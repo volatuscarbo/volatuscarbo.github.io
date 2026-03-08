@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RS EUETS Scope Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#05080f;--bg1:#0b1120;--bg2:#111c30;--bg3:#192338;
+  --brd:rgba(99,170,255,0.12);--brd2:rgba(99,170,255,0.22);
+  --blue:#3b82f6;--bglow:rgba(59,130,246,0.18);
+  --cyan:#22d3ee;--grn:#10b981;--gdim:rgba(16,185,129,0.15);
+  --red:#f43f5e;--rdim:rgba(244,63,94,0.12);
+  --amb:#f59e0b;--adim:rgba(245,158,11,0.15);
+  --tx:#e2eaf8;--tx2:#8da4c8;--tx3:#4a6080;
+  --mono:'JetBrains Mono',monospace;--sans:'Space Grotesk',sans-serif;
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--tx);font-family:var(--sans);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 800px 500px at 20% 0%,rgba(59,130,246,0.06),transparent 70%),
+    radial-gradient(ellipse 600px 400px at 80% 100%,rgba(34,211,238,0.04),transparent 70%);
+  pointer-events:none}
+.app{position:relative;z-index:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 26px;
+  border-bottom:1px solid var(--brd);background:rgba(11,17,32,0.92);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:100;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{width:36px;height:36px;border-radius:9px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.brand h1{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.brand p{font-size:10px;color:var(--tx3);font-family:var(--mono);margin-top:1px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;
+  font-family:var(--mono);font-size:10px;font-weight:600;border:1px solid;transition:all .3s;white-space:nowrap}
+.pill.loading{border-color:var(--amb);color:var(--amb);background:var(--adim)}
+.pill.ok{border-color:var(--grn);color:var(--grn);background:var(--gdim)}
+.pill.err{border-color:var(--red);color:var(--red);background:var(--rdim)}
+.pdot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.pdot.pulse{animation:blink 1.1s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:290px 1fr;flex:1;align-items:start}
+@media(max-width:820px){.layout{grid-template-columns:1fr}}
+
+/* SIDEBAR */
+.sidebar{border-right:1px solid var(--brd);padding:20px 15px;display:flex;flex-direction:column;
+  gap:17px;position:sticky;top:63px;max-height:calc(100vh - 63px);overflow-y:auto}
+.slabel{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--tx3);margin-bottom:8px}
+.dz{border:1.5px dashed var(--brd2);border-radius:10px;padding:21px 12px;text-align:center;
+  cursor:pointer;transition:all .2s;position:relative;background:rgba(59,130,246,0.02)}
+.dz:hover,.dz.over{border-color:var(--blue);background:var(--bglow)}
+.dz input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz .di{font-size:26px;margin-bottom:7px}
+.dz p{font-size:12px;color:var(--tx2)}
+.dz .ds{font-size:10px;color:var(--tx3);margin-top:3px;font-family:var(--mono)}
+.fbadge{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;
+  background:var(--bg3);border:1px solid var(--brd2);margin-top:10px}
+.fbadge .fi{font-size:18px;flex-shrink:0}
+.fbadge .fm{flex:1;overflow:hidden}
+.fbadge .fn{font-family:var(--mono);font-size:11px;color:var(--cyan);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fbadge .fmm{font-size:10px;color:var(--tx3);margin-top:2px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx3)}
+.sw{position:relative}
+.sw::after{content:'▾';position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:10px;pointer-events:none}
+.field select{width:100%;background:var(--bg2);border:1px solid var(--brd);border-radius:7px;
+  color:var(--tx);padding:8px 28px 8px 11px;font-size:12px;font-family:var(--sans);
+  outline:none;transition:border-color .2s;appearance:none}
+.field select:focus{border-color:var(--blue)}
+.btn-run{width:100%;padding:11px;border-radius:8px;border:none;font-size:13px;font-weight:700;
+  font-family:var(--sans);cursor:pointer;transition:all .2s;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff}
+.btn-run:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 28px rgba(59,130,246,.4)}
+.btn-run:disabled{opacity:.35;cursor:not-allowed}
+.ref-list{display:flex;flex-direction:column;gap:5px}
+.ri{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-radius:6px;
+  background:var(--bg2);border:1px solid var(--brd);font-family:var(--mono);font-size:10px}
+.ri .rn{color:var(--tx2)}
+.ri .rv{font-weight:700}
+.rv.ld{color:var(--amb)}.rv.ok{color:var(--grn)}.rv.er{color:var(--red)}
+hr.div{border:none;border-top:1px solid var(--brd)}
+.note{padding:8px 10px;border-radius:7px;font-size:10px;font-family:var(--mono);line-height:1.6}
+.note.info{background:var(--bglow);border:1px solid rgba(59,130,246,.2);color:var(--cyan)}
+.note.warn{background:var(--adim);border:1px solid rgba(245,158,11,.25);color:var(--amb)}
+
+/* MAIN */
+.main{padding:20px 20px 20px;display:flex;flex-direction:column;gap:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--bg1);border:1px solid var(--brd);border-radius:10px;padding:15px;position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.s-tot::after{background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.s-rs::after{background:var(--grn)}.s-no::after{background:var(--red)}.s-pct::after{background:var(--amb)}
+.sl{font-family:var(--mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx3);margin-bottom:7px}
+.sv{font-size:27px;font-weight:700;letter-spacing:-1px}
+.s-tot .sv{color:var(--cyan)}.s-rs .sv{color:var(--grn)}.s-no .sv{color:var(--red)}.s-pct .sv{color:var(--amb)}
+.ss{font-size:10px;color:var(--tx3);margin-top:4px;font-family:var(--mono)}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sbox{flex:1;min-width:200px;position:relative}
+.sbox input{width:100%;background:var(--bg1);border:1px solid var(--brd);border-radius:7px;
+  color:var(--tx);padding:8px 11px 8px 32px;font-size:12px;font-family:var(--sans);
+  outline:none;transition:border-color .2s}
+.sbox input:focus{border-color:var(--blue)}
+.sbox .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--tx3);font-size:12px;pointer-events:none}
+.fbtn{padding:7px 12px;border-radius:7px;border:1px solid var(--brd);background:var(--bg1);
+  color:var(--tx2);font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .15s;white-space:nowrap}
+.fbtn:hover{border-color:var(--blue);color:var(--tx)}
+.fbtn.fall{border-color:var(--blue);color:var(--blue);background:var(--bglow)}
+.fbtn.frs{border-color:var(--grn);color:var(--grn);background:var(--gdim)}
+.fbtn.fno{border-color:var(--red);color:var(--red);background:var(--rdim)}
+.expbtn{padding:7px 14px;border-radius:7px;border:1px solid var(--brd2);background:transparent;
+  color:var(--cyan);font-size:11px;font-family:var(--mono);font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.expbtn:hover{background:rgba(34,211,238,0.08);border-color:var(--cyan)}
+.tabs{display:flex;gap:2px;padding:0 0 0 1px}
+.tab{padding:8px 18px;font-family:var(--mono);font-size:11px;font-weight:600;cursor:pointer;
+  border:1px solid transparent;border-bottom:none;border-radius:7px 7px 0 0;color:var(--tx3);
+  background:transparent;transition:all .15s}
+.tab:hover{color:var(--tx2)}
+.tab.active{color:var(--cyan);border-color:var(--brd);background:var(--bg1)}
+.pivot-wrap{overflow-x:auto;max-height:560px;overflow-y:auto}
+.pivot-wrap table{width:auto;min-width:100%}
+.pivot-wrap th{background:var(--bg2);font-size:9px;letter-spacing:.8px;text-transform:uppercase;
+  font-family:var(--mono);color:var(--tx3);padding:9px 14px;border-bottom:1px solid var(--brd);
+  white-space:nowrap;position:sticky;top:0;z-index:5}
+.pivot-wrap th.rowh{position:sticky;left:0;z-index:6;background:var(--bg2)}
+.pivot-wrap td{padding:8px 14px;font-family:var(--mono);font-size:11px;border-bottom:1px solid rgba(99,170,255,0.05)}
+.pivot-wrap td.rowh{position:sticky;left:0;background:var(--bg1);color:var(--cyan);font-weight:600;z-index:2;border-right:1px solid var(--brd)}
+.pivot-wrap td.cnt{text-align:right;color:var(--tx);font-variant-numeric:tabular-nums}
+/* heat-map colours applied inline per cell */
+.pivot-wrap tr:hover td{background:rgba(59,130,246,0.04)}
+.pivot-wrap tr:hover td.rowh{background:var(--bg2)}
+.pivot-total{font-weight:700;color:var(--amb)!important;border-top:1px solid var(--brd)!important}
+.cinfo{font-family:var(--mono);font-size:10px;color:var(--tx3);white-space:nowrap}
+.tcard{background:var(--bg1);border:1px solid var(--brd);border-radius:10px;overflow:hidden}
+.twrap{overflow-x:auto;max-height:calc(100vh - 200px);overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{position:sticky;top:0;z-index:5;background:var(--bg2)}
+th{padding:10px 13px;text-align:left;font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.4px;text-transform:uppercase;color:var(--cyan);border-bottom:1px solid var(--brd);
+  cursor:pointer;user-select:none;white-space:nowrap;transition:color .15s}
+th:hover{color:var(--cyan)}th.sorted{color:var(--blue)}
+.sa{margin-left:3px;font-size:9px;opacity:.4}th.sorted .sa{opacity:1;color:var(--blue)}
+td{padding:9px 13px;border-bottom:1px solid rgba(99,170,255,0.05);
+  font-family:var(--mono);font-size:11px;color:var(--tx2);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(59,130,246,0.035)}
+tr.rsy td:first-child{border-left:3px solid var(--grn);padding-left:10px}
+tr.rsn td:first-child{border-left:3px solid transparent;padding-left:10px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:4px;
+  font-size:10px;font-weight:700;letter-spacing:.3px}
+.by{background:var(--gdim);color:var(--grn);border:1px solid rgba(16,185,129,.3)}
+.bn{background:var(--rdim);color:var(--red);border:1px solid rgba(244,63,94,.25)}
+.rsn-cell{color:var(--tx3);font-size:10px;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.num{text-align:right;color:var(--tx);font-variant-numeric:tabular-nums}
+.trunc{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:80px 20px;gap:10px;text-align:center;color:var(--tx3)}
+.empty .big{font-size:40px}
+.empty p{font-size:13px;color:var(--tx2)}
+.empty .sub{font-size:11px;font-family:var(--mono);color:var(--tx3)}
+.pager{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;
+  border-top:1px solid var(--brd);font-family:var(--mono);font-size:11px;color:var(--tx3)}
+.pager button{padding:4px 12px;border-radius:5px;border:1px solid var(--brd);background:var(--bg2);
+  color:var(--tx2);cursor:pointer;transition:all .15s}
+.pager button:hover:not(:disabled){border-color:var(--blue);color:var(--tx)}
+.pager button:disabled{opacity:.3;cursor:not-allowed}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--blue)}
+</style>
+</head>
+<body>
+<script>
+(function(){
+  try{
+    const w=1400,h=860;
+    const sw=window.screen.availWidth,sh=window.screen.availHeight;
+    const ww=Math.min(w,sw-40),wh=Math.min(h,sh-40);
+    window.resizeTo(ww,wh);
+    window.moveTo(Math.round((sw-ww)/2),Math.round((sh-wh)/2));
+  }catch(e){}
+})();
+</script>
+<div class="app">
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">✈</div>
+    <div>
+      <h1>EU ETS — Reduced Scope Checker</h1>
+      <p>Directive 2003/87/EC · RS_EUETS classification</p>
+    </div>
+  </div>
+  <div class="pills">
+    <div class="pill loading" id="p-omr"><span class="pdot pulse"></span>OMR</div>
+    <div class="pill loading" id="p-eea"><span class="pdot pulse"></span>EEA_EXCL</div>
+    <div class="pill loading" id="p-uk"><span class="pdot pulse"></span>UK_EXCL</div>
+    <div class="pill loading" id="p-apt"><span class="pdot pulse"></span>AIRPORTS</div>
+    <div class="pill loading" id="p-cem"><span class="pdot pulse"></span>GCDCEM</div>
+    <div class="pill loading" id="p-set"><span class="pdot pulse"></span>SET</div>
+    <div class="pill loading" id="p-doc"><span class="pdot pulse"></span>DOC7910</div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div>
+      <div class="slabel">Flight Data</div>
+      <div class="dz" id="dz" style="cursor:default">
+        <input type="file" id="fi" accept=".csv" style="display:none">
+        <div class="di" id="dz-icon">⏳</div>
+        <p id="dz-msg">Loading test1.csv…</p>
+        <p class="ds" id="dz-sub">fetching from GitHub</p>
+      </div>
+      <div id="fbadge" style="display:none"></div>
+    </div>
+    <hr class="div">
+    <div>
+      <div class="slabel">Settings</div>
+      <div class="field">
+        <label>Year (OMR adjustment logic)</label>
+        <div class="sw">
+          <select id="yrsel">
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025" selected>2025</option>
+            <option value="2026">2026</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="btn-run" id="btnRun" disabled onclick="runAnalysis()" style="display:none">&#9654; Run RS EUETS Analysis</button>
+    <hr class="div">
+    <div>
+      <div class="slabel">Reference Data Status</div>
+      <div class="ref-list">
+        <div class="ri"><span class="rn">OMR.csv</span><span class="rv ld" id="rv-omr">loading…</span></div>
+        <div class="ri"><span class="rn">EEA_TERRITORY.xlsx</span><span class="rv ld" id="rv-eea">loading…</span></div>
+        <div class="ri"><span class="rn">UK_Overseas.xlsx</span><span class="rv ld" id="rv-uk">loading…</span></div>
+        <div class="ri" style="grid-column:1/-1"><span class="rn">airports.csv → ICAO to ISO country (primary EEA check)</span><span class="rv ld" id="rv-apt">loading…</span></div>
+        <div class="ri"><span class="rn">gcdcem.csv</span><span class="rv ld" id="rv-cem">loading…</span></div>
+        <div class="ri"><span class="rn">set.csv</span><span class="rv ld" id="rv-set">loading…</span></div>
+        <div class="ri"><span class="rn">DOC_7910.csv</span><span class="rv ld" id="rv-doc">loading…</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="main">
+    <div class="stats" id="statsRow" style="display:none;flex-shrink:0;padding:14px 20px 0">
+      <div class="stat s-tot"><div class="sl">Total Flights</div><div class="sv" id="sv-tot">0</div><div class="ss" id="sv-fmt">—</div></div>
+      <div class="stat s-rs"><div class="sl">Reduced Scope</div><div class="sv" id="sv-rs">0</div><div class="ss">RS_EUETS = TRUE</div></div>
+      <div class="stat s-no"><div class="sl">Not In Scope</div><div class="sv" id="sv-no">0</div><div class="ss">RS_EUETS = FALSE</div></div>
+      <div class="stat s-pct"><div class="sl">RS Rate</div><div class="sv" id="sv-pct">—</div><div class="ss" id="sv-yr">Year: —</div></div>
+    </div>
+    <div class="toolbar" id="toolbar" style="display:none;flex-shrink:0;padding:8px 20px">
+      <div class="sbox"><span class="si">&#128269;</span><input type="text" id="srch" placeholder="Search dep, arr, type, registration, date…" oninput="applyFilters()"></div>
+      <button class="fbtn fall" id="b-all" onclick="setFilter('all',this)">All</button>
+      <button class="fbtn" id="b-rs" onclick="setFilter('rs',this)">&#10003; RS</button>
+      <button class="fbtn" id="b-no" onclick="setFilter('no',this)">&#10007; Non-RS</button>
+      <span style="flex:1"></span>
+      <span class="cinfo" id="cinfo"></span>
+      <button class="expbtn" onclick="exportCSV()">&#11015; Export CSV</button>
+    </div>
+    <div class="tcard">
+      <div class="tabs" style="flex-shrink:0;padding:10px 20px 0">
+        <button class="tab active" id="tab-flights" onclick="switchTab('flights',this)">Flights</button>
+        <button class="tab" id="tab-pivot" onclick="switchTab('pivot',this)">RS Pivot</button>
+        <button class="tab" id="tab-logic" onclick="switchTab('logic',this)">EUETS Logic</button>
+        <button class="tab" id="tab-corsia-logic" onclick="switchTab('corsia-logic',this)">CORSIA Logic</button>
+        <button class="tab" id="tab-extfs-logic" onclick="switchTab('extfs-logic',this)">EXTFS Logic</button>
+        <button class="tab" id="tab-corsia-states" onclick="switchTab('corsia-states',this)">CORSIA 2026 States</button>
+        <button class="tab" id="tab-threshold" onclick="switchTab('threshold',this)">Threshold Analysis</button>
+      </div>
+      <div class="twrap" id="tw">
+        <div class="empty">
+          <span class="big">&#9992;&#65039;</span>
+          <p>Upload a flight CSV and click Run Analysis</p>
+          <p class="sub">Reference data loading from GitHub…</p>
+        </div>
+      </div>
+      <div id="pgr" style="display:none"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const BASE='https://raw.githubusercontent.com/volatuscarbo/volatuscarbo.github.io/main/';
+const PAGE_SZ=500;
+const R={
+  omr:       new Set(),   // OMR airport ICAO codes (OMR.csv)
+  eeaTerr:   new Set(),   // EEA overseas territory ICAOs to EXCLUDE (EEA_TERRITORY.xlsx)
+  ukTerr:    new Set(),   // UK overseas territory ICAOs to EXCLUDE (UK_Overseas.xlsx)
+  icao2iso:  new Map(),   // ICAO → ISO-2 country code  (airports.csv — primary EEA check)
+  icao2mem:  new Map(),   // ICAO → member state name   (airports.csv — for OMR same-member)
+  icao2coords:new Map(),  // ICAO → {lat, lon}          (airports.csv — Vincenty GCD)
+  gcdcem:[],         // raw rows from gcdcem.csv for CEM lookup
+  setdata:[],        // raw rows from set.csv for SET lookup (fuel per NM × CO2_COEFF)
+  mwggCache:null,    // cached mwgg/Airports JSON, loaded on demand
+  doc7910:new Set(), // ICAO codes from DOC_7910 (airports in ICAO member states)
+  done:{omr:false,eea:false,uk:false,apt:false,cem:false,set:false,doc:false}
+};
+// EU-27 + Iceland + Norway — ISO codes that participate in EU ETS
+const EEA_ISO=new Set(['AT','BE','BG','CY','CZ','DE','DK','EE','ES','FI','FR','GR',
+  'HR','HU','IE','IT','LT','LU','LV','MT','NL','PL','PT','RO','SE','SI','SK','IS','NO']);
+// ICAO 2-letter prefix → EEA member state (fallback when airports.csv has no ISO)
+const EEA_PFX=new Set(['BI','EB','ED','EE','EF','EH','EI','EK','EL','EN','EP','ES','EV','EY',
+  'LA','LB','LC','LD','LE','LF','LG','LH','LI','LJ','LK','LM','LO','LP','LR','LZ']);
+let rawRows=null,results=[],filtered=[],fmode='all',sk=null,sd=1,page=0,activeTab='flights';
+
+/* CSV */
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if(!lines.length)return[];
+  const hdrs=splitL(lines[0]).map(h=>h.trim().replace(/^"|"$/g,''));
+  return lines.slice(1).map(l=>{
+    const v=splitL(l).map(x=>x.trim().replace(/^"|"$/g,''));
+    if(v.every(x=>!x))return null;
+    const r={};hdrs.forEach((h,i)=>r[h]=v[i]??'');return r;
+  }).filter(Boolean);
+}
+function splitL(line){
+  const o=[];let c='',q=false;
+  for(let i=0;i<line.length;i++){
+    if(line[i]==='"')q=!q;
+    else if(line[i]===','&&!q){o.push(c);c='';}
+    else c+=line[i];
+  }o.push(c);return o;
+}
+function pick(obj,...keys){
+  const lk=Object.keys(obj);
+  for(const k of keys){
+    const norm=k.toLowerCase().replace(/[_\s]/g,'');
+    const f=lk.find(x=>x.toLowerCase().replace(/[_\s]/g,'')===norm);
+    if(f!==undefined&&obj[f]!==undefined&&obj[f]!=='')return String(obj[f]);
+  }return'';
+}
+
+/* XLSX */
+let xlsxOK=false;
+async function ensureXLSX(){
+  if(xlsxOK)return;
+  await new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=()=>{xlsxOK=true;res();};s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+async function getXLSX(f){
+  await ensureXLSX();
+  const r=await fetch(BASE+f);if(!r.ok)throw Error(r.status);
+  const wb=XLSX.read(await r.arrayBuffer(),{type:'array'});
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+}
+async function getCSV(f){
+  const r=await fetch(BASE+f);if(!r.ok)throw Error(r.status);
+  return parseCSV(await r.text());
+}
+
+/* Column discovery */
+function findICAOcol(rows){
+  if(!rows.length)return null;
+  const keys=Object.keys(rows[0]);
+  for(const c of['ICAO','icao','ICAO_code','icao_code','apt_icao','airport_icao','apt','airport']){
+    const norm=c.toLowerCase().replace(/[_\s]/g,'');
+    const f=keys.find(k=>k.toLowerCase().replace(/[_\s]/g,'')===norm);
+    if(f)return f;
+  }
+  for(const k of keys){
+    const s=rows.slice(0,8).map(r=>(r[k]||'').toString().trim());
+    if(s.some(v=>/^[A-Z]{1,2}[0-9A-Z]{2,3}$/i.test(v)&&v.length>=3))return k;
+  }
+  return keys[0]||null;
+}
+function findMemCol(rows){
+  if(!rows.length)return null;
+  const keys=Object.keys(rows[0]);
+  for(const c of['member_state','memberstate','member','Member State','Member','Country',
+    'country','nation','eu_member','state','State','icao_member','territory']){
+    const norm=c.toLowerCase().replace(/[_\s]/g,'');
+    const f=keys.find(k=>k.toLowerCase().replace(/[_\s]/g,'')===norm);
+    if(f)return f;
+  }return null;
+}
+
+/* Status UI */
+function pill(id,state){
+  const el=document.getElementById('p-'+id);if(!el)return;
+  el.className='pill '+state;
+  const d=el.querySelector('.pdot');if(d)d.className='pdot'+(state==='loading'?' pulse':'');
+}
+function rv(id,text,cls){
+  const el=document.getElementById('rv-'+id);if(!el)return;
+  el.textContent=text;el.className='rv '+cls;
+}
+function allDone(){return Object.values(R.done).every(Boolean);}
+function checkReady(){
+  const ready=allDone()&&rawRows;
+  document.getElementById('btnRun').disabled=!ready;
+  if(ready&&!results.length) runAnalysis();
+}
+
+/* Load reference data */
+async function loadAll(){
+  await Promise.allSettled([loadOMR(),loadEEA(),loadUK(),loadAirports(),loadGCDCEM(),loadSET(),loadDOC7910()]);
+  checkReady();
+}
+
+async function loadOMR(){
+  try{
+    const rows=await getCSV('OMR.csv');
+    const col=findICAOcol(rows);
+    if(col)rows.forEach(r=>{const v=(r[col]||'').toString().trim().toUpperCase();if(v.length>=2)R.omr.add(v);});
+    R.done.omr=true;pill('omr','ok');rv('omr',R.omr.size+' airports','ok');
+  }catch{R.done.omr=true;pill('omr','err');rv('omr','error','er');checkReady();}
+}
+
+async function loadEEA(){
+  try{
+    const rows=await getXLSX('EEA_TERRITORY.xlsx');
+    const ic=findICAOcol(rows);
+    rows.forEach(r=>{
+      if(ic){const v=(r[ic]||'').toString().trim().toUpperCase();if(v)R.eeaTerr.add(v);}
+    });
+    R.done.eea=true;pill('eea','ok');rv('eea',R.eeaTerr.size+' excl.','ok');
+  }catch(e){R.done.eea=true;pill('eea','err');rv('eea','error: '+e.message,'er');checkReady();}
+}
+
+async function loadUK(){
+  try{
+    const rows=await getXLSX('UK_Overseas.xlsx');
+    const ic=findICAOcol(rows);
+    if(ic)rows.forEach(r=>{const v=(r[ic]||'').toString().trim().toUpperCase();if(v)R.ukTerr.add(v);});
+    R.done.uk=true;pill('uk','ok');rv('uk',R.ukTerr.size+' airports','ok');
+  }catch{R.done.uk=true;pill('uk','err');rv('uk','error','er');checkReady();}
+}
+
+// Union_airports.xlsx not used for EEA determination (per spec)
+
+async function loadAirports(){
+  // Load ICAO→ISO country mapping from airports.csv (repo-specific, compact file).
+  // Used to supplement EEA_ISO prefix check for airports not covered by prefix table.
+  // Hub format uses dep_iso_country/arr_iso_country directly (no lookup needed).
+  let mapped=0;
+  for(const fname of['iata_icao.csv','airports.csv','IATA_ICAO_TYPE.csv']){
+    try{
+      const rows=await getCSV(fname);
+      if(!rows.length)continue;
+      const cols=Object.keys(rows[0]);
+      // Find ICAO col: prefer exact 'icao' or 'ident', then anything with 'icao'
+      const icCol=cols.find(c=>/^(icao|ident|icao_code)$/i.test(c.trim()))
+                 ||cols.find(c=>/icao/i.test(c));
+      // Find ISO col: prefer 'iso_country', then 'iso', then 'country_code'
+      const isoCol=cols.find(c=>/^iso_country$/i.test(c.trim()))
+                  ||cols.find(c=>/^iso$/i.test(c.trim()))
+                  ||cols.find(c=>/iso.?country|country.?code/i.test(c));
+      // Find member/country name col for OMR same-member lookup
+      const memCol=cols.find(c=>/member_state|icao_member/i.test(c))
+                  ||cols.find(c=>/^(country|nation)$/i.test(c.trim()));
+      if(!icCol||!isoCol)continue;
+      // Find lat/lon columns
+      const latCol=cols.find(c=>/^(latitude_deg|latitude|lat)$/i.test(c.trim()));
+      const lonCol=cols.find(c=>/^(longitude_deg|longitude|lon|lng)$/i.test(c.trim()));
+      rows.forEach(r=>{
+        const icao=(r[icCol]||'').toString().trim().toUpperCase();
+        if(!icao||icao.length<3)return;
+        const iso=(r[isoCol]||'').toString().trim().toUpperCase();
+        if(iso&&iso.length===2){R.icao2iso.set(icao,iso);mapped++;}
+        if(memCol){const m=(r[memCol]||'').toString().trim();if(m)R.icao2mem.set(icao,m);}
+        if(latCol&&lonCol){
+          const lat=parseFloat(r[latCol]);const lon=parseFloat(r[lonCol]);
+          if(!isNaN(lat)&&!isNaN(lon))R.icao2coords.set(icao,{lat,lon});
+        }
+      });
+      if(mapped>0){rv('apt',mapped+' ICAO→ISO ('+fname+')','ok');break;}
+    }catch(e){}
+  }
+  R.done.apt=true;
+  pill('apt',mapped>0?'ok':'err');
+  if(!mapped)rv('apt','no ISO data — prefix fallback active','er');
+  checkReady();
+}
+
+async function loadGCDCEM(){
+  // gcdcem.csv columns:
+  //   Type Designator, Nb_Segments,
+  //   Intercept_1, Slope_1, Distance at First Breakpoint,
+  //   Intercept_2, Slope_2, Distance at Second Breakpoint,
+  //   Intercept_3, Slope_3
+  // Formula per segment: value = Intercept_N + Slope_N * gcd_km
+  // Select segment by comparing gcd_km to the breakpoint distances.
+  try{
+    const res=await fetch(BASE+'gcdcem.csv');
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    let text=await res.text();
+    if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+    const rows=parseCSV(text);
+    if(!rows.length)throw new Error('empty');
+    const p=v=>parseFloat((v||'').toString().replace(',','.'));
+    R.gcdcem=rows.map(r=>{
+      const ac=(r['Type Designator']||'').toString().trim().toUpperCase();
+      if(!ac)return null;
+      return{
+        ac,
+        nb:   parseInt(r['Nb_Segments'])||1,
+        i1:p(r['Intercept_1']),     s1:p(r['Slope_1']),
+        bp1:p(r['Distance at First Breakpoint']),
+        i2:p(r['Intercept_2']),     s2:p(r['Slope_2']),
+        bp2:p(r['Distance at Second Breakpoint']),
+        i3:p(r['Intercept_3']),     s3:p(r['Slope_3']),
+      };
+    }).filter(Boolean);
+    if(!R.gcdcem.length)throw new Error('no valid rows');
+    rv('cem',R.gcdcem.length+' aircraft types loaded','ok');
+    pill('cem','ok');
+  }catch(e){
+    rv('cem','error: '+e.message,'er');
+    pill('cem','err');
+  }
+  R.done.cem=true;
+  checkReady();
+}
+
+/* ── CEM piecewise linear lookup ────────────────────────────────────
+ * Exact ac_type match only. Applies the correct segment formula:
+ *   segment 1: gcd <= bp1  (or nb=1)
+ *   segment 2: bp1 < gcd <= bp2  (or nb=2)
+ *   segment 3: gcd > bp2
+ * value = Intercept_N + Slope_N * gcd_km
+ * Returns null if no exact ac_type match.
+ */
+function cemLookup(acType,gcdKm){
+  if(!R.gcdcem.length||!acType||gcdKm==null)return null;
+  const row=R.gcdcem.find(r=>r.ac===acType.toUpperCase());
+  if(!row)return null;
+  let intercept,slope;
+  if(row.nb>=3&&!isNaN(row.bp2)&&gcdKm>row.bp2){
+    intercept=row.i3;slope=row.s3;
+  }else if(row.nb>=2&&!isNaN(row.bp1)&&gcdKm>row.bp1){
+    intercept=row.i2;slope=row.s2;
+  }else{
+    intercept=row.i1;slope=row.s1;
+  }
+  if(isNaN(intercept)||isNaN(slope))return null;
+  return Math.round((intercept+slope*gcdKm)*10)/10;
+}
+
+async function loadDOC7910(){
+  // DOC_7910.csv: list of airports in ICAO contracting states.
+  // Used for CORSIA flag: TRUE only when both DEP and ARR are in this set.
+  // LCEN (N.Cyprus) and BKPR (Kosovo) are NOT in ICAO member states → CORSIA=FALSE.
+  try{
+    const rows=await getCSV('DOC_7910.csv');
+    const col=findICAOcol(rows);
+    if(!col)throw new Error('no ICAO column found');
+    rows.forEach(r=>{
+      const v=(r[col]||'').toString().trim().toUpperCase();
+      if(v.length>=2)R.doc7910.add(v);
+    });
+    if(!R.doc7910.size)throw new Error('empty');
+    rv('doc',R.doc7910.size+' airports','ok');
+    pill('doc','ok');
+  }catch(e){
+    rv('doc','error: '+e.message,'er');
+    pill('doc','err');
+  }
+  R.done.doc=true;
+  checkReady();
+}
+
+async function loadSET(){
+  // set.csv has two header rows: row 1 = col numbers (skip), row 2 = col names.
+  // Columns: ICAO_TYPE_CODE, NB_equations, BreakPoint_1, BreakPoint_2,
+  //          Slope_1/2/3, Intercept_1/2/3, CO2_COEFF
+  // Formula: fuel_kg = Intercept_N + Slope_N * gcd_nm
+  //          CO2_kg  = fuel_kg * CO2_COEFF
+  // GCD input is in NM (not km).
+  try{
+    const res=await fetch(BASE+'set.csv');
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    let text=await res.text();
+    if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+    // Skip first line (column numbers), parse from second line onwards
+    const firstNL=text.indexOf(String.fromCharCode(10));
+    const csvBody=text.slice(firstNL+1);
+    const rows=parseCSV(csvBody);
+    if(!rows.length)throw new Error('empty');
+    const p=v=>{const n=parseFloat((v||'').toString().replace(',','.'));return isNaN(n)?null:n;};
+    R.setdata=rows.map(r=>{
+      const ac=(r['ICAO_TYPE_CODE']||'').toString().trim().toUpperCase();
+      if(!ac||ac==='NA')return null;
+      return{
+        ac,
+        coeff:   3.16,  // always 3.16 per spec
+        nb:      parseInt(r['NB_equations'])||1,
+        bp1:     p(r['BreakPoint_1']),
+        bp2:     p(r['BreakPoint_2']),
+        i1:p(r['Intercept_1']), s1:p(r['Slope_1']),
+        i2:p(r['Intercept_2']), s2:p(r['Slope_2']),
+        i3:p(r['Intercept_3']), s3:p(r['Slope_3']),
+      };
+    }).filter(Boolean);
+    if(!R.setdata.length)throw new Error('no valid rows');
+    rv('set',R.setdata.length+' aircraft types loaded','ok');
+    pill('set','ok');
+  }catch(e){
+    rv('set','error: '+e.message,'er');
+    pill('set','err');
+  }
+  R.done.set=true;
+  checkReady();
+}
+
+/* ── SET piecewise lookup ────────────────────────────────────────────
+ * Exact ICAO_TYPE_CODE match. Input: gcd_nm (nautical miles).
+ * Selects segment by BreakPoint_1/2, computes:
+ *   fuel_kg = Intercept_N + Slope_N * gcd_nm
+ *   co2_kg  = fuel_kg * 3.16
+ * Returns co2_kg or null if no exact match.
+ */
+function setLookup(acType,gcdNm){
+  if(!R.setdata.length||!acType||gcdNm==null)return null;
+  const row=R.setdata.find(r=>r.ac===acType.toUpperCase());
+  if(!row)return null;
+  let intercept,slope;
+  if(row.nb>=3&&row.bp2!=null&&gcdNm>row.bp2){
+    intercept=row.i3;slope=row.s3;
+  }else if(row.nb>=2&&row.bp1!=null&&gcdNm>row.bp1){
+    intercept=row.i2;slope=row.s2;
+  }else{
+    intercept=row.i1;slope=row.s1;
+  }
+  if(intercept==null||slope==null)return null;
+  const fuel_kg=intercept+slope*gcdNm;
+  const co2_t=fuel_kg*row.coeff/1000;
+  return Math.round(co2_t*100)/100;
+}
+
+// getMem: returns a stable member identifier for OMR same-member comparison.
+// Uses icao2mem name from airports.csv, falls back to ISO code.
+// Only needs to be consistent within a pair — exact string doesn't matter.
+function getMem(icao){
+  return R.icao2mem.get(icao)||R.icao2iso.get(icao)||'';
+}
+
+/* ── Vincenty great-circle distance ───────────────────────────────────
+ * Uses the WGS-84 ellipsoid. Returns {km, nm} or null if coords missing.
+ * Reference: Vincenty (1975) "Direct and Inverse Solutions of Geodesics
+ *   on the Ellipsoid with Application of Nested Equations"
+ */
+function vincenty(icao1,icao2){
+  const c1=R.icao2coords.get(icao1),c2=R.icao2coords.get(icao2);
+  if(!c1||!c2)return null;
+  const toRad=d=>d*Math.PI/180;
+  // WGS-84 ellipsoid parameters
+  const a=6378137.0,f=1/298.257223563,b=a*(1-f);
+  const φ1=toRad(c1.lat),φ2=toRad(c2.lat);
+  const L=toRad(c2.lon-c1.lon);
+  const U1=Math.atan((1-f)*Math.tan(φ1));
+  const U2=Math.atan((1-f)*Math.tan(φ2));
+  const sinU1=Math.sin(U1),cosU1=Math.cos(U1);
+  const sinU2=Math.sin(U2),cosU2=Math.cos(U2);
+  let λ=L,λp,iter=0;
+  let sinσ,cosσ,σ,sinα,cos2α,cos2σm,C;
+  do{
+    const sinλ=Math.sin(λ),cosλ=Math.cos(λ);
+    sinσ=Math.sqrt((cosU2*sinλ)**2+(cosU1*sinU2-sinU1*cosU2*cosλ)**2);
+    if(sinσ===0)return{km:0,nm:0}; // coincident points
+    cosσ=sinU1*sinU2+cosU1*cosU2*cosλ;
+    σ=Math.atan2(sinσ,cosσ);
+    sinα=cosU1*cosU2*sinλ/sinσ;
+    cos2α=1-sinα*sinα;
+    cos2σm=cos2α===0?0:cosσ-2*sinU1*sinU2/cos2α;
+    C=f/16*cos2α*(4+f*(4-3*cos2α));
+    λp=λ;
+    λ=L+(1-C)*f*sinα*(σ+C*sinσ*(cos2σm+C*cosσ*(-1+2*cos2σm*cos2σm)));
+    if(++iter>200)break;
+  }while(Math.abs(λ-λp)>1e-12);
+  const u2=cos2α*(a*a-b*b)/(b*b);
+  const A_v=1+u2/16384*(4096+u2*(-768+u2*(320-175*u2)));
+  const B_v=u2/1024*(256+u2*(-128+u2*(74-47*u2)));
+  const Δσ=B_v*sinσ*(cos2σm+B_v/4*(cosσ*(-1+2*cos2σm**2)
+    -B_v/6*cos2σm*(-3+4*sinσ**2)*(-3+4*cos2σm**2)));
+  const distM=b*A_v*(σ-Δσ);
+  const km=Math.round(distM/1000*10)/10;
+  const nm=Math.round(distM/1852*10)/10;
+  return{km,nm};
+}
+
+/* Format detect & normalise */
+function detectFmt(row){
+  const ks=Object.keys(row).map(k=>k.toLowerCase());
+  if(ks.includes('dep_icao_code'))return'hub';
+  if(ks.includes('depstat'))return'simple';
+  return'unknown';
+}
+function normRow(row,fmt){
+  if(fmt==='hub'){
+    const dep=(pick(row,'dep_icao_code','depstat')||'').toUpperCase().trim();
+    const arr=(pick(row,'arr_icao_code','arrstat')||'').toUpperCase().trim();
+    // Hub CSV carries iso country codes directly — inject into icao2iso map
+    const depIso=(pick(row,'dep_iso_country','dep_iso')||'').toUpperCase().trim();
+    const arrIso=(pick(row,'arr_iso_country','arr_iso')||'').toUpperCase().trim();
+    if(dep&&depIso)R.icao2iso.set(dep,depIso);
+    if(arr&&arrIso)R.icao2iso.set(arr,arrIso);
+    const prev_bon_h = parseFloat(pick(row,'prev_fob_onblock'))||null;
+    const uplift_h   = parseFloat(pick(row,'uplift_kg'))||0;
+    const blk_off_h2 = parseFloat(pick(row,'fob_offblock_kg'))||null;
+    const blk_on_h   = parseFloat(pick(row,'fob_onblock_kg'))||null;
+    const fuel_h = (prev_bon_h!=null&&blk_on_h!=null)
+      ? Math.round((prev_bon_h+uplift_h-blk_on_h)*10)/10
+      : null;
+    const method_a_h = (blk_off_h2!=null&&blk_on_h!=null)
+      ? Math.round((blk_off_h2-blk_on_h)*10)/10 : null;
+    return{
+      dep,arr,
+      act:(pick(row,'aircraft_icao_code','ac_subtype','actype','ac_type')||'').toUpperCase().trim(),
+      reg:pick(row,'ac_registration','ac_reg'),
+      flt:pick(row,'flight_number','flight_nr','leg_no'),
+      dt:pick(row,'day_of_origin','UTC_date_time','date'),
+      legType:pick(row,'curr_leg_type'),
+      fuel_kg:fuel_h,
+      method_a:method_a_h,
+      prev_bon:prev_bon_h,
+      uplift_kg:uplift_h,
+      block_on:blk_on_h,blocks_off:blk_off_h2,
+    };
+  }
+  // Fuel columns: read raw values directly (pick normalises underscores/spaces)
+  const _uplift   = parseFloat((row['Uplift_kg']||row['uplift_kg']||'').toString().replace(',','.'));
+  const _blksoff  = parseFloat((row['Blocks OFF']||row['blocks_off']||row['BlocksOFF']||'').toString().replace(',','.'));
+  const _blkon    = parseFloat((row['Block_ON']||row['block_on']||row['BlockON']||'').toString().replace(',','.'));
+  return{
+    dep:(pick(row,'depstat','dep_icao')||'').toUpperCase().trim(),
+    arr:(pick(row,'arrstat','arr_icao')||'').toUpperCase().trim(),
+    act:(pick(row,'ac_type','actype','aircraft_type')||'').toUpperCase().trim(),
+    reg:pick(row,'ac_reg','ac_registration'),
+    flt:pick(row,'flight_nr','flight_number'),
+    dt:pick(row,'UTC_date_time','date'),
+    legType:'',
+    fuel_kg:null,
+    method_a:(!isNaN(_blksoff)&&!isNaN(_blkon))?Math.round((_blksoff-_blkon)*10)/10:null,
+    uplift_kg:isNaN(_uplift)?0:_uplift,
+    blocks_off:isNaN(_blksoff)?null:_blksoff,
+    block_on:isNaN(_blkon)?null:_blkon,
+  };
+}
+
+/* ── CORSIA 2026 Volunteering States (ICAO Edition 6 — 130 states total; 103 confirmed here) ── */
+const CORSIA_2026_STATES=new Map([
+  ["Afghanistan","AF"],["Albania","AL"],["Antigua and Barbuda","AG"],
+  ["Armenia","AM"],["Australia","AU"],["Austria","AT"],["Azerbaijan","AZ"],
+  ["Bahamas","BS"],["Bahrain","BH"],["Barbados","BB"],["Belgium","BE"],
+  ["Belize","BZ"],["Benin","BJ"],["Bosnia and Herzegovina","BA"],
+  ["Botswana","BW"],["Bulgaria","BG"],["Burkina Faso","BF"],
+  ["Cambodia","KH"],["Cameroon","CM"],["Canada","CA"],["Comoros","KM"],
+  ["Cook Islands","CK"],["Costa Rica","CR"],["C\u00f4te d'Ivoire","CI"],
+  ["Croatia","HR"],["Cuba","CU"],["Cyprus","CY"],["Czechia","CZ"],
+  ["Democratic Republic of the Congo","CD"],["Denmark","DK"],
+  ["Dominica","DM"],["Dominican Republic","DO"],["Ecuador","EC"],
+  ["El Salvador","SV"],["Equatorial Guinea","GQ"],["Estonia","EE"],
+  ["Finland","FI"],["France","FR"],["Gabon","GA"],["Gambia","GM"],
+  ["Georgia","GE"],["Germany","DE"],["Ghana","GH"],["Greece","GR"],
+  ["Grenada","GD"],["Guatemala","GT"],["Guyana","GY"],["Haiti","HT"],
+  ["Honduras","HN"],["Hungary","HU"],["Iceland","IS"],["Indonesia","ID"],
+  ["Iraq","IQ"],["Ireland","IE"],["Israel","IL"],["Italy","IT"],
+  ["Jamaica","JM"],["Japan","JP"],["Kazakhstan","KZ"],["Kenya","KE"],
+  ["Kiribati","KI"],["Kuwait","KW"],["Latvia","LV"],["Lithuania","LT"],
+  ["Luxembourg","LU"],["Madagascar","MG"],["Malawi","MW"],["Malaysia","MY"],
+  ["Maldives","MV"],["Mali","ML"],["Malta","MT"],["Marshall Islands","MH"],
+  ["Mauritania","MR"],["Mexico","MX"],["Micronesia (Federated States of)","FM"],
+  ["Monaco","MC"],["Montenegro","ME"],["Namibia","NA"],["Nauru","NR"],
+  ["Netherlands","NL"],["New Zealand","NZ"],["Nigeria","NG"],
+  ["North Macedonia","MK"],["Norway","NO"],["Oman","OM"],["Palau","PW"],
+  ["Papua New Guinea","PG"],["Philippines","PH"],["Poland","PL"],
+  ["Portugal","PT"],["Qatar","QA"],["Republic of Korea","KR"],
+  ["Republic of Moldova","MD"],["Romania","RO"],["Rwanda","RW"],
+  ["Saint Kitts and Nevis","KN"],["Saint Lucia","LC"],
+  ["Saint Vincent and the Grenadines","VC"],["Samoa","WS"],["San Marino","SM"],
+  ["Saudi Arabia","SA"],["Serbia","RS"],["Seychelles","SC"],
+  ["Sierra Leone","SL"],["Singapore","SG"],["Slovakia","SK"],
+  ["Slovenia","SI"],["Solomon Islands","SB"],["South Sudan","SS"],
+  ["Spain","ES"],["Suriname","SR"],["Sweden","SE"],["Switzerland","CH"],
+  ["Thailand","TH"],["Timor-Leste","TL"],["Tonga","TO"],
+  ["Trinidad and Tobago","TT"],["T\u00fcrkiye","TR"],["Tuvalu","TV"],
+  ["Uganda","UG"],["Ukraine","UA"],["United Arab Emirates","AE"],
+  ["United Kingdom","GB"],["United Republic of Tanzania","TZ"],
+  ["United States","US"],["Uruguay","UY"],["Vanuatu","VU"],
+  ["Viet Nam","VN"],["Zambia","ZM"],["Zimbabwe","ZW"]
+])
+const CORSIA_2026_ISO=new Set(CORSIA_2026_STATES.values());
+
+/* ── Module-scope airport helpers ─────────────────────────────────── */
+function isEEA(icao){
+  if(!icao)return false;
+  if(R.omr.has(icao))return true;           // OMR = outermost regions, always EEA
+  const iso=R.icao2iso.get(icao);
+  if(iso)return EEA_ISO.has(iso);           // airports.csv ISO lookup
+  return EEA_PFX.has(icao.substring(0,2).toUpperCase()); // prefix fallback
+}
+function isCH(icao){
+  if(!icao)return false;
+  const iso=R.icao2iso.get(icao);
+  if(iso)return iso==='CH';
+  return icao.substring(0,2).toUpperCase()==='LS';
+}
+function isGB(icao){
+  if(!icao)return false;
+  const iso=R.icao2iso.get(icao);
+  if(iso)return iso==='GB';
+  return icao.substring(0,2).toUpperCase()==='EG';
+}
+
+/* RS EUETS LOGIC — translated from R
+ *
+ * EEA membership is determined SOLELY from airports.csv:
+ *   ICAO → iso_country (2-letter) → check against EEA_ISO set
+ * Union_airports.xlsx is NOT used for EEA determination.
+ * EEA_TERRITORY.xlsx provides EXCLUSIONS (overseas territories).
+ * UK_Overseas.xlsx  provides UK territory EXCLUSIONS.
+ */
+function calcRS(n,year){
+  const{dep,arr,act}=n;
+  const yr=String(year);
+
+  if(act==='C525')return{rs:false,mDep:'',mArr:'',reason:'C525 aircraft — excluded from all EUETS'};
+  if(dep&&arr&&dep===arr)return{rs:false,mDep:'',mArr:'',reason:'DEP and ARR are the same airport — not a route'};
+  if(n.legType){
+    const lt=n.legType.trim().toLowerCase();
+    if(lt.includes('maint')||lt==='training'||lt.includes('state')||lt.includes('customer'))
+      return{rs:false,mDep:'',mArr:'',reason:'Leg type "'+n.legType+'" excluded from RS_EUETS'};
+  }
+
+  /* ── Helper: is this ICAO in an EEA member state? ──────────────────
+   * PRIMARY:  airports.csv → iso_country → EEA_ISO set
+   * FALLBACK: hardcoded ICAO 2-letter prefix (used only if airports.csv
+   *           didn't load or doesn't contain the airport)
+   */
+  // isEEA, isCH, isGB defined at module scope below
+
+  /* ── Helper: member state name for OMR same-member check ───────────
+   * Uses icao2mem from airports.csv (full country name).
+   * Falls back to ISO code if no name available.
+   */
+  function getMem(icao){
+    return R.icao2mem.get(icao)||R.icao2iso.get(icao)||'';
+  }
+
+  const mDep=getMem(dep), mArr=getMem(arr);
+
+  /* ── DEP side ───────────────────────────────────────────────────── */
+  const d_eea   = isEEA(dep);                         // in EEA member state
+  const d_nTerrEEA = !R.eeaTerr.has(dep);             // NOT an EEA overseas territory
+  const d_nTerrUK  = !R.ukTerr.has(dep);              // NOT a UK overseas territory
+  const d_nLXGB = dep!=='LXGB';                        // not Gibraltar airport
+  const d_nENSB = dep!=='ENSB';                        // not Svalbard
+  const d_nCH   = !isCH(dep);                         // not Switzerland
+  const d_nGB   = !isGB(dep);                         // not United Kingdom
+  const d_nLFV  = dep.substring(0,3)!=='LFV';         // not Guiana Space Centre
+  const d_scope = R.omr.has(dep)                      // in OMR, or starts E/L/BI
+                ||dep.substring(0,2)==='BI'
+                ||dep[0]==='E'
+                ||dep[0]==='L';
+  const depOK = d_eea&&d_nTerrEEA&&d_nTerrUK&&d_nLXGB&&d_nENSB&&d_nCH&&d_nGB&&d_nLFV&&d_scope;
+
+  /* ── ARR side ───────────────────────────────────────────────────── */
+  // GB mainland is a valid ARR destination (EEA → GB = RS_EUETS TRUE).
+  // Excluded: UK overseas territories (ukTerr set), Gibraltar (LXGB), EEA territories.
+  const a_gb        = isGB(arr);                        // GB mainland airport
+  const a_ch        = isCH(arr);                        // Switzerland (valid ARR, excluded only as DEP)
+  const a_eea       = isEEA(arr)||a_gb||a_ch;           // EEA member OR GB mainland OR Switzerland
+  const a_nTerrEEA  = !R.eeaTerr.has(arr);
+  const a_nTerrUK   = !R.ukTerr.has(arr);
+  const a_nLXGB = arr!=='LXGB';
+  const a_nENSB = arr!=='ENSB';
+  const a_nLFV  = arr.substring(0,3)!=='LFV';
+  const a_scope = R.omr.has(arr)
+                ||arr.substring(0,2)==='BI'
+                ||arr[0]==='E'
+                ||arr[0]==='L';
+  // GB airports (EG prefix) satisfy scope via the E* rule — no extra check needed
+  const arrOK = a_eea&&a_nTerrEEA&&a_nTerrUK&&a_nLXGB&&a_nENSB&&a_nLFV&&a_scope;
+
+  let rs=depOK&&arrOK;
+
+  /* ── Year-based OMR same-member-state adjustment ────────────────── */
+  // Compare by normalised member name (or ISO code if name not available)
+  const sameM = mDep&&mArr&&mDep===mArr;
+  if(['2024','2025','2026'].includes(yr)){
+    if(R.omr.has(dep)&&sameM)rs=false;
+    if(R.omr.has(arr)&&sameM)rs=false;
+  }
+  if(yr==='2023'&&R.omr.has(dep)&&R.omr.has(arr)&&sameM)rs=true;
+
+  /* ── Reason string ──────────────────────────────────────────────── */
+  if(rs)return{rs,mDep,mArr,reason:''};
+  const f=[];
+  if(!depOK){
+    const iso=R.icao2iso.get(dep)||'?';
+    if(!d_eea)     f.push('DEP "'+dep+'" (ISO:'+iso+'): not in EEA member state');
+    if(!d_scope)   f.push('DEP "'+dep+'": not in OMR / E* / L* / BI* scope');
+    if(!d_nTerrEEA)f.push('DEP "'+dep+'": EEA overseas territory (excluded)');
+    if(!d_nTerrUK) f.push('DEP "'+dep+'": UK overseas territory (excluded)');
+    if(!d_nCH)     f.push('DEP "'+dep+'" (CH): Switzerland excluded from dep side');
+    if(!d_nGB)     f.push('DEP "'+dep+'" (GB): United Kingdom excluded from dep side');
+    if(!d_nLXGB)   f.push('DEP=LXGB: Gibraltar excluded');
+    if(!d_nENSB)   f.push('DEP=ENSB: Svalbard excluded');
+    if(!d_nLFV)    f.push('DEP: LFV* prefix (Guiana Space Centre) excluded');
+  }
+  if(!arrOK){
+    const iso=R.icao2iso.get(arr)||'?';
+    if(!a_eea)     f.push('ARR "'+arr+'" (ISO:'+iso+'): not in EEA member state, GB or CH');
+    if(!a_scope)   f.push('ARR "'+arr+'": not in OMR / E* / L* / BI* scope');
+    if(!a_nTerrEEA)f.push('ARR "'+arr+'": EEA overseas territory (excluded)');
+    if(!a_nTerrUK) f.push('ARR "'+arr+'": UK overseas territory (excluded)');
+    if(!a_nLXGB)   f.push('ARR=LXGB: Gibraltar excluded');
+    if(!a_nENSB)   f.push('ARR=ENSB: Svalbard excluded');
+    if(!a_nLFV)    f.push('ARR: LFV* prefix excluded');
+  }
+  if(depOK&&arrOK&&!rs)f.push('OMR same-member-state exclusion ('+yr+'): '+mDep);
+  return{rs,mDep,mArr,reason:f.join(' · ')||'Outside scope'};
+}
+/* Run */
+async function runAnalysis(){
+  if(!rawRows||!allDone())return;
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('btnRun').textContent='⏳ Fetching coords…';
+  const yr=document.getElementById('yrsel').value;
+  const fmt=detectFmt(rawRows[0]||{});
+  // Collect all unique ICAOs missing coordinates and fetch from OurAirports-db
+  const missing=new Set();
+  rawRows.forEach(row=>{
+    const n=normRow(row,fmt);
+    if(n.dep&&!R.icao2coords.has(n.dep))missing.add(n.dep);
+    if(n.arr&&!R.icao2coords.has(n.arr))missing.add(n.arr);
+  });
+  if(missing.size){
+    // Fetch missing airport coords from two sources in sequence:
+    // 1. epranka/airports-db (56k airports, OurAirports data, fields: latitude_deg/longitude_deg)
+    // 2. mwgg/Airports (29k airports, fields: lat/lon) as secondary fallback
+    await Promise.allSettled([...missing].map(async icao=>{
+      // Source 1: epranka (latitude_deg / longitude_deg as strings)
+      try{
+        const r=await fetch('https://raw.githubusercontent.com/epranka/airports-db/master/icao/'+icao+'.json');
+        if(r.ok){
+          const d=await r.json();
+          const lat=parseFloat(d.latitude_deg);
+          const lon=parseFloat(d.longitude_deg);
+          if(!isNaN(lat)&&!isNaN(lon)){R.icao2coords.set(icao,{lat,lon});return;}
+        }
+      }catch(e){}
+      // Source 2: mwgg/Airports bulk JSON (cached in R.mwggCache)
+      try{
+        if(!R.mwggCache){
+          const r=await fetch('https://raw.githubusercontent.com/mwgg/Airports/master/airports.json');
+          R.mwggCache=r.ok?await r.json():{};
+        }
+        const d=R.mwggCache[icao];
+        if(d&&d.lat!=null&&d.lon!=null)
+          R.icao2coords.set(icao,{lat:parseFloat(d.lat),lon:parseFloat(d.lon)});
+      }catch(e){}
+    }));
+  }
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnRun').textContent='▶ Run RS EUETS Analysis';
+  // For simple format: sort by reg + departure datetime, then compute fuel per flight
+  // fuel_kg = prev_Block_ON + Uplift_kg - Blocks_OFF (current)
+  // First flight of each registration has no previous → null
+  let normed=rawRows.map(row=>normRow(row,fmt));
+  if(fmt==='simple'){
+    const parseDepDt=n=>{
+      const s=(n.dt||'').trim();
+      // Accept dd/mm/yyyy or dd.mm.yyyy, with optional time HH:MM
+      const parts=s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+      if(!parts)return 0;
+      return new Date(+parts[3],+parts[2]-1,+parts[1],+(parts[4]||0),+(parts[5]||0)).getTime();
+    };
+    normed.sort((a,b)=>a.reg<b.reg?-1:a.reg>b.reg?1:parseDepDt(a)-parseDepDt(b));
+    const prevBON={};
+    normed=normed.map(n=>{
+      const reg=n.reg;
+      const prev=prevBON[reg]??null;
+      const fuel=prev!=null&&n.block_on!=null
+        ?Math.round((prev+n.uplift_kg-n.block_on)*10)/10
+        :null;
+      if(n.block_on!=null)prevBON[reg]=n.block_on;
+      return{...n,fuel_kg:fuel,prev_bon:prev};
+    });
+  }
+  // hub format: fuel_kg already computed per-row in normRow (prev_fob_onblock + uplift - fob_offblock)
+  results=normed.map(n=>{
+    const{rs,mDep,mArr,reason}=calcRS(n,yr);
+    const gcd=vincenty(n.dep,n.arr);
+    const cem_val=cemLookup(n.act,gcd?gcd.km:null);
+    return{dep:n.dep,arr:n.arr,act:n.act,reg:n.reg,flt:n.flt,dt:n.dt,
+           legType:n.legType||'',
+           fuel_kg:n.fuel_kg??null,
+           method_a:n.method_a??null,
+           prev_bon:n.prev_bon??null,
+           uplift_kg_raw:n.uplift_kg??null,
+           block_on_raw:n.block_on??null,
+           depIso:R.icao2iso.get(n.dep)||'',arrIso:R.icao2iso.get(n.arr)||'',
+           gcd_km:gcd?gcd.km:null,gcd_nm:gcd?gcd.nm:null,
+           cert_kg:cem_val,
+           cert_tco2:cem_val!=null?Math.round(cem_val*3.16/1000*100)/100:null,
+           set_co2:setLookup(n.act,gcd?gcd.nm:null),
+           corsia_off: (()=>{
+             if(!R.doc7910.size) return null;
+             const dIso=R.icao2iso.get(n.dep)||'';
+             const aIso=R.icao2iso.get(n.arr)||'';
+             // Both airports must be CORSIA-eligible (DOC_7910) AND both states must volunteer
+             if(!R.doc7910.has(n.dep)||!R.doc7910.has(n.arr)) return false;
+             if(['LCEN','BKPR'].includes(n.dep)||['LCEN','BKPR'].includes(n.arr)) return false;
+             if(getMem(n.dep)&&getMem(n.arr)&&getMem(n.dep)===getMem(n.arr)) return false;
+             if(n.legType&&n.legType.trim().toLowerCase().includes('state')) return false;
+             return CORSIA_2026_ISO.has(dIso)&&CORSIA_2026_ISO.has(aIso);
+           })(),
+           fs: (()=>{
+             // FS_EUETS: TRUE when dep OR arr is EEA airport
+             // GB→EEA = FALSE (UK ETS), CH→EEA = FALSE (CH ETS)
+             // EEA→GB = TRUE (EEA dep), EEA→CH = TRUE (EEA dep)
+             const fsEeaApt=icao=>isEEA(icao)&&!isCH(icao)&&!isGB(icao)
+               &&!R.eeaTerr.has(icao)&&!R.ukTerr.has(icao)
+               &&icao!=='LXGB'&&icao!=='ENSB'&&icao.substring(0,3)!=='LFV';
+             return fsEeaApt(n.dep)||(fsEeaApt(n.arr)&&!isGB(n.dep)&&!isCH(n.dep));
+           })(),
+           extfs: (()=>{
+             // EXTFS_EUETS: TRUE when dep OR arr touches EEA/CH/GB
+             const eeaAptDep=icao=>isEEA(icao)&&!R.eeaTerr.has(icao)&&!R.ukTerr.has(icao)
+               &&icao!=='LXGB'&&icao!=='ENSB'&&icao.substring(0,3)!=='LFV';
+             const eeaAptArr=icao=>(isEEA(icao)||isCH(icao))&&!R.eeaTerr.has(icao)
+               &&!R.ukTerr.has(icao)&&icao!=='LXGB'&&icao!=='ENSB'&&icao.substring(0,3)!=='LFV';
+             const gbArr=isGB(n.arr)&&!R.ukTerr.has(n.arr)&&n.arr!=='LXGB';
+             return eeaAptDep(n.dep)||eeaAptArr(n.arr)||(isGB(n.dep)&&eeaAptArr(n.arr))||(eeaAptDep(n.dep)&&gbArr);
+           })(),
+           corsia: R.doc7910.size>0
+             ? (R.doc7910.has(n.dep)&&R.doc7910.has(n.arr)&&
+                !['LCEN','BKPR'].includes(n.dep)&&!['LCEN','BKPR'].includes(n.arr)&&
+                !(getMem(n.dep)&&getMem(n.arr)&&getMem(n.dep)===getMem(n.arr))&&
+                !(n.legType&&n.legType.trim().toLowerCase().includes('state')))
+             : null,
+           rs,mDep,mArr,reason};
+  });
+  const tot=results.length,rsN=results.filter(r=>r.rs).length;
+  document.getElementById('statsRow').style.display='grid';
+  document.getElementById('sv-tot').textContent=tot.toLocaleString();
+  document.getElementById('sv-rs').textContent=rsN.toLocaleString();
+  document.getElementById('sv-no').textContent=(tot-rsN).toLocaleString();
+  document.getElementById('sv-pct').textContent=tot?(rsN/tot*100).toFixed(1)+'%':'—';
+  document.getElementById('sv-fmt').textContent=fmt.toUpperCase()+' format';
+  document.getElementById('sv-yr').textContent='Year: '+yr;
+  document.getElementById('toolbar').style.display='flex';
+  fmode='all';sk=null;sd=1;page=0;
+  document.getElementById('srch').value='';
+  ['b-all','b-rs','b-no'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.className='fbtn'+(id==='b-all'?' fall':'');
+  });
+  if(activeTab==='pivot')renderPivot();else applyFilters();
+  // Auto-show threshold tab after analysis
+  switchTab('threshold', document.getElementById('tab-threshold'));
+}
+
+/* Filter */
+function setFilter(mode,btn){
+  fmode=mode;page=0;
+  ['b-all','b-rs','b-no'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='fbtn';});
+  if(mode==='all')btn.classList.add('fall');
+  if(mode==='rs') btn.classList.add('frs');
+  if(mode==='no') btn.classList.add('fno');
+  applyFilters();
+}
+function applyFilters(){
+  const q=(document.getElementById('srch').value||'').toLowerCase().trim();
+  filtered=results.filter(r=>{
+    if(fmode==='rs'&&!r.rs)return false;
+    if(fmode==='no'&&r.rs)return false;
+    if(!q)return true;
+    return[r.dep,r.arr,r.act,r.mDep,r.mArr,r.reg,r.flt,r.dt]
+      .some(v=>v&&String(v).toLowerCase().includes(q));
+  });
+  if(sk){
+    filtered.sort((a,b)=>{
+      let va=a[sk]??'',vb=b[sk]??'';
+      if(typeof va==='boolean'){va=va?1:0;vb=vb?1:0;}
+      return va<vb?-sd:va>vb?sd:0;
+    });
+  }
+  document.getElementById('cinfo').textContent=filtered.length.toLocaleString()+' / '+results.length.toLocaleString()+' flights';
+  page=0;render();
+}
+function sortBy(key){if(sk===key)sd*=-1;else{sk=key;sd=1;}applyFilters();}
+
+function render(){
+  const rows=filtered.slice(page*PAGE_SZ,(page+1)*PAGE_SZ);
+  const pages=Math.ceil(filtered.length/PAGE_SZ);
+  if(!rows.length){
+    document.getElementById('tw').innerHTML='<div class="empty"><span class="big">&#128269;</span><p>No matching flights</p><p class="sub">Adjust search or filters</p></div>';
+    document.getElementById('pgr').style.display='none';return;
+  }
+  const arr=col=>sk!==col?'<span class="sa">&#8645;</span>':sd===1?'<span class="sa">&#8593;</span>':'<span class="sa">&#8595;</span>';
+  const th=(k,l)=>`<th class="${sk===k?'sorted':''}" onclick="sortBy('${k}')">${l}${arr(k)}</th>`;
+  let html=`<table><thead><tr>
+    ${th('dt','Date')}${th('extfs','EXTFS_EUETS')}${th('fs','FS_EUETS')}${th('rs','RS_EUETS')}${th('corsia','CORSIA')}${th('corsia_off','CORSIA Offsetting')}${th('dep','DEP')}${th('arr','ARR')}${th('act','AC Type')}
+    ${th('gcd_km','GCD km')}${th('gcd_nm','GCD nm')}${th('cert_kg','CERT (kg)')}${th('cert_tco2','CERT (t CO2)')}${th('set_co2','SET (t CO2)')}
+    ${th('prev_bon','Prev BON (kg)')}${th('uplift_kg_raw','Uplift (kg)')}${th('block_on_raw','Block ON (kg)')}${th('method_a','Blocks OFF/ON')}${th('fuel_kg','Method B (kg)')}${th('legType','Leg Type')}${th('reg','Reg')}${th('flt','Flight')}
+    <th>Reason</th></tr></thead><tbody>`;
+  for(const r of rows){
+    html+=`<tr class="${r.rs?'rsy':'rsn'}">
+      <td>${r.dt||'—'}</td>
+      <td><span class="badge ${r.extfs?'by':'bn'}">${r.extfs?'&#10003; TRUE':'&#10007; FALSE'}</span></td>
+      <td><span class="badge ${r.fs?'by':'bn'}">${r.fs?'&#10003; TRUE':'&#10007; FALSE'}</span></td>
+      <td><span class="badge ${r.rs?'by':'bn'}">${r.rs?'&#10003; TRUE':'&#10007; FALSE'}</span></td>
+      <td>${r.corsia===null?'<span style="opacity:.4">—</span>':`<span class="badge ${r.corsia?'by':'bn'}">${r.corsia?'&#10003; TRUE':'&#10007; FALSE'}</span>`}</td>
+      <td>${r.corsia_off===null?'<span style="opacity:.4">—</span>':`<span class="badge ${r.corsia_off?'by':'bn'}">${r.corsia_off?'&#10003; TRUE':'&#10007; FALSE'}</span>`}</td>
+      <td>${(()=>{const noDep=r.dep&&!R.icao2coords.has(r.dep);return (noDep?'<span style="color:var(--amb)">&#9888; </span>':'')+'<span style="color:'+(noDep?'var(--red)':'inherit')+'">'+( r.dep||'—')+'</span>';})()}</td>
+      <td>${(()=>{const noArr=r.arr&&!R.icao2coords.has(r.arr);return (noArr?'<span style="color:var(--amb)">&#9888; </span>':'')+'<span style="color:'+(noArr?'var(--red)':'inherit')+'">'+( r.arr||'—')+'</span>';})()}</td>
+      <td>${r.act||'—'}</td>
+      <td class="num">${r.gcd_km!=null?r.gcd_km.toFixed(1):'—'}</td>
+      <td class="num">${r.gcd_nm!=null?r.gcd_nm.toFixed(1):'—'}</td>
+      <td class="num">${r.cert_kg!=null?r.cert_kg.toFixed(0):'—'}</td>
+      <td class="num">${r.cert_tco2!=null?r.cert_tco2.toFixed(2):'—'}</td>
+      <td class="num">${r.set_co2!=null?r.set_co2.toFixed(2):'—'}</td>
+      <td class="num">${r.prev_bon!=null?r.prev_bon.toFixed(0):'—'}</td>
+      <td class="num">${r.uplift_kg_raw!=null?r.uplift_kg_raw.toFixed(0):'—'}</td>
+      <td class="num">${r.block_on_raw!=null?r.block_on_raw.toFixed(0):'—'}</td>
+      <td class="num">${r.method_a!=null?r.method_a.toFixed(0):'—'}</td>
+      <td class="num">${r.fuel_kg!=null?r.fuel_kg.toFixed(0):'—'}</td>
+      <td>${r.legType||'—'}</td>
+      <td>${r.reg||'—'}</td>
+      <td>${r.flt||'—'}</td>
+      <td class="rsn-cell">${r.rs?'':r.reason}</td>
+    </tr>`;
+  }
+  html+='</tbody></table>';
+  document.getElementById('tw').innerHTML=html;
+  const pgr=document.getElementById('pgr');
+  if(pages>1){
+    pgr.style.display='flex';
+    pgr.innerHTML=`<button onclick="goPage(${page-1})" ${page===0?'disabled':''}>&#8249; Prev</button>
+      <span>Page ${page+1} / ${pages} &nbsp;&#183;&nbsp; ${filtered.length.toLocaleString()} rows</span>
+      <button onclick="goPage(${page+1})" ${page>=pages-1?'disabled':''}>Next &#8250;</button>`;
+  }else pgr.style.display='none';
+}
+function goPage(p){const max=Math.ceil(filtered.length/PAGE_SZ)-1;if(p<0||p>max)return;page=p;render();document.getElementById('tw').scrollTop=0;}
+
+/* Export */
+function exportCSV(){
+  const src=filtered.length?filtered:results;
+  const e=v=>'"'+String(v||'').replace(/"/g,'""')+'"';
+  const lines=['EXTFS_EUETS,FS_EUETS,RS_EUETS,CORSIA,CORSIA_Offsetting,DEP_ICAO,DEP_ISO,DEP_Country,ARR_ICAO,ARR_ISO,ARR_Country,AC_Type,GCD_km,GCD_nm,CERT_kg,CERT_tCO2,SET_tCO2,Blocks_OFF_ON_kg,Prev_BON_kg,Uplift_kg,Block_ON_kg,Method_B_kg,Leg_Type,Registration,Flight,Date,Reason'];
+  src.forEach(r=>lines.push([r.extfs,r.fs,r.rs,(r.corsia===null?'':r.corsia),(r.corsia_off===null?'':r.corsia_off),r.dep,r.depIso,e(r.mDep),r.arr,r.arrIso,e(r.mArr),r.act,r.gcd_km??'',r.gcd_nm??'',r.cert_kg??'',r.cert_tco2??'',r.set_co2??'',r.method_a??'',r.prev_bon??'',r.uplift_kg_raw??'',r.block_on_raw??'',r.fuel_kg??'',e(r.legType),r.reg,r.flt,r.dt,e(r.reason)].join(',')));
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:'rs_euets_'+new Date().toISOString().slice(0,10)+'.csv'});
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+/* CORSIA Logic matrix */
+function renderCorsiaLogic(){
+  const T='✅ TRUE',F='❌ FALSE';
+  const rows=[
+    ['ICAO state → ICAO state (international)',           T, 'Both airports in DOC_7910'],
+    ['ICAO state → ICAO state (same state / domestic)',   F, 'Same member state exclusion'],
+    ['Non-ICAO airport (dep or arr)',                     F, 'Airport not in DOC_7910'],
+    ['Kosovo (BKPR) — dep or arr',                       F, 'Hard-coded exclusion — not an ICAO state'],
+    ['North Cyprus (LCEN) — dep or arr',                 F, 'Hard-coded exclusion — not an ICAO state'],
+    ['Same airport — DEP = ARR',                          F, 'Not a route (handled upstream)'],
+    ['C525 — any route',                                  F, 'Aircraft type exclusion (handled upstream)'],
+    ['Leg type: contains "state"',                        F, 'State flights excluded from CORSIA'],
+  ];
+  let html=`<div style="padding:20px;overflow-x:auto">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:14px">
+      CORSIA — Route Classification Matrix · ICAO Annex 16 Vol. IV
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">Route</th>
+        <th style="text-align:center;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2);white-space:nowrap">CORSIA</th>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">Mechanism</th>
+      </tr></thead><tbody>`;
+  rows.forEach(([route,result,mech],i)=>{
+    const isTrue=result===T;
+    const bg=i%2===0?'var(--bg1)':'var(--bg)';
+    const badge=isTrue
+      ?`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;background:var(--gdim);color:var(--grn);border:1px solid rgba(16,185,129,.3)">✓ TRUE</span>`
+      :`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;background:var(--rdim);color:var(--red);border:1px solid rgba(244,63,94,.25)">✗ FALSE</span>`;
+    html+=`<tr style="background:${bg}">
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:11px;color:var(--tx2);border-bottom:1px solid rgba(99,170,255,0.05)">${route}</td>
+      <td style="padding:10px 16px;text-align:center;border-bottom:1px solid rgba(99,170,255,0.05)">${badge}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--tx3);border-bottom:1px solid rgba(99,170,255,0.05)">${mech}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('tw').innerHTML=html;
+}
+
+/* Threshold Analysis tab */
+function buildChartRow(rows, methodList, scopeId, CO2){
+  const THRESHOLD=10000;
+  // Compute totals for each method to find lowest
+  const totals=methodList.map(({key,label,fn,fallback})=>{
+    let total=0;
+    rows.forEach(r=>{ const v=fn(r); if(v!=null&&!isNaN(v)) total+=v; else if(fallback){ const fb=fallback(r); if(fb!=null&&!isNaN(fb)) total+=fb; } });
+    return {key,label,total};
+  });
+  // Lowest = smallest total CO2 (most favourable for operator)
+  const minTotal=Math.min(...totals.map(t=>t.total));
+  const cheapest=totals.find(t=>t.total===minTotal);
+
+  let html='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:10px;padding:0 4px">';
+  methodList.forEach(({key,label,fn,fallback})=>{
+    const canvasId='pie-'+scopeId+'-'+key;
+    const isBest=key===cheapest.key;
+    html+='<div style="display:flex;flex-direction:column;align-items:center;gap:6px">'
+      +'<div style="position:relative">'
+      +'<canvas id="'+canvasId+'" style="width:110px;height:110px"></canvas>'
+      +(isBest?'<div style="position:absolute;top:-8px;right:-8px;background:var(--grn);color:#000;font-family:var(--mono);font-size:8px;font-weight:700;padding:2px 6px;border-radius:10px;letter-spacing:.5px">LOWEST</div>':'')
+      +'</div>'
+      +'<div style="font-family:var(--mono);font-size:9px;text-align:center;color:'+(isBest?'var(--grn)':'var(--tx3)')+';max-width:110px;line-height:1.4;font-weight:'+(isBest?'700':'400')+'">'+label+'</div>'
+      +'</div>';
+  });
+
+  // Summary box
+  html+='<div style="margin-left:8px;background:var(--bg2);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:14px 18px;min-width:180px">'
+    +'<div style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Lowest CO₂ estimate</div>'
+    +'<div style="font-size:14px;font-weight:700;color:var(--grn);margin-bottom:4px">'+cheapest.label+'</div>'
+    +'<div style="font-family:var(--mono);font-size:12px;color:var(--tx1)">'+cheapest.total.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})+' t CO₂</div>'
+    +'<div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-top:4px">'+((cheapest.total/THRESHOLD)*100).toFixed(1)+'% of 10,000 t threshold</div>'
+    +'<div style="font-size:9px;color:var(--tx3);font-family:var(--mono);margin-top:8px;line-height:1.5">Use this method to minimise<br>reported emissions.</div>'
+    +'</div>';
+
+  html+='</div>';
+  return html;
+}
+
+function renderThreshold(){
+  if(!results||!results.length){
+    document.getElementById('tw').innerHTML=`<div style="padding:40px;font-family:var(--mono);color:var(--tx3);font-size:12px">Run analysis first to see threshold data.</div>`;
+    return;
+  }
+  const THRESHOLD=10000; // tCO2
+  const CO2=3.16/1000;   // kg fuel -> tCO2
+
+  // ── EU ETS scope: EXTFS_EUETS=true ──
+  const euets = results.filter(r=>r.extfs===true);
+  // ── CORSIA scope: CORSIA=true ──
+  const corsia = results.filter(r=>r.corsia===true);
+
+  // Sum each method
+  function sumMethod(rows, fn, fallbackFn){
+    let total=0, missing=0;
+    rows.forEach(r=>{
+      let v=fn(r);
+      if(v!=null&&!isNaN(v)){ total+=v; }
+      else{
+        missing++;
+        if(fallbackFn){ const fb=fallbackFn(r); if(fb!=null&&!isNaN(fb)) total+=fb; }
+      }
+    });
+    return {total, missing};
+  }
+
+  const setFn  = r=>r.set_co2;
+  const certFn = r=>r.cert_kg!=null ? r.cert_kg*CO2 : null;
+  const methbFn= r=>r.fuel_kg!=null ? r.fuel_kg*CO2 : null;
+  const methaFn= r=>r.method_a!=null ? r.method_a*CO2 : null;
+
+  const methods = {
+    euets: [
+      { key:'set',   label:'SET (t CO₂)',              fn: setFn,   fallback: null },
+      { key:'methb', label:'Method B (t CO₂)',         fn: methbFn, fallback: setFn,   fbLabel:'filled with SET' },
+    ],
+    corsia: [
+      { key:'cert',  label:'CERT (t CO₂)',             fn: certFn,  fallback: null },
+      { key:'methb', label:'Method B (t CO₂)',         fn: methbFn, fallback: certFn,  fbLabel:'filled with CERT' },
+      { key:'metha', label:'Blocks OFF/ON (t CO₂)',    fn: methaFn, fallback: certFn,  fbLabel:'filled with CERT' },
+    ],
+  };
+
+  function card(title, rows, methodList, scope, showMissing=true){
+    const total_rows = rows.length;
+    const TH_STYLE='text-align:left;padding:8px 14px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg1)';
+    let html='<div style="background:var(--bg2);border:1px solid var(--brd);border-radius:8px;padding:12px 18px;margin-bottom:10px">'
+      +'<div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:4px">'+scope+'</div>'
+      +'<div style="font-size:16px;font-weight:700;color:var(--tx1);margin-bottom:16px">'+title
+      +'<span style="font-family:var(--mono);font-size:11px;color:var(--tx3);font-weight:400;margin-left:8px">'+total_rows.toLocaleString()+' in-scope flights</span></div>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+      +'<thead><tr>'
+      +'<th style="'+TH_STYLE+'">Method</th>'
+      +'<th style="'+TH_STYLE+';text-align:right">Total CO₂ (t)</th>'
+      +'<th style="'+TH_STYLE+';text-align:right">vs 10,000 t threshold</th>'
+      +(showMissing?'<th style="'+TH_STYLE+';text-align:right">Flights missing data</th>':'')
+      +'<th style="'+TH_STYLE+';text-align:center">Threshold Met?</th>'
+      +'</tr></thead><tbody>';
+    methodList.forEach(function({key,label,fn,fallback,fbLabel},i){
+      const res=sumMethod(rows,fn,fallback);
+      const total=res.total, missing=res.missing;
+      const met=total>=THRESHOLD;
+      const pct=((total/THRESHOLD)*100).toFixed(1);
+      const bg=i%2===0?'var(--bg1)':'var(--bg)';
+      const badge=met
+        ?'<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 12px;border-radius:4px;font-size:11px;font-weight:700;background:var(--gdim);color:var(--grn);border:1px solid rgba(16,185,129,.3)">✓ YES</span>'
+        :'<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 12px;border-radius:4px;font-size:11px;font-weight:700;background:var(--rdim);color:var(--red);border:1px solid rgba(244,63,94,.25)">✗ NO</span>';
+      const barPct=Math.min(100,(total/THRESHOLD)*100);
+      const barColor=met?'var(--grn)':'var(--blue)';
+      const delta=(total-THRESHOLD).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+      const totalFmt=total.toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1});
+      html+='<tr style="background:'+bg+'">'
+        +'<td style="padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--tx2);border-bottom:1px solid rgba(99,170,255,0.05)">'+label+'</td>'
+        +'<td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--tx1);border-bottom:1px solid rgba(99,170,255,0.05)">'
+          +totalFmt
+          +'<div style="margin-top:4px;height:4px;background:rgba(99,170,255,0.1);border-radius:2px;width:120px;margin-left:auto">'
+          +'<div style="height:4px;border-radius:2px;background:'+barColor+';width:'+barPct+'%"></div></div></td>'
+        +'<td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-size:11px;border-bottom:1px solid rgba(99,170,255,0.05)">'
+          +'<span style="color:'+(met?'var(--grn)':'var(--red)')+'">'+(met?'+':'')+delta+' t</span>'
+          +'<span style="color:var(--tx3);font-size:10px;display:block">'+pct+'% of threshold</span></td>'
+        +(showMissing?(function(){
+          if(missing===0) return '<td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--tx3);border-bottom:1px solid rgba(99,170,255,0.05)">-</td>';
+          var note=fbLabel?' ('+fbLabel+')':'';
+          return '<td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--amber,#f59e0b);border-bottom:1px solid rgba(99,170,255,0.05)">\u26a0 '+missing.toLocaleString()+' flights'+note+'</td>';
+        })():'')
+        +'<td style="padding:10px 14px;text-align:center;border-bottom:1px solid rgba(99,170,255,0.05)">'+badge+'</td>'
+        +'</tr>';
+    });
+    html+='</tbody></table></div>';
+    return html;
+  }
+  let html=`<div style="padding:10px 16px;max-width:980px">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">
+      Threshold Analysis · 10,000 t CO₂ exemption threshold
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:10px">
+      Operators emitting less than 10,000 t CO₂/year are exempt. Results below show totals per scope and method.
+    </div>`;
+
+  html += card('EU ETS (EXTFS_EUETS)', euets, methods.euets, 'EU ETS · Extended Full Scope', true);
+  html += buildChartRow(euets, methods.euets, 'euets', CO2);
+  html += card('CORSIA', corsia, methods.corsia, 'CORSIA · International Offsetting', true);
+  html += buildChartRow(corsia, methods.corsia, 'corsia', CO2);
+
+  html += '</div>';
+  document.getElementById('tw').innerHTML=html;
+
+  // ── Draw pie charts after DOM is ready ──
+  requestAnimationFrame(()=>{
+    const allMethods=[...methods.euets,...methods.corsia];
+    const allRows={euets,corsia};
+    const scopes=[
+      {id:'euets', rows:euets,  methodList:methods.euets,  label:'EU ETS (EXTFS)'},
+      {id:'corsia',rows:corsia, methodList:methods.corsia, label:'CORSIA'},
+    ];
+    scopes.forEach(({id,rows,methodList,label})=>{
+      methodList.forEach(({key,label:mLabel,fn,fallback})=>{
+        const canvasId='pie-'+id+'-'+key;
+        const canvas=document.getElementById(canvasId);
+        if(!canvas)return;
+        const ctx=canvas.getContext('2d');
+        const {total,missing}=sumMethod(rows,fn,fallback);
+        const THRESHOLD=10000;
+        const met=total>=THRESHOLD;
+        const ratio=Math.min(total/THRESHOLD,1);
+        const dpr=window.devicePixelRatio||1;
+        const size=canvas.offsetWidth||120;
+        canvas.width=size*dpr; canvas.height=size*dpr;
+        ctx.scale(dpr,dpr);
+        const cx=size/2, cy=size/2, r=size*0.42, lw=size*0.13;
+        // background ring
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+        ctx.strokeStyle='rgba(99,170,255,0.1)'; ctx.lineWidth=lw; ctx.stroke();
+        // filled arc
+        const startAngle=-Math.PI/2;
+        const endAngle=startAngle+(Math.PI*2*ratio);
+        ctx.beginPath(); ctx.arc(cx,cy,r,startAngle,endAngle);
+        ctx.strokeStyle=met?'#10b981':'#63aaff';
+        ctx.lineWidth=lw; ctx.lineCap='round'; ctx.stroke();
+        // centre text
+        ctx.fillStyle=met?'#10b981':'#63aaff';
+        ctx.font='bold '+(size*0.18)+'px monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        const pct=Math.min((total/THRESHOLD)*100,999).toFixed(0)+'%';
+        ctx.fillText(pct,cx,cy);
+      });
+    });
+  });
+}
+
+/* CORSIA 2026 States tab *//* CORSIA 2026 States tab */
+function renderCorsiaStates(){
+  const sorted=[...CORSIA_2026_STATES.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  let html=`<div style="padding:20px;overflow-x:auto">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">
+      CORSIA 2026 — Volunteering States · ICAO Edition 6 (1 January 2026)
+    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--tx3);margin-bottom:14px">
+      130 states per ICAO Edition 6 (July 2025). Full authoritative list:
+      <a href="https://www.icao.int/CORSIA/corsia-states-chapter-3-state-pairs" target="_blank"
+         style="color:var(--cyan)">ICAO CORSIA States for Chapter 3 State Pairs →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:4px;margin-bottom:24px">`;
+  sorted.forEach(([name,iso],i)=>{
+    const bg=i%2===0?'var(--bg1)':'var(--bg)';
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:${bg};border-radius:4px;border:1px solid rgba(99,170,255,0.06)">
+      <span style="font-size:12px;color:var(--tx2)">${name}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--cyan);margin-left:8px;flex-shrink:0">${iso}</span>
+    </div>`;
+  });
+  html+=`</div>
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Notable Non-Participants (2026)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px">`;
+  const nonpart=[
+    ["China","CN"],["India","IN"],["Brazil","BR"],["Russia","RU"],
+    ["Ethiopia","ET"],["South Africa","ZA"],["Argentina","AR"],
+    ["Pakistan","PK"],["Bangladesh","BD"],["Egypt","EG"],
+  ];
+  nonpart.forEach(([name,iso])=>{
+    html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--rdim);border-radius:4px;border:1px solid rgba(244,63,94,0.15)">
+      <span style="font-size:12px;color:var(--tx3)">${name}</span>
+      <span style="font-family:var(--mono);font-size:10px;color:var(--red);margin-left:8px">${iso}</span>
+    </div>`;
+  });
+  html+=`</div>
+    <div style="font-family:var(--mono);font-size:9px;color:var(--tx3);margin-top:10px">
+      ⚠ Notable non-participants will be <strong style="color:var(--tx2)">mandatory</strong> from 2027 (Second Phase) based on 2018 RTK thresholds.
+    </div>
+  </div>`;
+  document.getElementById('tw').innerHTML=html;
+}
+
+/* EXTFS Logic matrix */
+function renderExtfsLogic(){
+  const T='✅ TRUE',F='❌ FALSE';
+  const rows=[
+    ['EEA → anything',                               T, 'EEA dep · airports.csv ISO → EEA_ISO + OMR.csv'],
+    ['anything → EEA',                               T, 'EEA arr · airports.csv ISO → EEA_ISO + OMR.csv'],
+    ['EEA → CH',                                     T, 'CH valid as ARR · airports.csv ISO = CH / LS* prefix'],
+    ['CH → EEA',                                     T, 'EEA arr · CH not counted as DEP'],
+    ['CH → non-EEA',                                 F, 'CH excluded as DEP'],
+    ['non-EEA → CH',                                 T, 'CH valid as ARR'],
+    ['GB → EEA',                                     T, 'GB valid as DEP when ARR is EEA · airports.csv ISO = GB / EG* prefix'],
+    ['EEA → GB',                                     T, 'EEA dep · GB valid as ARR'],
+    ['GB → non-EEA',                                 F, 'GB dep but ARR not EEA'],
+    ['non-EEA → GB',                                 F, 'non-EEA dep, GB not counted as EEA ARR without EEA dep'],
+    ['EEA → EEA territory',                          T, 'EEA dep · territory excl. only on arr eeaApt check'],
+    ['EEA territory → EEA',                          T, 'EEA arr · territory excl. only on dep eeaApt check'],
+    ['EEA territory → non-EEA',                      F, 'EEA territory not a valid DEP · EEA_TERRITORY.xlsx'],
+    ['non-EEA → EEA territory',                      F, 'EEA territory not a valid ARR · EEA_TERRITORY.xlsx'],
+    ['EEA → Svalbard (ENSB)',                        T, 'EEA dep · ENSB excluded from eeaApt only'],
+    ['Svalbard (ENSB) → EEA',                        T, 'EEA arr · ENSB excluded from eeaApt only'],
+    ['ENSB → non-EEA',                               F, 'ENSB not valid DEP or ARR for EXTFS'],
+    ['EEA → Gibraltar (LXGB)',                       T, 'EEA dep'],
+    ['Gibraltar (LXGB) → EEA',                       T, 'EEA arr'],
+    ['LXGB → non-EEA',                               F, 'LXGB not eeaApt'],
+    ['EEA → Guiana Space Centre (LFV*)',              T, 'EEA dep'],
+    ['Guiana Space Centre (LFV*) → EEA',             T, 'EEA arr'],
+    ['LFV* → non-EEA',                               F, 'LFV* not eeaApt'],
+    ['non-EEA → non-EEA',                            F, 'Neither side is EEA/CH/GB'],
+    ['Same airport DEP = ARR',                        F, 'Not a route'],
+    ['C525 — any route',                              F, 'Aircraft type exclusion'],
+  ];
+
+  const sources=[
+    {name:'airports.csv',desc:'ICAO → ISO country mapping, coordinates'},
+    {name:'OMR.csv',desc:'EU Outermost Regions airport list'},
+    {name:'EEA_TERRITORY.xlsx',desc:'EEA overseas territory exclusions'},
+    {name:'UK_Overseas.xlsx',desc:'UK overseas territory exclusions'},
+  ];
+
+  let html=`<div style="padding:20px;overflow-x:auto">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:14px">
+      EXTFS_EUETS — Route Classification Matrix · Extended Full Scope
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:28px">
+      <thead><tr>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">Route</th>
+        <th style="text-align:center;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2);white-space:nowrap">EXTFS_EUETS</th>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">Mechanism / Source</th>
+      </tr></thead><tbody>`;
+  rows.forEach(([route,result,mech],i)=>{
+    const isTrue=result===T;
+    const bg=i%2===0?'var(--bg1)':'var(--bg)';
+    const badge=isTrue
+      ?`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;background:var(--gdim);color:var(--grn);border:1px solid rgba(16,185,129,.3)">✓ TRUE</span>`
+      :`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;background:var(--rdim);color:var(--red);border:1px solid rgba(244,63,94,.25)">✗ FALSE</span>`;
+    html+=`<tr style="background:${bg}">
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:11px;color:var(--tx2);border-bottom:1px solid rgba(99,170,255,0.05)">${route}</td>
+      <td style="padding:10px 16px;text-align:center;border-bottom:1px solid rgba(99,170,255,0.05)">${badge}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--tx3);border-bottom:1px solid rgba(99,170,255,0.05)">${mech}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+
+  // Reference data sources section
+  html+=`<div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Reference Data Sources</div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">File</th>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">Description</th>
+      </tr></thead><tbody>`;
+  sources.forEach(({name,desc},i)=>{
+    const bg=i%2===0?'var(--bg1)':'var(--bg)';
+    html+=`<tr style="background:${bg}">
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:11px;color:var(--cyan);border-bottom:1px solid rgba(99,170,255,0.05)">${name}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--tx3);border-bottom:1px solid rgba(99,170,255,0.05)">${desc}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('tw').innerHTML=html;
+}
+
+/* Tab switching */
+function switchTab(tab,btn){
+  activeTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='flights'){
+    document.getElementById('toolbar').style.display=results.length?'flex':'none';
+    document.getElementById('pgr').style.display='none';
+    applyFilters();
+  }else if(tab==='pivot'){
+    document.getElementById('toolbar').style.display='none';
+    document.getElementById('pgr').style.display='none';
+    renderPivot();
+  }else if(tab==='logic'){
+    document.getElementById('toolbar').style.display='none';
+    document.getElementById('pgr').style.display='none';
+    renderLogic();
+  }else if(tab==='corsia-logic'){
+    document.getElementById('toolbar').style.display='none';
+    document.getElementById('pgr').style.display='none';
+    renderCorsiaLogic();
+  }else if(tab==='extfs-logic'){
+    document.getElementById('toolbar').style.display='none';
+    document.getElementById('pgr').style.display='none';
+    renderExtfsLogic();
+  }else if(tab==='corsia-states'){
+    document.getElementById('toolbar').style.display='none';
+    document.getElementById('pgr').style.display='none';
+    renderCorsiaStates();
+  }else{
+    document.getElementById('toolbar').style.display='none';
+    document.getElementById('pgr').style.display='none';
+    renderThreshold();
+  }
+  // Threshold: remove max-height so content fully visible; restore for other tabs
+  const tw=document.getElementById('tw');
+  if(tw) tw.style.maxHeight=(tab==='threshold')?'none':'calc(100vh - 200px)';
+}
+
+function renderPivot(){
+  const tw=document.getElementById('tw');
+  const rs=results.filter(r=>r.rs);
+  if(!rs.length){
+    tw.innerHTML='<div class="empty"><span class="big">📊</span><p>No RS_EUETS = TRUE flights to pivot</p><p class="sub">Run analysis first</p></div>';
+    return;
+  }
+
+  // Build DEP × ARR count map, track leg types per route
+  const depSet=new Set(),arrSet=new Set();
+  const counts=new Map(),legTypes=new Map();
+  rs.forEach(r=>{
+    depSet.add(r.dep);arrSet.add(r.arr);
+    const key=r.dep+'|'+r.arr;
+    counts.set(key,(counts.get(key)||0)+1);
+    if(r.legType){
+      const s=legTypes.get(key)||new Set();
+      s.add(r.legType);legTypes.set(key,s);
+    }
+  });
+
+  const deps=[...depSet].sort();
+  const arrs=[...arrSet].sort();
+
+  // Row totals (dep) and col totals (arr)
+  const rowTot={},colTot={};
+  deps.forEach(d=>rowTot[d]=0);
+  arrs.forEach(a=>colTot[a]=0);
+  counts.forEach((v,k)=>{
+    const[d,a]=k.split('|');
+    rowTot[d]=(rowTot[d]||0)+v;
+    colTot[a]=(colTot[a]||0)+v;
+  });
+  const grandTotal=rs.length;
+  let html='<div class="pivot-wrap"><table><thead><tr>';
+  html+='<th class="rowh">DEP \ ARR</th>';
+  arrs.forEach(a=>html+=`<th>${a}</th>`);
+  html+='<th>Total</th><th>Leg Types</th></tr></thead><tbody>';
+
+  deps.forEach(dep=>{
+    html+=`<tr><td class="rowh">${dep}</td>`;
+    arrs.forEach(arr=>{
+      const v=counts.get(dep+'|'+arr)||0;
+      html+=`<td class="cnt">${v||'—'}</td>`;
+    });
+    const ltSet=new Set();
+    arrs.forEach(a=>{const s=legTypes.get(dep+'|'+a);if(s)s.forEach(v=>ltSet.add(v));});
+    const ltStr=[...ltSet].sort().join(', ')||'—';
+    html+=`<td class="cnt pivot-total">${rowTot[dep]}</td>`;
+    html+=`<td style="font-family:var(--mono);font-size:10px;color:var(--tx3);padding:8px 14px;border-bottom:1px solid rgba(99,170,255,0.05)">${ltStr}</td></tr>`;
+  });
+
+  // Footer totals row
+  html+='<tr><td class="rowh pivot-total">Total</td>';
+  arrs.forEach(a=>html+=`<td class="cnt pivot-total">${colTot[a]||'—'}</td>`);
+  html+=`<td class="cnt pivot-total">${grandTotal}</td><td></td></tr>`;
+  html+='</tbody></table></div>';
+  tw.innerHTML=html;
+}
+
+/* EUETS Logic matrix */
+function renderLogic(){
+  const T='✅ TRUE',F='❌ FALSE';
+  const rows=[
+    ['EEA → EEA',                                        T, 'Both sides pass all checks'],
+    ['EEA → EEA — same member, OMR involved (2024–2026)',F, 'OMR same-member exclusion'],
+    ['EEA → EEA — same member, OMR involved (2023)',     T, '2023 exception'],
+    ['EEA → OMR (different member)',                     T, 'OMR passes isEEA + OMR scope check'],
+    ['OMR → EEA (different member)',                     T, 'OMR passes isEEA + OMR scope check'],
+    ['OMR → OMR — same member (2024–2026)',              F, 'OMR same-member exclusion'],
+    ['OMR → OMR — same member (2023)',                   T, '2023 exception'],
+    ['OMR → OMR — different member',                     T, 'Both sides pass'],
+    ['EEA → GB mainland',                                T, 'isGB makes a_eea pass; EG* satisfies scope'],
+    ['GB mainland → EEA',                                F, 'd_nGB blocks GB as DEP'],
+    ['EEA → CH',                                         T, 'CH only excluded on DEP side'],
+    ['CH → EEA',                                         F, 'd_nCH blocks CH as DEP'],
+    ['EEA → UK territory',                               F, 'ukTerr set on ARR'],
+    ['UK territory → EEA',                               F, 'ukTerr set on DEP'],
+    ['EEA → Gibraltar (LXGB)',                           F, 'Hard-coded LXGB exclusion on ARR'],
+    ['Gibraltar (LXGB) → EEA',                           F, 'Hard-coded LXGB exclusion on DEP'],
+    ['EEA → Svalbard (ENSB)',                            F, 'Hard-coded ENSB exclusion on ARR'],
+    ['Svalbard (ENSB) → EEA',                            F, 'Hard-coded ENSB exclusion on DEP'],
+    ['EEA → EEA territory',                              F, 'eeaTerr set on ARR'],
+    ['EEA territory → EEA',                              F, 'eeaTerr set on DEP'],
+    ['EEA → Guiana Space Centre (LFV*)',                 F, 'LFV* prefix exclusion on ARR'],
+    ['Guiana Space Centre (LFV*) → EEA',                 F, 'LFV* prefix exclusion on DEP'],
+    ['EEA → non-EEA',                                    F, 'a_eea fails'],
+    ['non-EEA → EEA',                                    F, 'd_eea fails'],
+    ['C525 — any route',                                  F, 'Aircraft type exclusion'],
+    ['Same airport — DEP = ARR',                           F, 'Not a route'],
+    ['Leg type: contains "maint"',                         F, 'curr_leg_type exclusion (hub format)'],
+    ['Leg type: Training',                                 F, 'curr_leg_type exclusion (hub format)'],
+    ['Leg type: contains "state"',                         F, 'curr_leg_type exclusion (hub format)'],
+    ['Leg type: contains "customer"',                      F, 'curr_leg_type exclusion (hub format)'],
+  ];
+  let html=`<div style="padding:20px;overflow-x:auto">
+    <div style="font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin-bottom:14px">
+      EU ETS Reduced Scope — Route Classification Matrix · Directive 2003/87/EC
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">Route</th>
+        <th style="text-align:center;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2);white-space:nowrap">RS_EUETS</th>
+        <th style="text-align:left;padding:9px 16px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tx3);border-bottom:1px solid var(--brd);background:var(--bg2)">Mechanism</th>
+      </tr></thead><tbody>`;
+  rows.forEach(([route,result,mech],i)=>{
+    const isTrue=result===T;
+    const bg=i%2===0?'var(--bg1)':'var(--bg)';
+    const badge=isTrue
+      ?`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;background:var(--gdim);color:var(--grn);border:1px solid rgba(16,185,129,.3)">✓ TRUE</span>`
+      :`<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;background:var(--rdim);color:var(--red);border:1px solid rgba(244,63,94,.25)">✗ FALSE</span>`;
+    html+=`<tr style="background:${bg}">
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:11px;color:var(--tx2);border-bottom:1px solid rgba(99,170,255,0.05)">${route}</td>
+      <td style="padding:10px 16px;text-align:center;border-bottom:1px solid rgba(99,170,255,0.05)">${badge}</td>
+      <td style="padding:10px 16px;font-family:var(--mono);font-size:10px;color:var(--tx3);border-bottom:1px solid rgba(99,170,255,0.05)">${mech}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('tw').innerHTML=html;
+}
+
+/* Upload */
+function handleFile(f){
+  if(!f||!f.name.endsWith('.csv'))return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    rawRows=parseCSV(e.target.result);
+    if(!rawRows.length){alert('Could not parse CSV.');return;}
+    const fmt=detectFmt(rawRows[0]||{});
+    const badge=document.getElementById('fbadge');
+    badge.style.display='block';
+    badge.innerHTML=`<div class="fbadge"><div class="fi">&#128203;</div><div class="fm">
+      <div class="fn">${f.name}</div>
+      <div class="fmm">${rawRows.length.toLocaleString()} rows &middot; ${fmt.toUpperCase()} &middot; ${(f.size/1024).toFixed(0)} KB</div>
+    </div></div>`;
+    if(fmt==='unknown')badge.innerHTML+=`<div class="note warn" style="margin-top:8px">
+      &#9888; Unknown format. Expected depstat+arrstat+ac_type (simple) or dep_icao_code+arr_icao_code (hub).</div>`;
+    checkReady();
+  };
+  reader.readAsText(f);
+}
+document.getElementById('fi').addEventListener('change',e=>{const f=e.target.files[0];if(f)handleFile(f);});
+const dzEl=document.getElementById('dz');
+dzEl.addEventListener('dragover',e=>{e.preventDefault();dzEl.classList.add('over');});
+dzEl.addEventListener('dragleave',()=>dzEl.classList.remove('over'));
+dzEl.addEventListener('drop',e=>{e.preventDefault();dzEl.classList.remove('over');const f=e.dataTransfer.files[0];if(f)handleFile(f);});
+
+loadAll();
+// Init: auto-fetch test1.csv (tab will switch after analysis completes)
+(function(){
+  async function fetchTestCSV(){
+    const url=BASE+'test1.csv';
+    try{
+      const resp=await fetch(url);
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const text=await resp.text();
+      rawRows=parseCSV(text);
+      if(!rawRows.length) throw new Error('empty CSV');
+      const fmt=detectFmt(rawRows[0]||{});
+      const badge=document.getElementById('fbadge');
+      badge.style.display='block';
+      badge.innerHTML='<div class="fbadge"><div class="fi">&#128203;</div><div class="fm">'
+        +'<div class="fn">test1.csv</div>'
+        +'<div class="fmm">'+rawRows.length.toLocaleString()+' rows &middot; '+fmt.toUpperCase()+' &middot; GitHub</div>'
+        +'</div></div>';
+      document.getElementById('dz-icon').textContent='✓';
+      document.getElementById('dz-msg').textContent='test1.csv loaded';
+      document.getElementById('dz-sub').textContent=rawRows.length.toLocaleString()+' rows';
+      checkReady();
+    }catch(e){
+      document.getElementById('dz-icon').textContent='⚠';
+      document.getElementById('dz-msg').textContent='Auto-load failed';
+      document.getElementById('dz-sub').textContent='Drop a CSV file to continue';
+      // Re-enable file input as fallback
+      document.getElementById('fi').style.display='';
+      document.getElementById('dz').style.cursor='pointer';
+      console.warn('test1.csv fetch failed:',e);
+    }
+  }
+
+  fetchTestCSV();
+})();
+</script>
+</body>
+</html>
