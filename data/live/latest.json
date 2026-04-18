@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-18T10:02:52.633001+00:00",
+  "timestamp": "2026-04-18T10:09:49.628985+00:00",
   "source": "opensky_live",
   "flights": [
     {
@@ -8,7 +8,7 @@
       "origin_country": "Israel",
       "longitude": 34.1165,
       "latitude": 33.318,
-      "altitude_m": 1744.98,
+      "altitude_m": 693.42,
       "on_ground": false,
       "velocity_ms": 80.1,
       "heading": 39,
