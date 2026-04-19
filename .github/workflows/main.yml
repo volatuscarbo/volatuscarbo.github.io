@@ -3,7 +3,7 @@ on:
   schedule:
     # Elke 15 minuten tussen 02:00 en 21:00 UTC
     # (airHaifa vliegt vanuit Israel, UTC+3 = lokaal 05:00-00:00)
-    - cron: '*/15 2-23 * * *'
+    - cron: '*/15 0-23 * * *'
   workflow_dispatch:
     inputs:
       date_override:
