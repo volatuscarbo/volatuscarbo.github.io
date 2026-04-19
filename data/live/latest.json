@@ -1,18 +1,5 @@
 {
-  "timestamp": "2026-04-19T14:11:20.739020+00:00",
+  "timestamp": "2026-04-19T14:59:23.975510+00:00",
   "source": "opensky_live",
-  "flights": [
-    {
-      "icao24": "739603",
-      "callsign": "HFA214",
-      "origin_country": "Israel",
-      "longitude": 33.1616,
-      "latitude": 33.0839,
-      "altitude_m": 5783.58,
-      "on_ground": false,
-      "velocity_ms": 157.23,
-      "heading": 123.79,
-      "vertical_rate": 0
-    }
-  ]
+  "flights": []
 }
