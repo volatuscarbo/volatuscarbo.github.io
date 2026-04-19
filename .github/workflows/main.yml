@@ -53,7 +53,7 @@ jobs:
           resp = requests.get(
               "https://opensky-network.org/api/states/all",
               headers=headers,
-              timeout=15
+              timeout=3
           )
           data = resp.json()
           states = data.get("states") or []
