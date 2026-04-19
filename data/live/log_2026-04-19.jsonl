@@ -15,3 +15,4 @@
 {"timestamp": "2026-04-19T14:59:23.975510+00:00", "source": "opensky_live", "flights": []}
 {"timestamp": "2026-04-19T15:55:21.583563+00:00", "source": "opensky_live", "flights": []}
 {"timestamp": "2026-04-19T17:23:02.112255+00:00", "source": "opensky_live", "flights": []}
+{"timestamp": "2026-04-19T18:02:59.777011+00:00", "source": "opensky_live", "flights": [{"icao24": "739605", "callsign": "HFA109", "origin_country": "Israel", "longitude": 34.8861, "latitude": 32.0142, "altitude_m": null, "on_ground": true, "velocity_ms": 12.35, "heading": 59.06, "vertical_rate": null}]}
