@@ -1,18 +1,42 @@
 {
-  "timestamp": "2026-04-21T12:03:27.364267+00:00",
+  "timestamp": "2026-04-21T14:10:34.810582+00:00",
   "source": "opensky_live",
   "flights": [
     {
       "icao24": "739600",
-      "callsign": "HFA213",
+      "callsign": "HFA214",
       "origin_country": "Israel",
-      "longitude": 23.9446,
-      "latitude": 37.9485,
-      "altitude_m": 121.92,
+      "longitude": 28.5339,
+      "latitude": 35.5868,
+      "altitude_m": 5783.58,
       "on_ground": false,
-      "velocity_ms": 51.75,
-      "heading": 217.33,
-      "vertical_rate": -2.6
+      "velocity_ms": 152.25,
+      "heading": 124.12,
+      "vertical_rate": 0
+    },
+    {
+      "icao24": "739605",
+      "callsign": "HFA107",
+      "origin_country": "Israel",
+      "longitude": 34.8753,
+      "latitude": 31.979,
+      "altitude_m": 4229.1,
+      "on_ground": false,
+      "velocity_ms": 130.89,
+      "heading": 173.91,
+      "vertical_rate": 7.15
+    },
+    {
+      "icao24": "739604",
+      "callsign": "HFA106",
+      "origin_country": "Israel",
+      "longitude": 33.6238,
+      "latitude": 34.7718,
+      "altitude_m": 1958.34,
+      "on_ground": false,
+      "velocity_ms": 96.49,
+      "heading": 150.98,
+      "vertical_rate": 8.78
     }
   ]
 }
