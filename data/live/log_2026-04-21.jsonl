@@ -1,0 +1,1 @@
+{"timestamp": "2026-04-21T05:40:20.659932+00:00", "source": "opensky_live", "flights": [{"icao24": "739604", "callsign": "HFA103", "origin_country": "Israel", "longitude": 34.8645, "latitude": 32.0137, "altitude_m": 1752.6, "on_ground": false, "velocity_ms": 65.55, "heading": 261.42, "vertical_rate": 9.43}]}
