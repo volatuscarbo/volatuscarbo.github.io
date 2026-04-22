@@ -25,7 +25,7 @@
         "timezone": "Asia/Jerusalem",
         "iata": "TLV",
         "icao": "LLBG",
-        "terminal": null,
+        "terminal": "3",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-22T23:15:00+00:00",
@@ -51,7 +51,7 @@
     },
     {
       "flight_date": "2026-04-22",
-      "flight_status": "scheduled",
+      "flight_status": "unknown",
       "departure": {
         "airport": "Ben Gurion International",
         "timezone": "Asia/Jerusalem",
@@ -97,7 +97,7 @@
     },
     {
       "flight_date": "2026-04-22",
-      "flight_status": "scheduled",
+      "flight_status": "landed",
       "departure": {
         "airport": "Larnaca",
         "timezone": "Asia/Nicosia",
@@ -108,9 +108,9 @@
         "delay": null,
         "scheduled": "2026-04-22T18:00:00+00:00",
         "estimated": "2026-04-22T18:00:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "actual": "2026-04-22T18:10:00+00:00",
+        "estimated_runway": "2026-04-22T18:10:00+00:00",
+        "actual_runway": "2026-04-22T18:10:00+00:00"
       },
       "arrival": {
         "airport": "Ben Gurion International",
@@ -122,10 +122,10 @@
         "baggage": null,
         "scheduled": "2026-04-22T19:15:00+00:00",
         "delay": null,
-        "estimated": null,
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "estimated": "2026-04-22T19:01:00+00:00",
+        "actual": "2026-04-22T19:01:00+00:00",
+        "estimated_runway": "2026-04-22T19:01:00+00:00",
+        "actual_runway": "2026-04-22T19:01:00+00:00"
       },
       "airline": {
         "name": "airHaifa",
@@ -156,12 +156,12 @@
         "icao": "LLBG",
         "terminal": null,
         "gate": null,
-        "delay": null,
+        "delay": 5,
         "scheduled": "2026-04-22T15:55:00+00:00",
         "estimated": "2026-04-22T15:55:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "actual": "2026-04-22T16:19:00+00:00",
+        "estimated_runway": "2026-04-22T16:19:00+00:00",
+        "actual_runway": "2026-04-22T16:19:00+00:00"
       },
       "arrival": {
         "airport": "Larnaca",
@@ -172,8 +172,8 @@
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-22T17:10:00+00:00",
-        "delay": 15,
-        "estimated": null,
+        "delay": 24,
+        "estimated": "2026-04-22T17:15:00+00:00",
         "actual": null,
         "estimated_runway": null,
         "actual_runway": null
@@ -199,7 +199,7 @@
     },
     {
       "flight_date": "2026-04-22",
-      "flight_status": "active",
+      "flight_status": "landed",
       "departure": {
         "airport": "Athens International Airport \"Eleftherios Venizelos\"",
         "timezone": "Europe/Athens",
@@ -224,10 +224,10 @@
         "baggage": null,
         "scheduled": "2026-04-22T17:45:00+00:00",
         "delay": null,
-        "estimated": "2026-04-22T17:21:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "estimated": "2026-04-22T17:27:00+00:00",
+        "actual": "2026-04-22T17:35:00+00:00",
+        "estimated_runway": "2026-04-22T17:35:00+00:00",
+        "actual_runway": "2026-04-22T17:35:00+00:00"
       },
       "airline": {
         "name": "airHaifa",
@@ -241,21 +241,12 @@
         "codeshared": null
       },
       "aircraft": {
-        "registration": "4X-IHA",
-        "iata": "AT76",
-        "icao": "AT76",
+        "registration": null,
+        "iata": null,
+        "icao": null,
         "icao24": "739600"
       },
-      "live": {
-        "updated": "2026-04-22T12:45:08+00:00",
-        "latitude": 36.4659,
-        "longitude": 27.0125,
-        "altitude": 7284.72,
-        "direction": 124,
-        "speed_horizontal": 533.376,
-        "speed_vertical": 0,
-        "is_ground": false
-      }
+      "live": null
     },
     {
       "flight_date": "2026-04-22",
@@ -310,7 +301,7 @@
     },
     {
       "flight_date": "2026-04-22",
-      "flight_status": "active",
+      "flight_status": "landed",
       "departure": {
         "airport": "Ben Gurion International",
         "timezone": "Asia/Jerusalem",
@@ -318,7 +309,7 @@
         "icao": "LLBG",
         "terminal": null,
         "gate": null,
-        "delay": 3,
+        "delay": null,
         "scheduled": "2026-04-22T12:00:00+00:00",
         "estimated": "2026-04-22T12:00:00+00:00",
         "actual": "2026-04-22T12:14:00+00:00",
@@ -334,11 +325,11 @@
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-22T13:15:00+00:00",
-        "delay": 14,
-        "estimated": "2026-04-22T13:18:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "delay": null,
+        "estimated": "2026-04-22T13:11:00+00:00",
+        "actual": "2026-04-22T13:12:00+00:00",
+        "estimated_runway": "2026-04-22T13:12:00+00:00",
+        "actual_runway": "2026-04-22T13:12:00+00:00"
       },
       "airline": {
         "name": "airHaifa",
@@ -361,7 +352,7 @@
     },
     {
       "flight_date": "2026-04-22",
-      "flight_status": "active",
+      "flight_status": "landed",
       "departure": {
         "airport": "Ben Gurion International",
         "timezone": "Asia/Jerusalem",
@@ -369,7 +360,7 @@
         "icao": "LLBG",
         "terminal": null,
         "gate": null,
-        "delay": null,
+        "delay": 10,
         "scheduled": "2026-04-22T11:00:00+00:00",
         "estimated": "2026-04-22T11:00:00+00:00",
         "actual": "2026-04-22T11:19:00+00:00",
@@ -385,11 +376,11 @@
         "gate": null,
         "baggage": "1",
         "scheduled": "2026-04-22T14:00:00+00:00",
-        "delay": 20,
-        "estimated": "2026-04-22T13:54:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "delay": 10,
+        "estimated": "2026-04-22T14:07:00+00:00",
+        "actual": "2026-04-22T14:10:00+00:00",
+        "estimated_runway": "2026-04-22T14:10:00+00:00",
+        "actual_runway": "2026-04-22T14:10:00+00:00"
       },
       "airline": {
         "name": "airHaifa",
@@ -458,7 +449,7 @@
     },
     {
       "flight_date": "2026-04-22",
-      "flight_status": "unknown",
+      "flight_status": null,
       "departure": {
         "airport": "Ben Gurion International",
         "timezone": "Asia/Jerusalem",
@@ -478,7 +469,7 @@
         "timezone": "Asia/Nicosia",
         "iata": "LCA",
         "icao": "LCLK",
-        "terminal": null,
+        "terminal": "N",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-22T09:15:00+00:00",
