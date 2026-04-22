@@ -36,9 +36,12 @@ jobs:
 
           # Known airHaifa aircraft (expand this!)
           aircraft_list = [
-              "4xabc1",
-              "4xabc2",
-              "4xabc3"
+              "4xiha",
+              "4xihb",
+              "4xihc",
+              "4xihd",
+              "4xihe",
+              "4xihf"
           ]
 
           all_flights = []
