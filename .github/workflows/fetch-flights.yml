@@ -1,4 +1,4 @@
-name: airHaifa planned Daily Flights
+name: airHaifa Daily Flights
 
 on:
   schedule:
