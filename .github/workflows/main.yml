@@ -1,13 +1,13 @@
-name: airHaifa Flight Monitor
+name: airHaifa Flight Monitor (AviationStack Only)
 
 on:
   schedule:
-    # Every 30 minutes (stable, avoids API throttling)
-    - cron: '*/25 * * * *'
+    # every 6 hours
+    - cron: '0 */6 * * *'
   workflow_dispatch:
     inputs:
       date_override:
-        description: 'Date to fetch (YYYY-MM-DD), empty = today'
+        description: 'Date (YYYY-MM-DD), empty = today'
         required: false
         default: ''
 
@@ -20,191 +20,77 @@ jobs:
       contents: write
 
     steps:
-      # ── 1. Checkout ─────────────────────────────────────────────
+      # ── Checkout ─────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. Python setup ─────────────────────────────────────────
+      # ── Python ───────────────────────────────
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install requests pytz
+        run: pip install requests
 
-      # ── 3. Fetch OpenSky (bounded + retry) ──────────────────────
-      - name: Fetch live positions (OpenSky)
-        env:
-          OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
-          OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
-        run: |
-          python - <<'EOF'
-          import requests, json, os, time
-          from datetime import datetime, timezone
-
-          def retry_post(url, data, retries=3):
-              for i in range(retries):
-                  try:
-                      r = requests.post(url, data=data, timeout=20)
-                      if r.status_code == 200:
-                          return r
-                  except Exception as e:
-                      print(f"[Token Retry {i+1}] {e}")
-                      time.sleep(2)
-              raise Exception("Token request failed")
-
-          def retry_get(url, headers=None, params=None, retries=3):
-              for i in range(retries):
-                  try:
-                      r = requests.get(url, headers=headers, params=params, timeout=30)
-                      if r.status_code == 200:
-                          return r
-                  except Exception as e:
-                      print(f"[GET Retry {i+1}] {e}")
-                      time.sleep(2)
-              raise Exception("GET request failed")
-
-          # ── Get OAuth token ──
-          token_resp = retry_post(
-              "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token",
-              {
-                  "grant_type": "client_credentials",
-                  "client_id": os.environ["OPENSKY_CLIENT_ID"],
-                  "client_secret": os.environ["OPENSKY_CLIENT_SECRET"],
-              }
-          )
-
-          token = token_resp.json().get("access_token")
-          if not token:
-              raise Exception("No OpenSky token received")
-
-          headers = {"Authorization": f"Bearer {token}"}
-
-          # ── Bounded region (Israel area) ──
-          params = {
-              "lamin": 29,
-              "lomin": 18,
-              "lamax": 44,
-              "lomax": 36
-          }
-
-          resp = retry_get(
-              "https://opensky-network.org/api/states/all",
-              headers=headers,
-              params=params
-          )
-
-          data = resp.json()
-          states = data.get("states") or []
-
-          hfa_flights = [
-              s for s in states
-              if s[1] and str(s[1]).strip().startswith("HFA")
-          ]
-
-          now = datetime.now(timezone.utc).isoformat()
-
-          result = {
-              "timestamp": now,
-              "source": "opensky_live",
-              "flights": [
-                  {
-                      "icao24": s[0],
-                      "callsign": s[1].strip() if s[1] else None,
-                      "origin_country": s[2],
-                      "longitude": s[5],
-                      "latitude": s[6],
-                      "altitude_m": s[7],
-                      "on_ground": s[8],
-                      "velocity_ms": s[9],
-                      "heading": s[10],
-                      "vertical_rate": s[11],
-                  }
-                  for s in hfa_flights
-              ]
-          }
-
-          os.makedirs("data/live", exist_ok=True)
-          with open("data/live/latest.json", "w") as f:
-              json.dump(result, f, indent=2)
-
-          print(f"[OpenSky] {len(hfa_flights)} flights @ {now}")
-          EOF
-
-      # ── 4. Daily AviationStack (run once/day) ───────────────────
-      - name: Fetch daily flights (AviationStack)
-        if: github.event_name == 'workflow_dispatch' || github.run_number % 48 == 0
+      # ── Fetch AviationStack ───────────────────
+      - name: Fetch flights (AviationStack)
         env:
           AVIATIONSTACK_KEY: ${{ secrets.AVIATIONSTACK_KEY }}
           DATE_OVERRIDE: ${{ github.event.inputs.date_override }}
         run: |
           python - <<'EOF'
-          import requests, csv, os
-          from datetime import date
+          import requests, os, json
+          from datetime import datetime, timezone
 
-          today = os.environ.get("DATE_OVERRIDE") or date.today().isoformat()
+          # ── DATE (UTC safe) ──
+          today = os.environ.get("DATE_OVERRIDE") or datetime.now(timezone.utc).date().isoformat()
 
-          def fetch():
-              return requests.get(
-                  "http://api.aviationstack.com/v1/flights",
-                  params={
-                      "access_key": os.environ["AVIATIONSTACK_KEY"],
-                      "airline_iata": "E2",
-                      "limit": 100
-                  },
-                  timeout=30
-              )
+          airline = "E2"
 
-          r = fetch()
-          data = r.json()
+          url = "http://api.aviationstack.com/v1/flights"
+
+          params = {
+              "access_key": os.environ["AVIATIONSTACK_KEY"],
+              "airline_iata": airline,
+              "limit": 100
+          }
+
+          r = requests.get(url, params=params, timeout=30)
+
+          try:
+              data = r.json()
+          except Exception:
+              print("Invalid API response:", r.text[:300])
+              raise
+
           flights = data.get("data", [])
 
-          os.makedirs("data/daily", exist_ok=True)
-          file = f"data/daily/{today}.csv"
+          # ── FILTER: only "today" flights ──
+          flights_today = []
+          for f in flights:
+              dep = (f.get("departure") or {}).get("scheduled") or ""
+              if dep.startswith(today):
+                  flights_today.append(f)
 
-          with open(file, "w", newline="", encoding="utf-8") as f:
-              writer = csv.DictWriter(f, fieldnames=[
-                  "date","flight_iata","dep_iata","arr_iata","status"
-              ])
-              writer.writeheader()
+          # ── SAVE STRUCTURED FILE ──
+          path = f"data/daily/{airline}"
+          os.makedirs(path, exist_ok=True)
 
-              for fl in flights:
-                  writer.writerow({
-                      "date": today,
-                      "flight_iata": fl.get("flight", {}).get("iata"),
-                      "dep_iata": fl.get("departure", {}).get("iata"),
-                      "arr_iata": fl.get("arrival", {}).get("iata"),
-                      "status": fl.get("flight_status"),
-                  })
+          out_file = f"{path}/{today}.json"
 
-          print(f"[AviationStack] {len(flights)} flights saved")
+          with open(out_file, "w") as f:
+              json.dump({
+                  "date": today,
+                  "airline": airline,
+                  "count": len(flights_today),
+                  "flights": flights_today
+              }, f, indent=2)
+
+          print(f"[AviationStack] {len(flights_today)} flights saved → {out_file}")
           EOF
 
-      # ── 5. Append log ───────────────────────────────────────────
-      - name: Append snapshot log
-        run: |
-          python - <<'EOF'
-          import json, os
-          from datetime import date
-
-          today = date.today().isoformat()
-          live = "data/live/latest.json"
-          log = f"data/live/log_{today}.jsonl"
-
-          if not os.path.exists(live):
-              exit(0)
-
-          with open(live) as f:
-              snap = json.load(f)
-
-          with open(log, "a") as f:
-              f.write(json.dumps(snap) + "\n")
-
-          print("[Log] appended")
-          EOF
-
-      # ── 6. Commit only if changed ───────────────────────────────
+      # ── Commit changes ───────────────────────
       - name: Commit & push
         run: |
           git config user.name "github-actions[bot]"
@@ -215,16 +101,15 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes"
           else
-            git commit -m "✈ flight data $(date -u)"
+            git commit -m "✈ AviationStack update $(date -u)"
             git push
           fi
 
-      # ── 7. Summary ──────────────────────────────────────────────
+      # ── Summary ──────────────────────────────
       - name: Summary
         run: |
-          echo "## ✈ airHaifa Monitor" >> $GITHUB_STEP_SUMMARY
+          echo "## ✈ airHaifa Monitor (AviationStack Only)" >> $GITHUB_STEP_SUMMARY
 
-          if [ -f data/live/latest.json ]; then
-            COUNT=$(python -c "import json;print(len(json.load(open('data/live/latest.json'))['flights']))")
-            echo "Flights: $COUNT" >> $GITHUB_STEP_SUMMARY
+          if [ -f data/daily/E2/*.json ]; then
+            echo "Data updated successfully" >> $GITHUB_STEP_SUMMARY
           fi
