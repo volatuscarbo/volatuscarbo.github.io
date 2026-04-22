@@ -36,7 +36,7 @@ jobs:
 
           # Known airHaifa aircraft (expand this!)
           aircraft_list = [
-              "739600,
+              "739600",
               "739601",
               "739602",
               "739603",
