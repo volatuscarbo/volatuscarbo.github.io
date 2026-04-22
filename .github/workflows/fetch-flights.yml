@@ -74,8 +74,12 @@ jobs:
           git add data/
 
           if git diff --staged --quiet; then
-            echo "No changes"
-          else
-            git commit -m "Daily flights $(date -u)"
-            git push
+          echo "No changes"
+          exit 0
           fi
+
+          git commit -m "✈ flight data $(date -u)"
+          # 🔥 KEY FIX: sync with remote
+          git pull --rebase origin main
+
+          git push origin main
