@@ -1,29 +1,31 @@
-name: airHaifa Daily Flight Monitor
+name: airHaifa Flight Monitor
+
 on:
   schedule:
-    # Elke 15 minuten tussen 02:00 en 21:00 UTC
-    # (airHaifa vliegt vanuit Israel, UTC+3 = lokaal 05:00-00:00)
-    - cron: '*/15 0-23 * * *'
+    # Every 30 minutes (stable, avoids API throttling)
+    - cron: '*/25 * * * *'
   workflow_dispatch:
     inputs:
       date_override:
-        description: 'Datum om op te halen (YYYY-MM-DD), leeg = vandaag'
+        description: 'Date to fetch (YYYY-MM-DD), empty = today'
         required: false
         default: ''
+
 jobs:
   fetch-flights:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     permissions:
-      contents: write   # nodig voor git push
+      contents: write
+
     steps:
-      # ── 1. Repository ophalen ─────────────────────────────────────────────
+      # ── 1. Checkout ─────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # volledige history voor correcte git push
 
-      # ── 2. Python instellen ───────────────────────────────────────────────
-      - name: Set up Python 3.11
+      # ── 2. Python setup ─────────────────────────────────────────
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -31,38 +33,78 @@ jobs:
       - name: Install dependencies
         run: pip install requests pytz
 
-      # ── 3. OpenSky poll (primaire bron, gratis) ───────────────────────────
-      - name: Fetch live positions from OpenSky
+      # ── 3. Fetch OpenSky (bounded + retry) ──────────────────────
+      - name: Fetch live positions (OpenSky)
         env:
           OPENSKY_CLIENT_ID: ${{ secrets.OPENSKY_CLIENT_ID }}
           OPENSKY_CLIENT_SECRET: ${{ secrets.OPENSKY_CLIENT_SECRET }}
         run: |
           python - <<'EOF'
-          import requests, json, os
+          import requests, json, os, time
           from datetime import datetime, timezone
-          # OAuth2 token ophalen
-          token_url = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token"
-          token_resp = requests.post(token_url, data={
-              "grant_type": "client_credentials",
-              "client_id": os.environ["OPENSKY_CLIENT_ID"],
-              "client_secret": os.environ["OPENSKY_CLIENT_SECRET"],
-          })
+
+          def retry_post(url, data, retries=3):
+              for i in range(retries):
+                  try:
+                      r = requests.post(url, data=data, timeout=20)
+                      if r.status_code == 200:
+                          return r
+                  except Exception as e:
+                      print(f"[Token Retry {i+1}] {e}")
+                      time.sleep(2)
+              raise Exception("Token request failed")
+
+          def retry_get(url, headers=None, params=None, retries=3):
+              for i in range(retries):
+                  try:
+                      r = requests.get(url, headers=headers, params=params, timeout=30)
+                      if r.status_code == 200:
+                          return r
+                  except Exception as e:
+                      print(f"[GET Retry {i+1}] {e}")
+                      time.sleep(2)
+              raise Exception("GET request failed")
+
+          # ── Get OAuth token ──
+          token_resp = retry_post(
+              "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token",
+              {
+                  "grant_type": "client_credentials",
+                  "client_id": os.environ["OPENSKY_CLIENT_ID"],
+                  "client_secret": os.environ["OPENSKY_CLIENT_SECRET"],
+              }
+          )
+
           token = token_resp.json().get("access_token")
+          if not token:
+              raise Exception("No OpenSky token received")
+
           headers = {"Authorization": f"Bearer {token}"}
-          # Live state vectors filteren op callsign prefix HFA
-          resp = requests.get(
+
+          # ── Bounded region (Israel area) ──
+          params = {
+              "lamin": 29,
+              "lomin": 18,
+              "lamax": 44,
+              "lomax": 36
+          }
+
+          resp = retry_get(
               "https://opensky-network.org/api/states/all",
               headers=headers,
-              timeout=15
+              params=params
           )
+
           data = resp.json()
           states = data.get("states") or []
-          # airHaifa vluchten = callsign begint met "HFA"
+
           hfa_flights = [
               s for s in states
               if s[1] and str(s[1]).strip().startswith("HFA")
           ]
+
           now = datetime.now(timezone.utc).isoformat()
+
           result = {
               "timestamp": now,
               "source": "opensky_live",
@@ -82,118 +124,107 @@ jobs:
                   for s in hfa_flights
               ]
           }
+
           os.makedirs("data/live", exist_ok=True)
           with open("data/live/latest.json", "w") as f:
               json.dump(result, f, indent=2)
-          print(f"[OpenSky] {len(hfa_flights)} HFA vluchten gevonden om {now}")
+
+          print(f"[OpenSky] {len(hfa_flights)} flights @ {now}")
           EOF
 
-      # ── 4. AviationStack dagelijkse vluchtlijst (1× per dag, 06:00 UTC) ──
-      - name: Fetch daily flight list from AviationStack
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && startsWith(github.event.schedule, '0 6'))
+      # ── 4. Daily AviationStack (run once/day) ───────────────────
+      - name: Fetch daily flights (AviationStack)
+        if: github.event_name == 'workflow_dispatch' || github.run_number % 48 == 0
         env:
           AVIATIONSTACK_KEY: ${{ secrets.AVIATIONSTACK_KEY }}
           DATE_OVERRIDE: ${{ github.event.inputs.date_override }}
         run: |
           python - <<'EOF'
-          import requests, csv, os, json
-          from datetime import date, datetime, timezone
+          import requests, csv, os
+          from datetime import date
+
           today = os.environ.get("DATE_OVERRIDE") or date.today().isoformat()
-          params = {
-              "access_key": os.environ["AVIATIONSTACK_KEY"],
-              "airline_iata": "E2",
-              "flight_status": "landed",
-              "limit": 100,
-          }
-          resp = requests.get(
-              "http://api.aviationstack.com/v1/flights",
-              params=params,
-              timeout=20
-          )
-          data = resp.json()
+
+          def fetch():
+              return requests.get(
+                  "http://api.aviationstack.com/v1/flights",
+                  params={
+                      "access_key": os.environ["AVIATIONSTACK_KEY"],
+                      "airline_iata": "E2",
+                      "limit": 100
+                  },
+                  timeout=30
+              )
+
+          r = fetch()
+          data = r.json()
           flights = data.get("data", [])
+
           os.makedirs("data/daily", exist_ok=True)
-          filename = f"data/daily/{today}.csv"
-          with open(filename, "w", newline="", encoding="utf-8") as f:
+          file = f"data/daily/{today}.csv"
+
+          with open(file, "w", newline="", encoding="utf-8") as f:
               writer = csv.DictWriter(f, fieldnames=[
-                  "date", "flight_iata", "flight_icao",
-                  "dep_iata", "dep_icao", "dep_scheduled", "dep_actual",
-                  "arr_iata", "arr_icao", "arr_scheduled", "arr_actual",
-                  "status", "aircraft_icao24", "aircraft_registration"
+                  "date","flight_iata","dep_iata","arr_iata","status"
               ])
               writer.writeheader()
+
               for fl in flights:
-                  dep = fl.get("departure", {})
-                  arr = fl.get("arrival", {})
-                  acft = fl.get("aircraft") or {}
                   writer.writerow({
                       "date": today,
                       "flight_iata": fl.get("flight", {}).get("iata"),
-                      "flight_icao": fl.get("flight", {}).get("icao"),
-                      "dep_iata": dep.get("iata"),
-                      "dep_icao": dep.get("icao"),
-                      "dep_scheduled": dep.get("scheduled"),
-                      "dep_actual": dep.get("actual"),
-                      "arr_iata": arr.get("iata"),
-                      "arr_icao": arr.get("icao"),
-                      "arr_scheduled": arr.get("scheduled"),
-                      "arr_actual": arr.get("actual"),
+                      "dep_iata": fl.get("departure", {}).get("iata"),
+                      "arr_iata": fl.get("arrival", {}).get("iata"),
                       "status": fl.get("flight_status"),
-                      "aircraft_icao24": acft.get("icao24"),
-                      "aircraft_registration": acft.get("registration"),
                   })
-          print(f"[AviationStack] {len(flights)} vluchten opgeslagen in {filename}")
+
+          print(f"[AviationStack] {len(flights)} flights saved")
           EOF
 
-      # ── 5. Live data appenderen aan dagelijkse log ────────────────────────
-      - name: Append live snapshot to daily log
+      # ── 5. Append log ───────────────────────────────────────────
+      - name: Append snapshot log
         run: |
           python - <<'EOF'
           import json, os
-          from datetime import date, datetime, timezone
+          from datetime import date
+
           today = date.today().isoformat()
-          live_file = "data/live/latest.json"
-          log_file = f"data/live/log_{today}.jsonl"
-          if not os.path.exists(live_file):
-              print("Geen live data gevonden, overgeslagen.")
+          live = "data/live/latest.json"
+          log = f"data/live/log_{today}.jsonl"
+
+          if not os.path.exists(live):
               exit(0)
-          with open(live_file) as f:
-              snapshot = json.load(f)
-          os.makedirs("data/live", exist_ok=True)
-          with open(log_file, "a") as f:
-              f.write(json.dumps(snapshot) + "\n")
-          n = len(snapshot.get("flights", []))
-          print(f"[Log] Snapshot met {n} vlucht(en) toegevoegd aan {log_file}")
+
+          with open(live) as f:
+              snap = json.load(f)
+
+          with open(log, "a") as f:
+              f.write(json.dumps(snap) + "\n")
+
+          print("[Log] appended")
           EOF
 
-      # ── 6. Wijzigingen committen en pushen ────────────────────────────────
-      - name: Commit and push data
+      # ── 6. Commit only if changed ───────────────────────────────
+      - name: Commit & push
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.email "actions@github.com"
+
           git add data/
-          # Alleen committen als er iets veranderd is
+
           if git diff --staged --quiet; then
-            echo "Geen nieuwe data, niets te committen."
+            echo "No changes"
           else
-            TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
-            git commit -m "✈ airHaifa flight data ${TIMESTAMP}"
+            git commit -m "✈ flight data $(date -u)"
             git push
           fi
 
-      # ── 7. Summary in Actions log ─────────────────────────────────────────
-      - name: Print summary
+      # ── 7. Summary ──────────────────────────────────────────────
+      - name: Summary
         run: |
-          echo "## ✈ airHaifa Flight Monitor" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✈ airHaifa Monitor" >> $GITHUB_STEP_SUMMARY
+
           if [ -f data/live/latest.json ]; then
-            N=$(python -c "import json; d=json.load(open('data/live/latest.json')); print(len(d['flights']))")
-            TS=$(python -c "import json; d=json.load(open('data/live/latest.json')); print(d['timestamp'])")
-            echo "**Live vluchten gevonden:** ${N}" >> $GITHUB_STEP_SUMMARY
-            echo "**Tijdstip:** ${TS}" >> $GITHUB_STEP_SUMMARY
+            COUNT=$(python -c "import json;print(len(json.load(open('data/live/latest.json'))['flights']))")
+            echo "Flights: $COUNT" >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Data opgeslagen in:**" >> $GITHUB_STEP_SUMMARY
-          echo "- \`data/live/latest.json\` — meest recente live snapshot" >> $GITHUB_STEP_SUMMARY
-          echo "- \`data/live/log_YYYY-MM-DD.jsonl\` — alle snapshots van vandaag" >> $GITHUB_STEP_SUMMARY
-          echo "- \`data/daily/YYYY-MM-DD.csv\` — dagelijkse vluchtlijst (AviationStack)" >> $GITHUB_STEP_SUMMARY
