@@ -69,7 +69,7 @@ jobs:
          git config --global user.name "legal-bot"
          git config --global user.email "frank.adriaansen@etsverification.com"
 
-         git add ets_legal_engine/data/ || true
+         git add ETS_LEGAL/data/ || true
 
          git commit -m "Weekly legal update" || echo "No changes to commit"
          # IMPORTANT: sync with remote
