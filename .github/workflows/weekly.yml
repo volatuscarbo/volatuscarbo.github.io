@@ -15,17 +15,18 @@ jobs:
 
       - name: Setup Python
         uses: actions/setup-python@v6
-
+        with:
+          python-version: '3.11'
       - name: Install deps
         run: pip install requests beautifulsoup4
 
       - name: Run pipeline
-        run: python scripts/run_all.py
+        run: python ets-legal-engine/scripts/run_all.py
 
       - name: Commit updates
         run: |
           git config --global user.name "legal-bot"
           git config --global user.email "frank.adriaansen@etsverification.com"
-          git add data/
+          git ets-legal-engine/data/
           git commit -m "Weekly legal update" || echo "No changes"
           git push
