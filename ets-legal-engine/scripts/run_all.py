@@ -1,10 +1,10 @@
 import json
 import os
 
-from discover import discover_celex
-from download import download_all
-from parse import parse_html
-from diff_engine import diff_laws
+from scripts.download import download_all
+from scripts.discover import discover_celex
+from scripts.parse import parse_html
+from scripts.diff_engine import diff_laws
 
 # -----------------------------
 # PATH FIX (IMPORTANT)
