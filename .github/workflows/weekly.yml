@@ -42,7 +42,7 @@ jobs:
       # -----------------------------
       - name: Ensure folders exist
         run: |
-          mkdir -p ets-legal-engine/data/raw
+          mkdir -p ets_legal_engine/data/raw
 
       # -----------------------------
       # Run pipeline
@@ -59,7 +59,7 @@ jobs:
       - name: Inspect data output
         run: |
           echo "=== DATA CONTENT ==="
-          ls -R ets-legal-engine/data || true
+          ls -R ets_legal_engine/data || true
 
       # -----------------------------
       # Commit & push changes
