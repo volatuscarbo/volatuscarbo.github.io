@@ -17,7 +17,7 @@ jobs:
       # Checkout repo
       # -----------------------------
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -25,7 +25,7 @@ jobs:
       # Setup Python
       # -----------------------------
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -48,13 +48,12 @@ jobs:
       # Run pipeline
       # -----------------------------
       - name: Run ETS Legal Engine
-        
         run: |
           echo "Starting pipeline..."
           python -m ETS_LEGAL.scripts.run_all
 
       # -----------------------------
-      # Debug output (IMPORTANT)
+      # Debug output
       # -----------------------------
       - name: Inspect data output
         run: |
@@ -66,13 +65,10 @@ jobs:
       # -----------------------------
       - name: Commit updates
         run: |
-         git config --global user.name "legal-bot"
-         git config --global user.email "frank.adriaansen@etsverification.com"
-
-         git add ETS_LEGAL/data/ || true
-
-         git commit -m "Weekly legal update" || echo "No changes to commit"
-         # IMPORTANT: sync with remote
-         git pull --rebase origin main || echo "Nothing to rebase"
-
-         git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git || echo "Nothing to push"
+          git config --global user.name "legal-bot"
+          git config --global user.email "frank.adriaansen@etsverification.com"
+          git add ETS_LEGAL/data/
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Weekly legal update"
+          git pull --rebase origin main
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
