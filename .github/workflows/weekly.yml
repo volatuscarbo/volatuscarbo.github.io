@@ -1,4 +1,6 @@
 name: ETS Legal Engine
+permissions:
+  contents: write
 
 on:
   schedule:
