@@ -65,11 +65,13 @@ jobs:
       # -----------------------------
       - name: Commit updates
         run: |
-          git config --global user.name "legal-bot"
-          git config --global user.email "frank.adriaansen@etsverification.com"
+         git config --global user.name "legal-bot"
+         git config --global user.email "frank.adriaansen@etsverification.com"
 
-          git add ets-legal-engine/data/ || true
+         git add ets-legal-engine/data/ || true
 
-          git commit -m "Weekly legal update" || echo "No changes to commit"
+         git commit -m "Weekly legal update" || echo "No changes to commit"
+         # IMPORTANT: sync with remote
+         git pull --rebase origin main || echo "Nothing to rebase"
 
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git || echo "Nothing to push"
+         git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git || echo "Nothing to push"
