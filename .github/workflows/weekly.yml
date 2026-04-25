@@ -1,4 +1,4 @@
-name: ETS Legal Engine
+name: ETS LEGAL
 
 permissions:
   contents: write
@@ -42,16 +42,16 @@ jobs:
       # -----------------------------
       - name: Ensure folders exist
         run: |
-          mkdir -p ets_legal_engine/data/raw
+          mkdir -p ETS_LEGAL/data/raw
 
       # -----------------------------
       # Run pipeline
       # -----------------------------
       - name: Run ETS Legal Engine
-        working-directory: ets_legal_engine
+        working-directory: ETS_LEGAL
         run: |
           echo "Starting pipeline..."
-          python -m ets_legal_engine.scripts.run_all
+          python -m ETS_LEGAL.scripts.run_all
 
       # -----------------------------
       # Debug output (IMPORTANT)
@@ -59,7 +59,7 @@ jobs:
       - name: Inspect data output
         run: |
           echo "=== DATA CONTENT ==="
-          ls -R ets_legal_engine/data || true
+          ls -R ETS_LEGAL/data || true
 
       # -----------------------------
       # Commit & push changes
