@@ -1,10 +1,11 @@
 name: ETS Legal Engine
+
 permissions:
   contents: write
 
 on:
   schedule:
-    - cron: '0 4 * * 1'
+    - cron: '0 4 * * 1'   # every Monday 04:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -12,28 +13,63 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # -----------------------------
+      # Checkout repo
+      # -----------------------------
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
+      # -----------------------------
+      # Setup Python
+      # -----------------------------
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
-      - name: Install deps
-        run: pip install requests beautifulsoup4
 
-      - name: Run pipeline
-        run :
-           echo "Starting script" 
-           python ets-legal-engine/scripts/run_all.py
+      # -----------------------------
+      # Install dependencies
+      # -----------------------------
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
 
+      # -----------------------------
+      # Ensure folders exist
+      # -----------------------------
+      - name: Ensure folders exist
+        run: |
+          mkdir -p ets-legal-engine/data/raw
+
+      # -----------------------------
+      # Run pipeline
+      # -----------------------------
+      - name: Run ETS Legal Engine
+        run: |
+          echo "Starting pipeline..."
+          python ets-legal-engine/scripts/run_all.py
+
+      # -----------------------------
+      # Debug output (IMPORTANT)
+      # -----------------------------
+      - name: Inspect data output
+        run: |
+          echo "=== DATA CONTENT ==="
+          ls -R ets-legal-engine/data || true
+
+      # -----------------------------
+      # Commit & push changes
+      # -----------------------------
       - name: Commit updates
         run: |
-         git config --global user.name "legal-bot"
-         git config --global user.email "frank.adriaansen@etsverification.com"
+          git config --global user.name "legal-bot"
+          git config --global user.email "frank.adriaansen@etsverification.com"
 
-         git add ets-legal-engine/data/ || true
+          git add ets-legal-engine/data/ || true
 
-         git commit -m "Weekly legal update" || echo "No changes to commit"
+          git commit -m "Weekly legal update" || echo "No changes to commit"
 
-         git push || echo "Nothing to push"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git || echo "Nothing to push"
