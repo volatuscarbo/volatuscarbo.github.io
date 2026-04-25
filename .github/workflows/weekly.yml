@@ -51,7 +51,7 @@ jobs:
         working-directory: ets-legal-engine
         run: |
           echo "Starting pipeline..."
-          python -m ets-legal-engine.scripts.run_all
+          python -m ets_legal_engine.scripts.run_all
 
       # -----------------------------
       # Debug output (IMPORTANT)
