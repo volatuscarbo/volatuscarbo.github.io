@@ -27,8 +27,11 @@ jobs:
 
       - name: Commit updates
         run: |
-           git config --global user.name "legal-bot"
-           git config --global user.email "frank.adriaansen@etsverification.com"
-           git add ets-legal-engine/data/
-           git commit -m "Weekly legal update" || echo "No changes"
-           git push
+         git config --global user.name "legal-bot"
+         git config --global user.email "frank.adriaansen@etsverification.com"
+
+         git add ets-legal-engine/data/ || true
+
+         git commit -m "Weekly legal update" || echo "No changes to commit"
+
+         git push || echo "Nothing to push"
