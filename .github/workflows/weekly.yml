@@ -48,9 +48,10 @@ jobs:
       # Run pipeline
       # -----------------------------
       - name: Run ETS Legal Engine
+        working-directory: ETS_LEGAL
         run: |
           echo "Starting pipeline..."
-          python -m ETS_LEGAL.scripts.run_all
+          python -m scripts.run_all
 
       # -----------------------------
       # Debug output
