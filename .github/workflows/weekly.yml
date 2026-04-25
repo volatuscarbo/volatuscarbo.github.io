@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
 
       - name: Install deps
         run: pip install requests beautifulsoup4
@@ -25,7 +25,7 @@ jobs:
       - name: Commit updates
         run: |
           git config --global user.name "legal-bot"
-          git config --global user.email "bot@ets.com"
+          git config --global user.email "frank.adriaansen@etsverification.com"
           git add data/
           git commit -m "Weekly legal update" || echo "No changes"
           git push
