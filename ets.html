@@ -15,24 +15,15 @@
     }
 
     header {
-      padding: 20px;
+      padding: 18px;
       background: #111a2e;
       border-bottom: 1px solid #223;
     }
 
-    h1 {
-      margin: 0;
-      font-size: 22px;
-    }
+    h1 { margin: 0; font-size: 20px; }
+    .brand { font-size: 12px; color: #aaa; }
 
-    .brand {
-      font-size: 13px;
-      color: #aaa;
-    }
-
-    .container {
-      padding: 20px;
-    }
+    .container { padding: 20px; }
 
     .card {
       background: #1b2338;
@@ -55,22 +46,17 @@
 
     input {
       padding: 10px;
-      width: 250px;
+      width: 260px;
       margin-right: 10px;
     }
 
-    a {
-      color: #00d4ff;
-    }
+    #dashboard { display: none; }
 
-    #dashboard {
-      display: none;
-    }
-
+    a { color: #00d4ff; }
     pre {
       white-space: pre-wrap;
       background: #0f172a;
-      padding: 15px;
+      padding: 12px;
       border-radius: 8px;
     }
   </style>
@@ -79,7 +65,7 @@
 <body>
 
 <header>
-  <h1>✈️ ETS Verification Portal</h1>
+  <h1>✈️ ETS Verification</h1>
   <div class="brand">VolatusCarbo Aviation Auditing</div>
 </header>
 
@@ -94,7 +80,7 @@
 
   <!-- DASHBOARD -->
   <div id="dashboard">
-    <h3>Dashboard</h3>
+    <h3>Documents</h3>
     <div id="docs"></div>
   </div>
 
@@ -102,10 +88,9 @@
 
 <script>
 const supabaseClient = supabase.createClient(
-  "https://wgsknwmczjjqucfueanx.supabase.co",
-  "sb_publishable_9gyHR3xwGCSjUpJs4T060w_sEGFs8FQ"
-);
-
+    "https://wgsknwmczjjqucfueanx.supabase.co",
+    "sb_publishable_9gyHR3xwGCSjUpJs4T060w_sEGFs8FQ"
+  );
 // ---------------- LOGIN ----------------
 async function login() {
   const email = document.getElementById("email").value;
@@ -113,19 +98,23 @@ async function login() {
   const { error } = await supabaseClient.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: "https://volatuscarbo.github.io/"
+      emailRedirectTo: "https://volatuscarbo.com/"
     }
   });
 
   if (error) {
     alert(error.message);
   } else {
-    alert("Magic link sent. Check your email.");
+    alert("Check your email for the magic link");
   }
 }
 
-// ---------------- LOAD SESSION ----------------
+// ---------------- SESSION HANDLING (CRITICAL FIX) ----------------
 window.onload = async () => {
+
+  // 🔥 THIS FIXES YOUR MAGIC LINK REDIRECT ISSUE
+  await supabaseClient.auth.exchangeCodeForSession(window.location.href);
+
   const { data: { session } } = await supabaseClient.auth.getSession();
 
   if (session) {
@@ -137,6 +126,7 @@ window.onload = async () => {
 
 // ---------------- LOAD DOCUMENTS ----------------
 async function loadDocuments() {
+
   const { data: docs } = await supabaseClient
     .from("documents")
     .select("*");
@@ -149,7 +139,7 @@ async function loadDocuments() {
   container.innerHTML = "";
 
   docs
-    .sort((a, b) => new Date(b.version_date) - new Date(a.version_date))
+    .sort((a,b) => new Date(b.version_date) - new Date(a.version_date))
     .forEach(doc => {
 
       const read = reads?.find(r => r.document_id === doc.id);
@@ -180,19 +170,21 @@ async function loadDocuments() {
     });
 }
 
-// ---------------- OPEN DOC ----------------
+// ---------------- OPEN DOCUMENT ----------------
 async function openDoc(path, docId) {
+
   const text = await fetch(path).then(r => r.text());
 
   const win = window.open();
+
   win.document.write(`
     <html>
-      <body style="font-family:Arial;padding:20px;">
-        <pre>${text}</pre>
-        <button onclick="window.opener.ack('${docId}')">
-          Acknowledge Read
-        </button>
-      </body>
+    <body style="font-family:Arial;padding:20px;">
+      <pre>${text}</pre>
+      <button onclick="window.opener.ack('${docId}')">
+        Acknowledge
+      </button>
+    </body>
     </html>
   `);
 
@@ -207,6 +199,7 @@ async function openDoc(path, docId) {
 
 // ---------------- ACKNOWLEDGE ----------------
 async function ack(docId) {
+
   const user = (await supabaseClient.auth.getUser()).data.user;
 
   await supabaseClient.from("read_events").upsert({
@@ -219,18 +212,10 @@ async function ack(docId) {
   location.reload();
 }
 </script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-<script>
-window.onload = async () => {
-
-  const supabaseClient = supabase.createClient(
-    "https://wgsknwmczjjqucfueanx.supabase.co",
-    "sb_publishable_9gyHR3xwGCSjUpJs4T060w_sEGFs8FQ"
-  );
-
-  console.log("Supabase loaded:", supabaseClient);
-};
-</script>
 </body>
 </html>
+
+
+
+
