@@ -48,8 +48,8 @@ jobs:
           GITHUB_BRANCH: ${{ github.ref_name }}
           SCRIPT_DIR: ${{ github.workspace }}/.github/scripts
         run: |
-          cd ${{ github.workspace }}
-          python3 .github/scripts/sync_to_supabase.py
+          
+          python3 volatuscarbo.github.io/.github/scripts/sync_to_supabase.py
       
       - name: Log sync result
         if: always()
