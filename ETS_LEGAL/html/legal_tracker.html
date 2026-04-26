@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ETS Verification Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <style>
+    body {
+      font-family: Arial;
+      background: #0b1220;
+      color: white;
+    }
+    .card {
+      background: #1b2338;
+      padding: 20px;
+      margin: 10px;
+      border-radius: 10px;
+    }
+    .latest {
+      border: 2px solid #00d4ff;
+    }
+    button {
+      padding: 10px;
+      background: #00d4ff;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>✈️ ETS Verification</h1>
+<h3>VolatusCarbo Aviation Auditing</h3>
+
+<div id="login">
+  <input id="email" placeholder="Enter email"/>
+  <button onclick="login()">Send Magic Link</button>
+</div>
+
+<div id="dashboard" style="display:none;"></div>
+
+<script>
+const supabase = supabase.createClient(
+  "YOUR_URL",
+  "YOUR_ANON_KEY"
+);
+
+async function login() {
+  const email = document.getElementById('email').value;
+
+  await supabase.auth.signInWithOtp({ email });
+
+  alert("Magic link sent");
+}
+
+async function loadDashboard() {
+  const { data: docs } = await supabase.from('documents').select('*');
+
+  const { data: reads } = await supabase.from('read_events').select('*');
+
+  const container = document.getElementById('dashboard');
+  container.innerHTML = '';
+
+  docs.sort((a,b)=> new Date(b.version_date)-new Date(a.version_date));
+
+  docs.forEach(doc => {
+    const read = reads.find(r => r.document_id === doc.id);
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    if(doc.is_latest) card.classList.add('latest');
+
+    const unread = !read || !read.acknowledged_at;
+
+    card.innerHTML = `
+      <h3>${doc.title}</h3>
+      <p>Date: ${doc.version_date}</p>
+      <p>${doc.is_latest ? "LATEST VERSION" : ""}</p>
+      <a href="${doc.web_url}" target="_blank">Official Source</a><br><br>
+      <button onclick="openDoc('${doc.file_path}', '${doc.id}')">
+        ${unread ? "Read Now" : "View Again"}
+      </button>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+async function openDoc(path, docId) {
+  const text = await fetch(path).then(r=>r.text());
+
+  const win = window.open();
+  win.document.write(`<pre>${text}</pre>
+    <button onclick="ack('${docId}')">Acknowledge</button>
+  `);
+
+  await supabase.from('read_events').upsert({
+    document_id: docId,
+    last_access_at: new Date()
+  });
+}
+
+async function ack(docId) {
+  await supabase.from('read_events').upsert({
+    document_id: docId,
+    acknowledged_at: new Date()
+  });
+
+  alert("Acknowledged");
+  location.reload();
+}
+</script>
+
+</body>
+</html>
