@@ -40,13 +40,14 @@ jobs:
           ls -la ETS_LEGAL/data/diffs.json 2>/dev/null || echo "⚠️ diffs.json not found"
       
       - name: Read documents and sync to Supabase
+        working-directory: .github/scripts
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GITHUB_REPO: ${{ github.repository }}
           GITHUB_BRANCH: ${{ github.ref_name }}
         run: |
-          python .github/scripts/sync_to_supabase.py
+          python3 sync_to_supabase.py
       
       - name: Log sync result
         if: always()
