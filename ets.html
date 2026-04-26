@@ -219,6 +219,18 @@ async function ack(docId) {
   location.reload();
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
+<script>
+window.onload = async () => {
+
+  const supabaseClient = supabase.createClient(
+    "https://wgsknwmczjjqucfueanx.supabase.co",
+    "sb_publishable_9gyHR3xwGCSjUpJs4T060w_sEGFs8FQ"
+  );
+
+  console.log("Supabase loaded:", supabaseClient);
+};
+</script>
 </body>
 </html>
