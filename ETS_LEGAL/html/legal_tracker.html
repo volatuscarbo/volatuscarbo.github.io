@@ -1,108 +1,216 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
   <title>ETS Verification Portal</title>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
   <style>
     body {
-      font-family: Arial;
+      margin: 0;
+      font-family: Arial, sans-serif;
       background: #0b1220;
       color: white;
     }
+
+    header {
+      padding: 20px;
+      background: #111a2e;
+      border-bottom: 1px solid #223;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .brand {
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
     .card {
       background: #1b2338;
-      padding: 20px;
-      margin: 10px;
+      padding: 15px;
+      margin-bottom: 12px;
       border-radius: 10px;
     }
+
     .latest {
       border: 2px solid #00d4ff;
     }
+
     button {
-      padding: 10px;
       background: #00d4ff;
       border: none;
+      padding: 8px 12px;
       cursor: pointer;
+      margin-top: 8px;
+    }
+
+    input {
+      padding: 10px;
+      width: 250px;
+      margin-right: 10px;
+    }
+
+    a {
+      color: #00d4ff;
+    }
+
+    #dashboard {
+      display: none;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      background: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
     }
   </style>
 </head>
 
 <body>
 
-<h1>✈️ ETS Verification</h1>
-<h3>VolatusCarbo Aviation Auditing</h3>
+<header>
+  <h1>✈️ ETS Verification Portal</h1>
+  <div class="brand">VolatusCarbo Aviation Auditing</div>
+</header>
 
-<div id="login">
-  <input id="email" placeholder="Enter email"/>
-  <button onclick="login()">Send Magic Link</button>
+<div class="container">
+
+  <!-- LOGIN -->
+  <div id="login">
+    <h3>Login</h3>
+    <input id="email" placeholder="Enter email" />
+    <button onclick="login()">Send Magic Link</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="dashboard">
+    <h3>Dashboard</h3>
+    <div id="docs"></div>
+  </div>
+
 </div>
 
-<div id="dashboard" style="display:none;"></div>
-
 <script>
-const supabase = supabase.createClient(
-  "YOUR_URL",
-  "YOUR_ANON_KEY"
+const supabaseClient = supabase.createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
 );
 
+// ---------------- LOGIN ----------------
 async function login() {
-  const email = document.getElementById('email').value;
+  const email = document.getElementById("email").value;
 
-  await supabase.auth.signInWithOtp({ email });
-
-  alert("Magic link sent");
-}
-
-async function loadDashboard() {
-  const { data: docs } = await supabase.from('documents').select('*');
-
-  const { data: reads } = await supabase.from('read_events').select('*');
-
-  const container = document.getElementById('dashboard');
-  container.innerHTML = '';
-
-  docs.sort((a,b)=> new Date(b.version_date)-new Date(a.version_date));
-
-  docs.forEach(doc => {
-    const read = reads.find(r => r.document_id === doc.id);
-
-    const card = document.createElement('div');
-    card.className = 'card';
-
-    if(doc.is_latest) card.classList.add('latest');
-
-    const unread = !read || !read.acknowledged_at;
-
-    card.innerHTML = `
-      <h3>${doc.title}</h3>
-      <p>Date: ${doc.version_date}</p>
-      <p>${doc.is_latest ? "LATEST VERSION" : ""}</p>
-      <a href="${doc.web_url}" target="_blank">Official Source</a><br><br>
-      <button onclick="openDoc('${doc.file_path}', '${doc.id}')">
-        ${unread ? "Read Now" : "View Again"}
-      </button>
-    `;
-
-    container.appendChild(card);
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: "https://volatuscarbo.github.io/"
+    }
   });
+
+  if (error) {
+    alert(error.message);
+  } else {
+    alert("Magic link sent. Check your email.");
+  }
 }
 
+// ---------------- LOAD SESSION ----------------
+window.onload = async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (session) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    loadDocuments();
+  }
+};
+
+// ---------------- LOAD DOCUMENTS ----------------
+async function loadDocuments() {
+  const { data: docs } = await supabaseClient
+    .from("documents")
+    .select("*");
+
+  const { data: reads } = await supabaseClient
+    .from("read_events")
+    .select("*");
+
+  const container = document.getElementById("docs");
+  container.innerHTML = "";
+
+  docs
+    .sort((a, b) => new Date(b.version_date) - new Date(a.version_date))
+    .forEach(doc => {
+
+      const read = reads?.find(r => r.document_id === doc.id);
+      const unread = !read || !read.acknowledged_at;
+
+      const card = document.createElement("div");
+      card.className = "card";
+
+      if (doc.is_latest) {
+        card.classList.add("latest");
+      }
+
+      card.innerHTML = `
+        <h4>${doc.title}</h4>
+        <p>Directive: ${doc.directive}</p>
+        <p>Date: ${doc.version_date}</p>
+
+        ${doc.is_latest ? "<b>🔵 LATEST VERSION</b><br>" : ""}
+
+        <a href="${doc.web_url}" target="_blank">Official Source</a><br>
+
+        <button onclick="openDoc('${doc.file_path}', '${doc.id}')">
+          ${unread ? "Read & Acknowledge" : "View Again"}
+        </button>
+      `;
+
+      container.appendChild(card);
+    });
+}
+
+// ---------------- OPEN DOC ----------------
 async function openDoc(path, docId) {
-  const text = await fetch(path).then(r=>r.text());
+  const text = await fetch(path).then(r => r.text());
 
   const win = window.open();
-  win.document.write(`<pre>${text}</pre>
-    <button onclick="ack('${docId}')">Acknowledge</button>
+  win.document.write(`
+    <html>
+      <body style="font-family:Arial;padding:20px;">
+        <pre>${text}</pre>
+        <button onclick="window.opener.ack('${docId}')">
+          Acknowledge Read
+        </button>
+      </body>
+    </html>
   `);
 
-  await supabase.from('read_events').upsert({
+  const user = (await supabaseClient.auth.getUser()).data.user;
+
+  await supabaseClient.from("read_events").upsert({
+    user_id: user.id,
     document_id: docId,
     last_access_at: new Date()
   });
 }
 
+// ---------------- ACKNOWLEDGE ----------------
 async function ack(docId) {
-  await supabase.from('read_events').upsert({
+  const user = (await supabaseClient.auth.getUser()).data.user;
+
+  await supabaseClient.from("read_events").upsert({
+    user_id: user.id,
     document_id: docId,
     acknowledged_at: new Date()
   });
