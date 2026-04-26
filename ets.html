@@ -118,6 +118,8 @@ window.onload = async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
 
   if (session) {
+    // 🔥 STEP 2: CLEAN URL FIRST
+    window.history.replaceState({}, document.title, "/ets.html");
     document.getElementById("login").style.display = "none";
     document.getElementById("dashboard").style.display = "block";
     loadDocuments();
