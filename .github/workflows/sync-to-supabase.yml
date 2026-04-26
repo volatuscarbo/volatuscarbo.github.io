@@ -1,0 +1,58 @@
+# .github/workflows/sync-to-supabase.yml
+
+name: Sync Documents to Supabase
+
+on:
+  # Trigger on push to main
+  push:
+    branches:
+      - main
+    paths:
+      - 'ETS_LEGAL/baselines/**'
+      - 'ETS_LEGAL/data/diffs.json'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  sync-documents:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Get full history for version tracking
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests
+      
+      - name: Verify directories exist
+        run: |
+          echo "📂 Checking directory structure..."
+          ls -la ETS_LEGAL/baselines/ 2>/dev/null || echo "⚠️ baselines directory not found"
+          ls -la ETS_LEGAL/data/diffs.json 2>/dev/null || echo "⚠️ diffs.json not found"
+      
+      - name: Read documents and sync to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GITHUB_REPO: ${{ github.repository }}
+          GITHUB_BRANCH: ${{ github.ref_name }}
+        run: |
+          python .github/scripts/sync_to_supabase.py
+      
+      - name: Log sync result
+        if: always()
+        run: |
+          echo "✅ Sync workflow completed"
+          echo "📊 Check Supabase dashboard for document updates"
+          echo "🔗 Repo: ${{ github.repository }}"
+          echo "🌿 Branch: ${{ github.ref_name }}"
+
