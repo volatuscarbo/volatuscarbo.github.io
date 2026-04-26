@@ -1,75 +1,122 @@
-name: ETS LEGAL
-
-permissions:
-  contents: write
-
+name: ETS Legal Monitor
+ 
 on:
   schedule:
-    - cron: '0 4 * * 1'   # every Monday 04:00 UTC
-  workflow_dispatch:
-
+    - cron: '0 7 * * 1'   # Every Monday at 07:00 UTC
+  workflow_dispatch:        # Allow manual runs from the GitHub UI
+ 
+# Grant the built-in GITHUB_TOKEN permission to push commits back to the repo.
+# This is needed for the "Commit baselines" step.
+# If your org disables this, create a PAT with repo scope and store it as
+# secret REPO_TOKEN, then replace secrets.GITHUB_TOKEN with secrets.REPO_TOKEN
+# in the checkout step above.
+permissions:
+  contents: write
+ 
 jobs:
-  run:
+  monitor:
     runs-on: ubuntu-latest
-
+ 
     steps:
-      # -----------------------------
-      # Checkout repo
-      # -----------------------------
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      #    fetch-depth: 0 so we can push commits back to the repo.
+      #    The default GITHUB_TOKEN has write permission by default on most
+      #    repos; if yours is read-only, see the note at the bottom of this file.
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      # -----------------------------
-      # Setup Python
-      # -----------------------------
-      - name: Setup Python
+          token: ${{ secrets.GITHUB_TOKEN }}
+ 
+      # ── 2. Configure git identity for the commit-back step ──────────────────
+      - name: Configure git
+        run: |
+          git config user.name  "ETS Legal Monitor"
+          git config user.email "actions@github.com"
+ 
+      # ── 3. Python setup ──────────────────────────────────────────────────────
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      # -----------------------------
-      # Install dependencies
-      # -----------------------------
+ 
+      # ── 4. Install dependencies ──────────────────────────────────────────────
       - name: Install dependencies
+        working-directory: ETS_LEGAL
+        run: pip install -r requirements.txt
+ 
+      # ── 5. Run the monitor ───────────────────────────────────────────────────
+      - name: Run ETS monitor
+        working-directory: ETS_LEGAL
+        run: python -m scripts.run_all
+ 
+      # ── 6. Commit updated baselines back to the repo ─────────────────────────
+      #    This is the critical step — without it every run is a "first run"
+      #    because the checkout is always a fresh clone.
+      #    Only commits if baseline files actually changed (new or updated text).
+      - name: Commit baselines
         run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4
-
-      # -----------------------------
-      # Ensure folders exist
-      # -----------------------------
-      - name: Ensure folders exist
-        run: |
-          mkdir -p ETS_LEGAL/data/raw
-
-      # -----------------------------
-      # Run pipeline
-      # -----------------------------
-      - name: Run ETS Legal Engine
+          git add ETS_LEGAL/baselines/
+          if git diff --cached --quiet; then
+            echo "No baseline changes to commit."
+          else
+            git commit -m "chore: update ETS baselines [skip ci]"
+            git push
+          fi
+ 
+      # ── 8. Parse diffs.json and set output variables ─────────────────────────
+      #    Reads amendments_found and summary from diffs.json.
+      #    Sets step outputs so the email step can use them.
+      - name: Check for amendments
+        id: check_diffs
         working-directory: ETS_LEGAL
         run: |
-          echo "Starting pipeline..."
-          python -m scripts.run_all
-
-      # -----------------------------
-      # Debug output
-      # -----------------------------
-      - name: Inspect data output
-        run: |
-          echo "=== DATA CONTENT ==="
-          ls -R ETS_LEGAL/data || true
-
-      # -----------------------------
-      # Commit & push changes
-      # -----------------------------
-      - name: Commit updates
-        run: |
-          git config --global user.name "legal-bot"
-          git config --global user.email "frank.adriaansen@etsverification.com"
-          git add ETS_LEGAL/data/
-          git diff --cached --quiet && echo "No changes to commit" && exit 0
-          git commit -m "Weekly legal update"
-          git pull --rebase origin main
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          FOUND=$(python -c "import json; d=json.load(open('diffs.json')); print(str(d.get('amendments_found', False)).lower())")
+          echo "found=$FOUND" >> $GITHUB_OUTPUT
+ 
+          python -c "
+          import json
+          d = json.load(open('diffs.json'))
+          print(d.get('summary', 'No summary available.'))
+          " > /tmp/summary.txt
+ 
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/summary.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+ 
+      # ── 9. Upload diffs.json as an artifact (always, for audit trail) ─────────
+      - name: Upload diffs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ets-diffs-${{ github.run_id }}
+          path: ETS_LEGAL/diffs.json
+          retention-days: 90
+ 
+      # ── 10. Send email — only when amendments are found ──────────────────────
+      #
+      #    SETUP REQUIRED (one-time):
+      #    1. Go to your Google Account → Security → 2-Step Verification → App passwords
+      #    2. Create an app password for "Mail"
+      #    3. In your GitHub repo: Settings → Secrets → Actions → New repository secret
+      #       - GMAIL_USER    = your.address@gmail.com
+      #       - GMAIL_APP_PW  = the 16-character app password (no spaces)
+      #
+      - name: Send amendment alert email
+        if: steps.check_diffs.outputs.found == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USER }}
+          password: ${{ secrets.GMAIL_APP_PW }}
+          to: frank.adriaansen274@gmail.com
+          from: ETS Legal Monitor <${{ secrets.GMAIL_USER }}>
+          subject: "⚠️ ETS Amendment Detected — ${{ github.run_id }}"
+          body: |
+            ${{ steps.check_diffs.outputs.summary }}
+ 
+            ---
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            Full diffs are attached as a workflow artifact (retained 90 days).
+ 
