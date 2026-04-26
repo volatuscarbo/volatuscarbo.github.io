@@ -110,7 +110,7 @@ jobs:
           secure: true
           username: ${{ secrets.GMAIL_USER }}
           password: ${{ secrets.GMAIL_APP_PW }}
-          to: frank.adriaansen274@gmail.com
+          to: frank.adriaansen@etsverification.com
           from: ETS Legal Monitor <${{ secrets.GMAIL_USER }}>
           subject: "⚠️ ETS Amendment Detected — ${{ github.run_id }}"
           body: |
