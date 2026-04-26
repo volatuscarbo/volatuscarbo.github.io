@@ -46,8 +46,9 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GITHUB_REPO: ${{ github.repository }}
           GITHUB_BRANCH: ${{ github.ref_name }}
+          SCRIPT_DIR: ${{ github.workspace }}/.github/scripts
         run: |
-          python3 sync_to_supabase.py
+          python3 $SCRIPT_DIR/sync_to_supabase.py
       
       - name: Log sync result
         if: always()
