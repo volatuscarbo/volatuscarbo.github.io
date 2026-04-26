@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<!-- saved from url=(0051)file:///C:/Users/frank/Downloads/ets-portal-v2.html -->
+<!-- saved from url=(0069)file:///C:/Users/frank/Downloads/ETS_Verification_Portal_READY_5.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="ETS Verification Portal - Review and acknowledge aviation compliance documents">
   <title>ETS Verification Portal</title>
 
-  <script src="./ETS Verification Portal_files/+esm"></script>
+  <script src="./ETS_Verification_Portal_READY2_files/supabase-js@2.38.4"></script>
 
   <style>
     :root {
@@ -987,7 +987,7 @@
 <div class="container">
 
   <!-- LOGIN SECTION -->
-  <div id="login">
+  <div id="login" style="display: flex;">
     <div class="login-card">
       <h2>Verify Your Identity</h2>
       <p>Enter your email address to receive a secure magic link. You'll be able to review and acknowledge all required documents.</p>
@@ -997,20 +997,25 @@
       <div class="form-group">
         <label for="email">Email Address</label>
         <input id="email" type="email" placeholder="your@company.com" autocomplete="email" required="">
+        <small style="color: var(--text-muted); margin-top: 6px; display: block; font-size: 11px;">
+          Your company email address used for aviation operations
+        </small>
       </div>
 
       <button class="primary" id="login-btn" onclick="handleLogin()">
         <span>📧</span> Send Magic Link
       </button>
 
-      <p style="margin-top: 16px; font-size: 11px; color: var(--text-muted); text-align: center;">
-        A secure link will be sent to your email. No password needed.
+      <p style="margin-top: 16px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.6;">
+        ✓ A secure magic link will be sent to your email<br>
+        ✓ No password needed<br>
+        ✓ One-time use (expires in 1 hour)
       </p>
     </div>
   </div>
 
   <!-- DASHBOARD SECTION -->
-  <div id="dashboard">
+  <div id="dashboard" style="display: none;">
     <div class="dashboard-header">
       <h2>Your Documents</h2>
       <div class="dashboard-actions">
@@ -1090,19 +1095,21 @@
 <!-- TOAST CONTAINER -->
 <div class="toast-container" id="toast-container"></div>
 
-<script type="module">
+<script>
   // ==================== CONFIGURATION ====================
   // ⚠️ IMPORTANT: Keep these as environment variables in production
   // For GitHub Pages: Use a secure backend to handle auth
   const CONFIG = {
     SUPABASE_URL: 'https://wgsknwmczjjqucfueanx.supabase.co',
-    SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indnc2tudzBjempqcXVjZnVlYW54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDAwMDAwMDAsImV4cCI6MjAwMDAwMDAwfQ.PLACEHOLDER',
+    SUPABASE_KEY: 'sb_publishable_9gyHR3xwGCSjUpJs4T060w_sEGFs8FQ',
     REDIRECT_URL: getRedirectUrl()
   };
 
   // SECURITY: Only expose non-sensitive data
   function getRedirectUrl() {
-    return window.location.origin + window.location.pathname;
+    const url = window.location.origin + window.location.pathname;
+    console.log('🔗 Redirect URL:', url);
+    return url;
   }
 
   // ==================== SUPABASE CLIENT ====================
@@ -1132,7 +1139,9 @@
     documents: [],
     readEvents: [],
     filter: 'all',
-    searchTerm: ''
+    searchTerm: '',
+    lastLoginAttempt: 0,
+    loginCooldownSeconds: 0
   };
 
   // ==================== UTILITY FUNCTIONS ====================
@@ -1189,23 +1198,38 @@
     const email = emailInput.value.trim();
     const loginBtn = document.getElementById('login-btn');
 
-    // Validation
+    // Check rate limiting (Supabase enforces 60-second limit)
+    const now = Date.now();
+    const timeSinceLastAttempt = Math.floor((now - appState.lastLoginAttempt) / 1000);
+    
+    if (timeSinceLastAttempt < 60) {
+      const secondsLeft = 60 - timeSinceLastAttempt;
+      showAlert('login-alerts', `Please wait ${secondsLeft} seconds before requesting another magic link`, 'warning');
+      return;
+    }
+
+    // Validation - Email required
     if (!email) {
-      showAlert('login-alerts', 'Please enter your email address', 'warning');
+      showAlert('login-alerts', '📧 Please enter your email address', 'warning');
       emailInput.focus();
       return;
     }
 
-    if (!email.includes('@')) {
-      showAlert('login-alerts', 'Please enter a valid email address', 'warning');
+    // Validation - Valid email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showAlert('login-alerts', '❌ Please enter a valid email address (e.g., pilot@company.com)', 'warning');
+      emailInput.select();
       return;
     }
 
     // Show loading state
     loginBtn.disabled = true;
-    loginBtn.innerHTML = '<span class="loading-spinner"></span> Sending...';
+    loginBtn.innerHTML = '<span class="loading-spinner"></span> Sending magic link...';
 
     try {
+      console.log('📨 Attempting to send magic link to:', email);
+
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
         options: {
@@ -1217,13 +1241,37 @@
         throw error;
       }
 
-      showAlert('login-alerts', '✓ Magic link sent! Check your email inbox.', 'success');
+      // Track the attempt time for rate limiting
+      appState.lastLoginAttempt = Date.now();
+      
+      showAlert('login-alerts', `✓ Magic link sent to ${email}! Check your inbox and spam folder.`, 'success');
+      console.log('✓ Magic link sent successfully');
+      
+      // Clear input and focus
       emailInput.value = '';
+      
+      // Show rate limit warning
+      setTimeout(() => {
+        showAlert('login-alerts', '⏱️ You can request another magic link in 60 seconds', 'info');
+      }, 1000);
 
     } catch (error) {
-      console.error('Login error:', error);
-      showAlert('login-alerts', `Error: ${error.message || 'Failed to send magic link'}`, 'error');
-
+      console.error('❌ Login error:', error);
+      
+      // Handle specific error types
+      let errorMessage = 'Failed to send magic link';
+      
+      if (error.message?.includes('rate limit')) {
+        errorMessage = 'Too many requests. Please wait before trying again (Supabase rate limit: max 2 emails per hour)';
+      } else if (error.message?.includes('invalid email')) {
+        errorMessage = 'Invalid email address. Please check and try again.';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showAlert('login-alerts', `❌ ${errorMessage}`, 'error');
     } finally {
       loginBtn.disabled = false;
       loginBtn.innerHTML = '<span>📧</span> Send Magic Link';
@@ -1244,29 +1292,91 @@
   // ==================== SESSION MANAGEMENT ====================
   async function checkSession() {
     try {
-      // Handle OAuth callback
-      await supabaseClient.auth.exchangeCodeForSession(window.location.href);
+      console.log('🔐 ===== SESSION CHECK START =====');
+      console.log('📍 Current URL:', window.location.href);
       
-      // Clean URL
+      // Handle OAuth callback - Exchange code for session
+      console.log('🔐 Checking for OAuth callback...');
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const error = urlParams.get('error');
+      
+      if (error) {
+        console.error('❌ OAuth Error:', error, urlParams.get('error_description'));
+        return false;
+      }
+      
+      if (code) {
+        console.log('✅ Found OAuth code:', code.substring(0, 20) + '...');
+        try {
+          const { error: exchangeError } = await supabaseClient.auth.exchangeCodeForSession(window.location.href);
+          
+          if (exchangeError) {
+            console.error('❌ Exchange code error:', exchangeError);
+            return false;
+          }
+          console.log('✅ Successfully exchanged code for session');
+        } catch (e) {
+          console.error('❌ Exchange code exception:', e);
+          return false;
+        }
+      } else {
+        console.log('⏳ No OAuth code in URL');
+      }
+      
+      // Clean URL (remove code parameter)
+      console.log('🧹 Cleaning URL...');
       window.history.replaceState({}, document.title, window.location.pathname);
 
-      // Get session
-      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      // Get current session
+      console.log('🔍 Getting session from Supabase...');
+      let session = null;
+      try {
+        const { data: { session: currentSession }, error: getError } = await supabaseClient.auth.getSession();
+        
+        if (getError) {
+          console.error('❌ Get session error:', getError);
+          throw getError;
+        }
+        
+        session = currentSession;
+        console.log('📊 Session result:', session ? 'FOUND ✅' : 'NOT FOUND ❌');
+      } catch (e) {
+        console.error('❌ Get session exception:', e);
+        return false;
+      }
 
-      if (error) throw error;
-
+      // Check if user is logged in
       if (session && session.user) {
+        console.log('✅ SESSION FOUND!');
+        console.log('👤 User Email:', session.user.email);
+        console.log('🔑 User ID:', session.user.id);
+        
         appState.currentUser = session.user;
+        console.log('📝 Updated appState.currentUser');
+        
+        console.log('🎨 Showing dashboard...');
         showDashboard();
+        
+        console.log('📋 Updating header...');
         updateHeader();
+        
+        console.log('📚 Loading documents...');
         await loadDocuments();
+        
+        console.log('✅ ===== SESSION CHECK SUCCESS =====');
         return true;
+      } else {
+        console.log('⏳ No active session - user needs to login');
+        console.log('✅ ===== SESSION CHECK COMPLETE (NO SESSION) =====');
       }
 
       return false;
 
     } catch (error) {
-      console.error('Session check error:', error);
+      console.error('❌ SESSION CHECK ERROR:', error);
+      console.error('Error message:', error.message);
+      console.error('Full error:', error);
       return false;
     }
   }
@@ -1618,6 +1728,18 @@
     if (!await initSupabase()) {
       return;
     }
+
+    // Listen for auth state changes
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      console.log('🔔 Auth state changed:', event, 'Session:', session ? 'YES' : 'NO');
+      
+      if (session && session.user) {
+        console.log('✅ User authenticated:', session.user.email);
+        appState.currentUser = session.user;
+        showDashboard();
+        updateHeader();
+      }
+    });
 
     // Check session
     const hasSession = await checkSession();
