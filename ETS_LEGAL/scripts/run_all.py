@@ -86,6 +86,10 @@ DIRECTIVES = [
         "celex": "32018R2066",
         "title": "Commission Implementing Regulation (EU) 2018/2066",
     },
+ {
+        "celex": "32018R2067",
+        "title": "Commission Implementing Regulation (EU) 2018/2067",
+    },
  
 ]
  
