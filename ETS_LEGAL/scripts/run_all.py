@@ -82,6 +82,11 @@ DIRECTIVES = [
         "celex": "32023L0959",
         "title": "ETS2 Directive 2023/959/EU (buildings, road transport, maritime)",
     },
+    {
+        "celex": "32018R2066",
+        "title": "Commission Implementing Regulation (EU) 2018/2066",
+    },
+ 
 ]
  
 # ── HTTP helpers ──────────────────────────────────────────────────────────────
