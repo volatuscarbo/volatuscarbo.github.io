@@ -609,13 +609,13 @@
 
 <!-- Contract Modal -->
 <div class="modal-overlay" id="contract-modal">
-  <div class="modal">
+  <div class="modal modal-lg">
     <div class="modal-header">
       <h2 id="contract-modal-title">New Contract</h2>
       <button class="modal-close" onclick="closeModal('contract-modal')">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-grid">
+      <div class="form-grid cols-3">
         <div class="form-group full">
           <label>Operator *</label>
           <select id="c-operator"><option value="">Select operator…</option></select>
@@ -624,18 +624,47 @@
           <label>Agreement Date *</label>
           <input type="date" id="c-agreement-date"/>
         </div>
-        <div class="form-group">
+        <div class="form-group full" style="grid-column: 2 / -1;">
           <label>Agreement Reference</label>
-          <input type="text" id="c-reference" placeholder="Verification Auditing Services…"/>
+          <input type="text" id="c-reference" placeholder="Verification Auditing Services Extension Agreement"/>
         </div>
+
+        <!-- Validity period -->
+        <div class="form-group">
+          <label>Start Year *</label>
+          <input type="number" id="c-start-year" min="2000" max="2099" placeholder="e.g. 2025" oninput="updateContractYearDisplay()"/>
+        </div>
+        <div class="form-group">
+          <label>Duration (years) *</label>
+          <input type="number" id="c-duration" min="1" max="10" value="1" oninput="updateContractYearDisplay()"/>
+        </div>
+        <div class="form-group">
+          <label>Valid Period</label>
+          <input type="text" id="c-year-display" readonly style="background:#f5f5f5; color:var(--text-muted); font-weight:600;" placeholder="–"/>
+        </div>
+
         <div class="form-group full">
           <label>Notes</label>
-          <textarea id="c-notes" style="min-height:60px;"></textarea>
+          <textarea id="c-notes" style="min-height:56px;"></textarea>
         </div>
+
+        <!-- Scheme values -->
         <div class="form-group full">
-          <label>Coverage (Scheme + Year combinations)</label>
-          <div id="coverage-builder" style="margin-top:6px;"></div>
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="addCoverageRow()">+ Add Coverage</button>
+          <label>Schemes &amp; Values</label>
+          <div style="background:#fafbfc; border:1px solid var(--border); border-radius:6px; padding:12px; margin-top:6px;">
+            <div style="display:grid; grid-template-columns:2fr 1fr auto; gap:8px; margin-bottom:8px; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px;">
+              <span>Scheme</span><span>Value (EUR)</span><span></span>
+            </div>
+            <div id="coverage-builder"></div>
+            <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="addCoverageRow()">+ Add Scheme</button>
+          </div>
+        </div>
+
+        <!-- Total value (auto-calculated) -->
+        <div class="form-group full" style="display:flex; align-items:center; justify-content:flex-end; gap:16px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:6px; padding:12px 16px;">
+          <span style="font-weight:600; color:var(--accent);">Total Contract Value:</span>
+          <span id="c-total-display" style="font-size:20px; font-weight:700; color:var(--accent);">€ 0,00</span>
+          <input type="hidden" id="c-total-value"/>
         </div>
       </div>
     </div>
@@ -939,13 +968,22 @@ async function checkContract() {
   const year   = parseInt(document.getElementById('f-audit-year').value);
   const alertEl = document.getElementById('audit-contract-alert');
   if (!opId || !scheme || !year) { alertEl.innerHTML = ''; return; }
-  const { data } = await db.from('contract_coverage')
-    .select('coverage_id, contract:contract_id(operator_id, active)')
-    .eq('scheme', scheme).eq('valid_year', year);
-  const valid = (data || []).some(c => c.contract?.operator_id === opId && c.contract?.active);
+
+  // Load active contracts for this operator that cover this scheme
+  const { data } = await db.from('contract')
+    .select('contract_id, start_year, duration, contract_coverage(scheme)')
+    .eq('operator_id', opId)
+    .eq('active', true);
+
+  const valid = (data || []).some(c => {
+    const inRange = c.start_year <= year && year < (c.start_year + c.duration);
+    const hasScheme = (c.contract_coverage || []).some(cv => cv.scheme === scheme);
+    return inRange && hasScheme;
+  });
+
   if (valid) { alertEl.innerHTML = ''; }
   else {
-    alertEl.innerHTML = `<div class="alert alert-warning">⚠ No active contract found for this operator / scheme / year combination. The audit can still be saved, but please verify the contract situation.</div>`;
+    alertEl.innerHTML = `<div class="alert alert-warning">⚠ No active contract found for this operator / scheme / year. The audit can still be saved, but please verify the contract situation.</div>`;
   }
 }
 
@@ -1205,36 +1243,67 @@ function downloadInvoicePDF() {
 
 // ── CONTRACTS ─────────────────────────────────────────────
 async function loadContracts() {
-  const { data } = await db.from('contract').select('*, operator:operator_id(operator), contract_coverage(scheme, valid_year)').order('created_at', { ascending: false });
+  const { data } = await db.from('contract')
+    .select('*, operator:operator_id(operator), contract_coverage(scheme, value)')
+    .order('created_at', { ascending: false });
   const el = document.getElementById('contracts-list-container');
   if (!data?.length) { el.innerHTML = '<div class="empty-state"><p>No contracts yet. Add your first contract above.</p></div>'; return; }
   el.innerHTML = `<div class="card"><table class="data-table">
-    <thead><tr><th>Operator</th><th>Agreement Date</th><th>Reference</th><th>Coverage</th><th>Status</th><th style="width:100px"></th></tr></thead>
+    <thead><tr>
+      <th>Operator</th><th>Agreement Date</th><th>Valid Period</th>
+      <th>Schemes &amp; Values</th><th>Total Value</th><th>Status</th><th style="width:90px"></th>
+    </tr></thead>
     <tbody>${data.map(c => {
-      const coverage = (c.contract_coverage || []).sort((a,b) => a.valid_year - b.valid_year);
-      const byScheme = {};
-      coverage.forEach(cv => { if (!byScheme[cv.scheme]) byScheme[cv.scheme] = []; byScheme[cv.scheme].push(cv.valid_year); });
-      const tags = Object.entries(byScheme).map(([s,yrs]) => `<span class="coverage-tag">${s}: ${yrs.join(', ')}</span>`).join('');
+      const endYear = c.start_year && c.duration ? c.start_year + c.duration - 1 : null;
+      const period = c.start_year ? (c.duration > 1 ? `${c.start_year} – ${endYear}` : `${c.start_year}`) : '–';
+      const tags = (c.contract_coverage || []).map(cv =>
+        `<span class="coverage-tag">${cv.scheme}${cv.value ? ': € ' + Number(cv.value).toLocaleString('de-DE', {minimumFractionDigits:2}) : ''}</span>`
+      ).join('');
+      const total = c.total_value ? '€ ' + Number(c.total_value).toLocaleString('de-DE', {minimumFractionDigits:2}) : '–';
       return `<tr>
         <td><strong>${c.operator?.operator || '–'}</strong></td>
         <td>${c.agreement_date ? fmtDate(c.agreement_date) : '–'}</td>
-        <td style="font-size:12px;">${c.agreement_reference || '–'}</td>
+        <td style="font-weight:600;">${period}</td>
         <td><div class="coverage-list">${tags || '<span class="text-muted">–</span>'}</div></td>
+        <td style="font-weight:600; color:var(--accent);">${total}</td>
         <td>${c.active ? '<span class="badge badge-completed">Active</span>' : '<span class="badge badge-cancelled">Inactive</span>'}</td>
-        <td>
-          <button class="btn btn-ghost btn-sm" onclick="editContract('${c.contract_id}')">Edit</button>
-        </td>
+        <td><button class="btn btn-ghost btn-sm" onclick="editContract('${c.contract_id}')">Edit</button></td>
       </tr>`;
     }).join('')}</tbody></table></div>`;
+}
+
+function updateContractYearDisplay() {
+  const start = parseInt(document.getElementById('c-start-year').value);
+  const dur   = parseInt(document.getElementById('c-duration').value) || 1;
+  const disp  = document.getElementById('c-year-display');
+  if (start && dur) {
+    disp.value = dur === 1 ? `${start}` : `${start} – ${start + dur - 1}`;
+  } else { disp.value = ''; }
+}
+
+function recalcTotal() {
+  const rows = [...document.getElementById('coverage-builder').children];
+  const total = rows.reduce((sum, row) => {
+    const val = parseFloat(row.querySelector('input[type="number"]')?.value) || 0;
+    return sum + val;
+  }, 0);
+  document.getElementById('c-total-display').textContent = '€ ' + total.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  document.getElementById('c-total-value').value = total;
 }
 
 function openContractModal() {
   editingContractId = null;
   document.getElementById('contract-modal-title').textContent = 'New Contract';
+  document.getElementById('c-operator').value = '';
   document.getElementById('c-agreement-date').value = '';
   document.getElementById('c-reference').value = 'Verification Auditing Services Extension Agreement';
+  document.getElementById('c-start-year').value = '';
+  document.getElementById('c-duration').value = '1';
+  document.getElementById('c-year-display').value = '';
   document.getElementById('c-notes').value = '';
   document.getElementById('coverage-builder').innerHTML = '';
+  document.getElementById('c-total-display').textContent = '€ 0,00';
+  document.getElementById('c-total-value').value = '0';
   populateContractOperatorDropdown();
   addCoverageRow();
   openModal('contract-modal');
@@ -1250,11 +1319,15 @@ async function editContract(id) {
     document.getElementById('c-operator').value = data.operator_id;
     document.getElementById('c-agreement-date').value = data.agreement_date || '';
     document.getElementById('c-reference').value = data.agreement_reference || '';
+    document.getElementById('c-start-year').value = data.start_year || '';
+    document.getElementById('c-duration').value = data.duration || 1;
     document.getElementById('c-notes').value = data.notes || '';
+    updateContractYearDisplay();
     document.getElementById('coverage-builder').innerHTML = '';
     if (data.contract_coverage?.length) {
-      data.contract_coverage.forEach(cv => addCoverageRow(cv.scheme, cv.valid_year));
+      data.contract_coverage.forEach(cv => addCoverageRow(cv.scheme, cv.value));
     } else { addCoverageRow(); }
+    recalcTotal();
   }, 50);
   openModal('contract-modal');
 }
@@ -1264,32 +1337,38 @@ function populateContractOperatorDropdown() {
   sel.innerHTML = '<option value="">Select operator…</option>' + operatorsCache.map(o => `<option value="${o.operator_id}">${o.operator}</option>`).join('');
 }
 
-function addCoverageRow(scheme = '', year = '') {
+function addCoverageRow(scheme = '', value = '') {
   const div = document.createElement('div');
-  div.style.cssText = 'display:flex;gap:8px;margin-bottom:6px;align-items:center;';
+  div.style.cssText = 'display:grid;grid-template-columns:2fr 1fr auto;gap:8px;margin-bottom:6px;align-items:center;';
   div.innerHTML = `
-    <select style="flex:2;">
-      <option value="">Scheme…</option>
+    <select>
+      <option value="">Select scheme…</option>
       ${SCHEMES.map(s => `<option value="${s}" ${s===scheme?'selected':''}>${s}</option>`).join('')}
     </select>
-    <input type="number" placeholder="Year" min="2020" max="2099" value="${year}" style="flex:1;"/>
-    <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()" style="padding:5px 8px;">✕</button>`;
+    <input type="number" placeholder="0.00" min="0" step="0.01" value="${value || ''}" oninput="recalcTotal()" style="text-align:right;"/>
+    <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove(); recalcTotal();" style="padding:5px 8px;">✕</button>`;
   document.getElementById('coverage-builder').appendChild(div);
 }
 
 async function saveContract() {
-  const operator_id = document.getElementById('c-operator').value;
+  const operator_id   = document.getElementById('c-operator').value;
   const agreement_date = document.getElementById('c-agreement-date').value;
-  if (!operator_id || !agreement_date) { alert('Please select an operator and agreement date.'); return; }
+  const start_year    = parseInt(document.getElementById('c-start-year').value);
+  const duration      = parseInt(document.getElementById('c-duration').value) || 1;
+  const total_value   = parseFloat(document.getElementById('c-total-value').value) || 0;
+
+  if (!operator_id || !agreement_date || !start_year) {
+    alert('Please fill in Operator, Agreement Date and Start Year.'); return;
+  }
 
   const coverageRows = [...document.getElementById('coverage-builder').children].map(row => {
     const sel = row.querySelector('select');
-    const inp = row.querySelector('input');
-    return { scheme: sel?.value, valid_year: parseInt(inp?.value) };
-  }).filter(c => c.scheme && c.valid_year);
+    const inp = row.querySelector('input[type="number"]');
+    return { scheme: sel?.value, value: parseFloat(inp?.value) || null };
+  }).filter(c => c.scheme);
 
   const contractPayload = {
-    operator_id, agreement_date,
+    operator_id, agreement_date, start_year, duration, total_value,
     agreement_reference: document.getElementById('c-reference').value || null,
     notes: document.getElementById('c-notes').value || null,
     active: true
