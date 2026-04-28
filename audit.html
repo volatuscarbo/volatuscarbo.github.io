@@ -738,7 +738,7 @@ async function sendMagicLink() {
   const alertEl = document.getElementById('auth-alert');
   if (!email) { alertEl.innerHTML = '<div class="alert alert-danger">Please enter your email address.</div>'; return; }
   alertEl.innerHTML = '';
-  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: 'https://volatuscarbo.github.io/' } });
+  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: 'https://volatuscarbo.com/audit.html' } });
   if (error) { alertEl.innerHTML = `<div class="alert alert-danger">${error.message}</div>`; return; }
   document.getElementById('auth-success').style.display = 'block';
 }
