@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ETSverification – Audit Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --primary-light: #2c5282;
+    --accent: #2e7d32;
+    --accent-light: #43a047;
+    --danger: #c62828;
+    --warning: #e65100;
+    --warning-bg: #fff3e0;
+    --bg: #f4f6f9;
+    --surface: #ffffff;
+    --border: #dde1e7;
+    --text: #1a202c;
+    --text-muted: #64748b;
+    --sidebar-w: 220px;
+    --radius: 8px;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+  /* ── AUTH ── */
+  #auth-screen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--primary) 0%, #2d6a9f 100%);
+  }
+  .auth-card {
+    background: var(--surface); border-radius: 16px; padding: 48px 40px;
+    width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    text-align: center;
+  }
+  .auth-logo { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+  .auth-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
+  .auth-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .auth-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+
+  /* ── LAYOUT ── */
+  #app { display: flex; min-height: 100vh; }
+  aside {
+    width: var(--sidebar-w); background: var(--primary); color: #fff;
+    display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-brand {
+    padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-brand .brand-name { font-size: 13px; font-weight: 700; letter-spacing: .5px; opacity: .95; }
+  .sidebar-brand .brand-sub { font-size: 11px; opacity: .55; margin-top: 2px; }
+  nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+  nav a {
+    display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+    color: rgba(255,255,255,.75); text-decoration: none; font-size: 13px;
+    border-left: 3px solid transparent; transition: all .15s;
+  }
+  nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+  nav a.active { background: rgba(255,255,255,.12); color: #fff; border-left-color: #64b5f6; }
+  nav a svg { flex-shrink: 0; opacity: .8; }
+  .sidebar-footer {
+    padding: 12px 16px; border-top: 1px solid rgba(255,255,255,.1);
+    font-size: 11px; opacity: .5;
+  }
+  .logout-btn {
+    width: 100%; background: none; border: none; color: rgba(255,255,255,.6);
+    padding: 9px 16px; text-align: left; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logout-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+  main {
+    margin-left: var(--sidebar-w); flex: 1; padding: 28px 32px;
+    min-height: 100vh;
+  }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .card-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-body { padding: 20px; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+  .stat-value { font-size: 28px; font-weight: 700; margin-top: 4px; color: var(--primary); }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 6px; border: none;
+    cursor: pointer; font-size: 13px; font-weight: 500; transition: all .15s;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-success { background: var(--accent); color: #fff; }
+  .btn-success:hover { background: var(--accent-light); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { opacity: .85; }
+  .btn-ghost { background: transparent; color: var(--primary); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  /* ── FORMS ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; }
+  input, select, textarea {
+    padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 14px; background: var(--surface); color: var(--text);
+    transition: border-color .15s; width: 100%;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(44,82,130,.1);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+  /* ── AUDIT LIST ── */
+  .filters-bar {
+    display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+  }
+  .filters-bar select, .filters-bar input { width: auto; min-width: 140px; }
+  .filters-bar .spacer { flex: 1; }
+
+  .audit-list { display: flex; flex-direction: column; gap: 10px; }
+  .audit-item {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; display: grid;
+    grid-template-columns: 2fr 1fr 80px 80px 110px 1fr auto;
+    align-items: center; gap: 12px; transition: box-shadow .15s;
+  }
+  .audit-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+  .audit-item .op-name { font-weight: 600; font-size: 14px; }
+  .audit-item .op-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .audit-actions { display: flex; gap: 6px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block; padding: 3px 9px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+  .badge-planned   { background: #e3f2fd; color: #1565c0; }
+  .badge-progress  { background: #fff8e1; color: #e65100; }
+  .badge-completed { background: #e8f5e9; color: #2e7d32; }
+  .badge-cancelled { background: #fce4ec; color: #c62828; }
+  .badge-invoiced  { background: #e8f5e9; color: #2e7d32; }
+  .badge-noinvoice { background: #f5f5f5; color: #757575; }
+  .badge-eu-ets    { background: #e8eaf6; color: #283593; }
+  .badge-corsia    { background: #e0f2f1; color: #00695c; }
+  .badge-uk-ets    { background: #fce4ec; color: #880e4f; }
+  .badge-french    { background: #fff3e0; color: #bf360c; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 500; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 12px; width: 100%;
+    max-width: 680px; max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2); animation: slideUp .2s ease;
+  }
+  .modal-lg { max-width: 860px; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header h2 { font-size: 17px; font-weight: 700; }
+  .modal-close { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text-muted); line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+  .modal-body { padding: 24px; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+  /* ── ALERT ── */
+  .alert {
+    padding: 12px 16px; border-radius: 6px; font-size: 13px;
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px;
+  }
+  .alert-warning { background: var(--warning-bg); border: 1px solid #ffcc02; color: var(--warning); }
+  .alert-danger   { background: #ffebee; border: 1px solid #ef9a9a; color: var(--danger); }
+  .alert-success  { background: #e8f5e9; border: 1px solid #a5d6a7; color: var(--accent); }
+  .alert-info     { background: #e3f2fd; border: 1px solid #90caf9; color: #1565c0; }
+
+  /* ── TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted);
+    border-bottom: 2px solid var(--border); background: #fafbfc;
+  }
+  .data-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #f8fafc; }
+
+  /* ── COVERAGE TAGS ── */
+  .coverage-list { display: flex; flex-wrap: wrap; gap: 4px; }
+  .coverage-tag {
+    background: #e8eaf6; color: #283593; border-radius: 4px;
+    padding: 2px 7px; font-size: 11px; font-weight: 500;
+  }
+
+  /* ── REPORT ── */
+  .report-section { margin-bottom: 28px; }
+  .report-section h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .summary-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; text-align: center;
+  }
+  .summary-card .val { font-size: 24px; font-weight: 700; color: var(--primary); }
+  .summary-card .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .5px; }
+
+  /* ── INVOICE PREVIEW ── */
+  #invoice-preview {
+    font-family: Arial, sans-serif; font-size: 11px; line-height: 1.4;
+    color: #000; background: #fff; width: 794px; min-height: 1123px;
+    padding: 40px 50px; margin: 0 auto;
+  }
+  .inv-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; border-bottom: 3px solid #1a3a5c; padding-bottom: 16px; }
+  .inv-logo-text { font-size: 18px; font-weight: 900; color: #1a3a5c; }
+  .inv-logo-text span { color: #2e7d32; }
+  .inv-logo-sub { font-size: 9px; color: #888; margin-top: 2px; }
+  .inv-logo-right { text-align: right; }
+  .inv-logo-right .ets-mark { font-size: 22px; font-weight: 900; line-height: 1.1; }
+  .inv-logo-right .ets-mark .e { color: #1a3a5c; }
+  .inv-logo-right .ets-mark .t { color: #2e7d32; }
+  .inv-logo-right .ets-v { color: #888; font-size: 13px; font-weight: 700; }
+  .inv-address-row { display: flex; justify-content: space-between; margin-bottom: 28px; }
+  .inv-client { font-size: 12px; line-height: 1.6; }
+  .inv-client strong { font-size: 13px; }
+  .inv-box {
+    border: 1.5px solid #1a3a5c; padding: 14px 18px; border-radius: 4px;
+    min-width: 260px; font-size: 11px; line-height: 1.7;
+  }
+  .inv-box h3 { font-size: 16px; margin-bottom: 6px; color: #1a3a5c; }
+  .inv-service-bar {
+    background: #1a3a5c; color: #fff; padding: 8px 12px;
+    display: flex; justify-content: space-between; font-weight: 700; font-size: 12px;
+    margin-bottom: 16px; border-radius: 3px;
+  }
+  .inv-ref-line { display: flex; justify-content: space-between; font-weight: 700; font-size: 12px; margin-bottom: 20px; }
+  .inv-body-text { font-size: 11.5px; line-height: 1.7; margin-bottom: 20px; }
+  .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .inv-table th { background: #1a3a5c; color: #fff; padding: 7px 12px; font-size: 11px; text-align: left; }
+  .inv-table th:last-child { text-align: right; }
+  .inv-table td { padding: 7px 12px; border-bottom: 1px solid #ddd; font-size: 11px; }
+  .inv-table td:last-child { text-align: right; }
+  .inv-table tr.total td { border-top: 2px solid #1a3a5c; border-bottom: 2px solid #1a3a5c; font-weight: 700; font-size: 12px; }
+  .inv-payment-note { text-align: center; font-size: 10.5px; color: #555; margin: 8px 0 24px; }
+  .inv-closing { font-size: 12px; line-height: 1.8; margin-bottom: 48px; }
+  .inv-sig { font-size: 11px; }
+  .inv-footer {
+    border-top: 2px solid #1a3a5c; padding-top: 10px; margin-top: 40px;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; font-size: 9.5px; line-height: 1.5;
+  }
+  .inv-footer-col strong { font-size: 10px; color: #1a3a5c; display: block; margin-bottom: 3px; }
+
+  /* ── UTILS ── */
+  .text-muted { color: var(--text-muted); }
+  .text-center { text-align: center; }
+  .mt-4 { margin-top: 16px; }
+  .mt-6 { margin-top: 24px; }
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+  .empty-state svg { opacity: .3; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+  .spinner { border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; width: 24px; height: 24px; animation: spin .7s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay { display: flex; align-items: center; justify-content: center; padding: 48px; }
+
+  /* nav section label */
+  .nav-section { padding: 16px 16px 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,.35); text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ AUTH SCREEN ══════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">✈ ETSverification</div>
+    <div class="auth-sub">Aviation ETS Compliance</div>
+    <h2 class="auth-title">Sign in to Audit Tracker</h2>
+    <p class="auth-desc">Enter your email address and we'll send you a secure magic link to sign in.</p>
+    <div id="auth-alert"></div>
+    <div class="form-group" style="text-align:left; margin-bottom:14px;">
+      <label>Email Address</label>
+      <input type="email" id="auth-email" placeholder="your@etsverification.com" autocomplete="email"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;" onclick="sendMagicLink()">
+      Send Magic Link
+    </button>
+    <div id="auth-success" style="display:none; margin-top:20px;">
+      <div class="alert alert-success">
+        ✓ Magic link sent! Check your email and click the link to sign in.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ APP ══════════════════ -->
+<div id="app" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-brand">
+      <div class="brand-name">✈ ETSverification</div>
+      <div class="brand-sub">Audit Tracker</div>
+    </div>
+    <nav>
+      <div class="nav-section">Main</div>
+      <a href="#" data-page="dashboard" onclick="navigate('dashboard')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="#" data-page="audits" onclick="navigate('audits')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Audits
+      </a>
+      <div class="nav-section">Management</div>
+      <a href="#" data-page="contracts" onclick="navigate('contracts')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Contracts
+      </a>
+      <a href="#" data-page="auditors" onclick="navigate('auditors')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Auditors
+      </a>
+      <a href="#" data-page="operators" onclick="navigate('operators')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+        Operators
+      </a>
+      <div class="nav-section">Reports</div>
+      <a href="#" data-page="report" onclick="navigate('report')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Annual Report
+      </a>
+    </nav>
+    <button class="logout-btn" onclick="signOut()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+    <div class="sidebar-footer" id="user-email-display"></div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page">
+      <div class="page-header">
+        <div><h1>Dashboard</h1><p>Overview of your audit activities</p></div>
+        <button class="btn btn-primary" onclick="openAddAuditModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Audit
+        </button>
+      </div>
+      <div class="stats-row" id="dash-stats">
+        <div class="stat-card"><div class="stat-label">Total Audits</div><div class="stat-value" id="stat-total">–</div><div class="stat-sub">all time</div></div>
+        <div class="stat-card"><div class="stat-label">This Year</div><div class="stat-value" id="stat-year">–</div><div class="stat-sub" id="stat-year-label">–</div></div>
+        <div class="stat-card"><div class="stat-label">Invoiced</div><div class="stat-value" id="stat-invoiced">–</div><div class="stat-sub">this year</div></div>
+        <div class="stat-card"><div class="stat-label">Pending Invoice</div><div class="stat-value" id="stat-pending">–</div><div class="stat-sub">completed, no invoice</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Recent Audits <span class="text-muted" style="font-weight:400;font-size:12px;">last 10</span></div>
+        <div id="dash-recent"></div>
+      </div>
+    </div>
+
+    <!-- AUDITS -->
+    <div id="page-audits" class="page">
+      <div class="page-header">
+        <div><h1>Audits</h1><p>Manage and track all verification audits</p></div>
+        <button class="btn btn-primary" onclick="openAddAuditModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Audit
+        </button>
+      </div>
+      <div class="filters-bar">
+        <select id="filter-year" onchange="loadAudits()"><option value="">All Years</option></select>
+        <select id="filter-scheme" onchange="loadAudits()">
+          <option value="">All Schemes</option>
+          <option>EU-ETS</option><option>CORSIA</option><option>UK-ETS</option><option>French Compensation scheme</option>
+        </select>
+        <select id="filter-status" onchange="loadAudits()">
+          <option value="">All Statuses</option>
+          <option>Planned</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
+        </select>
+        <input type="text" id="filter-search" placeholder="Search operator…" oninput="loadAudits()" style="min-width:180px;"/>
+        <div class="spacer"></div>
+        <span id="audit-count" class="text-muted" style="font-size:12px;"></span>
+      </div>
+      <div id="audit-list-container"></div>
+    </div>
+
+    <!-- CONTRACTS -->
+    <div id="page-contracts" class="page">
+      <div class="page-header">
+        <div><h1>Contracts</h1><p>Manage operator agreements and coverage</p></div>
+        <button class="btn btn-primary" onclick="openContractModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Contract
+        </button>
+      </div>
+      <div id="contracts-list-container"></div>
+    </div>
+
+    <!-- AUDITORS -->
+    <div id="page-auditors" class="page">
+      <div class="page-header">
+        <div><h1>Auditors & Reviewers</h1><p>Manage the team</p></div>
+        <button class="btn btn-primary" onclick="openAuditorModal()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Person
+        </button>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th style="width:100px"></th></tr></thead>
+          <tbody id="auditors-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPERATORS -->
+    <div id="page-operators" class="page">
+      <div class="page-header"><div><h1>Operators</h1><p>Read-only view of registered operators</p></div></div>
+      <div class="card">
+        <table class="data-table">
+          <thead><tr><th>Operator</th><th>Code</th><th>Customer Nr</th><th>Country</th><th>Contact</th></tr></thead>
+          <tbody id="operators-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="page-report" class="page">
+      <div class="page-header">
+        <div><h1>Annual Report</h1><p>Audit summary per year</p></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="report-year" onchange="loadReport()" style="width:auto;"></select>
+          <button class="btn btn-ghost btn-sm" onclick="exportReportExcel()">Export Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="exportReportPDF()">Export PDF</button>
+        </div>
+      </div>
+      <div id="report-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Add/Edit Audit Modal -->
+<div class="modal-overlay" id="audit-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2 id="audit-modal-title">New Audit</h2>
+      <button class="modal-close" onclick="closeModal('audit-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="audit-contract-alert"></div>
+      <div class="form-grid cols-3">
+        <div class="form-group full">
+          <label>Operator *</label>
+          <select id="f-operator" onchange="checkContract()"><option value="">Select operator…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Scheme *</label>
+          <select id="f-scheme" onchange="checkContract()">
+            <option value="">Select scheme…</option>
+            <option>EU-ETS</option><option>CORSIA</option><option>UK-ETS</option><option>French Compensation scheme</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Audit Year *</label>
+          <input type="number" id="f-audit-year" min="2000" max="2099" placeholder="e.g. 2025" oninput="checkContract()"/>
+        </div>
+        <div class="form-group">
+          <label>Version</label>
+          <input type="number" id="f-version" min="1" value="1"/>
+        </div>
+        <div class="form-group">
+          <label>Audit Date</label>
+          <input type="date" id="f-audit-date"/>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option>Planned</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Auditor</label>
+          <select id="f-auditor"><option value="">Select auditor…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Reviewer</label>
+          <select id="f-reviewer"><option value="">Select reviewer…</option></select>
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="f-notes" placeholder="Additional remarks…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('audit-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAudit()">Save Audit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice Modal -->
+<div class="modal-overlay" id="invoice-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h2>Create Invoice</h2>
+      <button class="modal-close" onclick="closeModal('invoice-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Invoice Amount (EUR)</label>
+          <input type="number" id="inv-amount" step="0.01" placeholder="e.g. 2000.00"/>
+        </div>
+        <div class="form-group">
+          <label>Invoice Date</label>
+          <input type="date" id="inv-date"/>
+        </div>
+        <div class="form-group full">
+          <label>Service Description (auto-filled)</label>
+          <input type="text" id="inv-service-desc" placeholder="Full Year Audit of 2025 CORSIA AEm Reports"/>
+        </div>
+        <div class="form-group">
+          <label>Agreement Reference</label>
+          <input type="text" id="inv-agreement-ref" placeholder="Verification Auditing Services Extension Agreement"/>
+        </div>
+        <div class="form-group">
+          <label>Agreement Date</label>
+          <input type="date" id="inv-agreement-date"/>
+        </div>
+        <div class="form-group">
+          <label>Invoice Year (issue year)</label>
+          <input type="number" id="inv-year" placeholder="2026"/>
+        </div>
+        <div class="form-group">
+          <label>Invoice Number (auto-generated)</label>
+          <input type="text" id="inv-number" readonly style="background:#f5f5f5;"/>
+        </div>
+      </div>
+      <div class="alert alert-info mt-4" style="margin-bottom:0;">
+        ℹ After saving, the invoice PDF will be generated automatically.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('invoice-modal')">Cancel</button>
+      <button class="btn btn-success" onclick="saveInvoice()">Generate Invoice &amp; PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Invoice PDF Preview Modal -->
+<div class="modal-overlay" id="pdf-modal">
+  <div class="modal" style="max-width:860px;">
+    <div class="modal-header">
+      <h2>Invoice Preview</h2>
+      <button class="modal-close" onclick="closeModal('pdf-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0; overflow:auto;">
+      <div id="invoice-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('pdf-modal')">Close</button>
+      <button class="btn btn-primary" onclick="downloadInvoicePDF()">Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contract Modal -->
+<div class="modal-overlay" id="contract-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="contract-modal-title">New Contract</h2>
+      <button class="modal-close" onclick="closeModal('contract-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Operator *</label>
+          <select id="c-operator"><option value="">Select operator…</option></select>
+        </div>
+        <div class="form-group">
+          <label>Agreement Date *</label>
+          <input type="date" id="c-agreement-date"/>
+        </div>
+        <div class="form-group">
+          <label>Agreement Reference</label>
+          <input type="text" id="c-reference" placeholder="Verification Auditing Services…"/>
+        </div>
+        <div class="form-group full">
+          <label>Notes</label>
+          <textarea id="c-notes" style="min-height:60px;"></textarea>
+        </div>
+        <div class="form-group full">
+          <label>Coverage (Scheme + Year combinations)</label>
+          <div id="coverage-builder" style="margin-top:6px;"></div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="addCoverageRow()">+ Add Coverage</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('contract-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContract()">Save Contract</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auditor Modal -->
+<div class="modal-overlay" id="auditor-modal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 id="auditor-modal-title">Add Person</h2>
+      <button class="modal-close" onclick="closeModal('auditor-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Full Name *</label>
+          <input type="text" id="aud-name" placeholder="e.g. Guido Harling"/>
+        </div>
+        <div class="form-group full">
+          <label>Email *</label>
+          <input type="email" id="aud-email" placeholder="e.g. guido@etsverification.com"/>
+        </div>
+        <div class="form-group full">
+          <label>Role *</label>
+          <select id="aud-role">
+            <option value="auditor">Auditor</option>
+            <option value="reviewer">Reviewer</option>
+            <option value="both">Both</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('auditor-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAuditor()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header"><h2 id="confirm-title">Confirm</h2><button class="modal-close" onclick="closeModal('confirm-modal')">✕</button></div>
+    <div class="modal-body"><p id="confirm-message"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('confirm-modal')">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SCRIPT ══════════════════ -->
+<script>
+const SUPABASE_URL = 'https://jogkaopvrchcjplaxjpx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_MlQCKnmxeXbQADBvt2IZHQ_0ybhllTR';
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const SCHEMES = ['EU-ETS','CORSIA','UK-ETS','French Compensation scheme'];
+let currentUser = null;
+let editingAuditId = null;
+let editingContractId = null;
+let editingAuditorId = null;
+let currentInvoiceAudit = null;
+let currentInvoiceData = null;
+let operatorsCache = [];
+let auditorsCache = [];
+
+// ── INIT ──────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  const { data: { session } } = await db.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    showApp();
+  } else {
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      currentUser = session.user;
+      document.getElementById('auth-screen').style.display = 'none';
+      showApp();
+    }
+    if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+  });
+});
+
+async function sendMagicLink() {
+  const email = document.getElementById('auth-email').value.trim();
+  const alertEl = document.getElementById('auth-alert');
+  if (!email) { alertEl.innerHTML = '<div class="alert alert-danger">Please enter your email address.</div>'; return; }
+  alertEl.innerHTML = '';
+  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: 'https://volatuscarbo.github.io/' } });
+  if (error) { alertEl.innerHTML = `<div class="alert alert-danger">${error.message}</div>`; return; }
+  document.getElementById('auth-success').style.display = 'block';
+}
+
+async function signOut() {
+  await db.auth.signOut();
+}
+
+async function showApp() {
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('user-email-display').textContent = currentUser?.email || '';
+  await Promise.all([loadOperatorsCache(), loadAuditorsCache()]);
+  navigate('dashboard');
+}
+
+// ── NAVIGATION ────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(`page-${page}`)?.classList.add('active');
+  document.querySelector(`nav a[data-page="${page}"]`)?.classList.add('active');
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'audits') { populateYearFilter(); loadAudits(); }
+  if (page === 'contracts') loadContracts();
+  if (page === 'auditors') loadAuditors();
+  if (page === 'operators') loadOperatorsPage();
+  if (page === 'report') { populateReportYears(); loadReport(); }
+}
+
+// ── CACHE LOADERS ─────────────────────────────────────────
+async function loadOperatorsCache() {
+  const { data } = await db.from('operator').select('operator_id, operator, operator_code, internal_number_code, operator_address, operator_country, operator_contact_person').order('operator');
+  operatorsCache = data || [];
+}
+async function loadAuditorsCache() {
+  const { data } = await db.from('auditor').select('*').eq('active', true).order('auditor_name');
+  auditorsCache = data || [];
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────
+async function loadDashboard() {
+  const year = new Date().getFullYear();
+  const { data: all } = await db.from('audit').select('*, operator:operator_id(operator), invoice:invoice_id(invoice_id)').order('created_at', { ascending: false });
+  if (!all) return;
+  const thisYear = all.filter(a => a.audit_year == year);
+  const invoiced = thisYear.filter(a => a.invoice_id);
+  const pending = all.filter(a => !a.invoice_id && a.status === 'Completed');
+  document.getElementById('stat-total').textContent = all.length;
+  document.getElementById('stat-year').textContent = thisYear.length;
+  document.getElementById('stat-year-label').textContent = `audits for ${year}`;
+  document.getElementById('stat-invoiced').textContent = invoiced.length;
+  document.getElementById('stat-pending').textContent = pending.length;
+  const recent = all.slice(0, 10);
+  renderAuditRows(recent, 'dash-recent');
+}
+
+// ── AUDITS ────────────────────────────────────────────────
+function populateYearFilter() {
+  const sel = document.getElementById('filter-year');
+  const cur = new Date().getFullYear();
+  sel.innerHTML = '<option value="">All Years</option>';
+  for (let y = cur + 1; y >= cur - 5; y--) sel.innerHTML += `<option value="${y}">${y}</option>`;
+}
+
+async function loadAudits() {
+  const year   = document.getElementById('filter-year')?.value;
+  const scheme = document.getElementById('filter-scheme')?.value;
+  const status = document.getElementById('filter-status')?.value;
+  const search = document.getElementById('filter-search')?.value?.toLowerCase();
+
+  let q = db.from('audit').select('*, operator:operator_id(operator, internal_number_code), auditor:auditor_id(auditor_name), reviewer:reviewer_id(auditor_name), invoice:invoice_id(invoice_id, invoice_number)').order('created_at', { ascending: false });
+  if (year) q = q.eq('audit_year', year);
+  if (scheme) q = q.eq('scheme', scheme);
+  if (status) q = q.eq('status', status);
+
+  const { data, error } = await q;
+  if (error) { console.error(error); return; }
+  let rows = data || [];
+  if (search) rows = rows.filter(a => a.operator?.operator?.toLowerCase().includes(search));
+  document.getElementById('audit-count').textContent = `${rows.length} audit${rows.length !== 1 ? 's' : ''}`;
+  renderAuditRows(rows, 'audit-list-container');
+}
+
+function renderAuditRows(rows, containerId) {
+  const el = document.getElementById(containerId);
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty-state"><svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><p>No audits found</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="audit-list">' + rows.map(a => {
+    const schemeCls = { 'EU-ETS':'eu-ets','CORSIA':'corsia','UK-ETS':'uk-ets','French Compensation scheme':'french' }[a.scheme] || '';
+    const statusCls = { 'Planned':'planned','In Progress':'progress','Completed':'completed','Cancelled':'cancelled' }[a.status] || '';
+    const invBadge = a.invoice_id
+      ? `<span class="badge badge-invoiced">Invoiced</span>`
+      : `<span class="badge badge-noinvoice">No Invoice</span>`;
+    return `<div class="audit-item">
+      <div>
+        <div class="op-name">${a.operator?.operator || '–'}</div>
+        <div class="op-meta">v${a.version} · ${a.auditor?.auditor_name || '–'} / ${a.reviewer?.auditor_name || '–'}</div>
+      </div>
+      <span class="badge badge-${schemeCls}">${a.scheme}</span>
+      <span style="font-weight:600;">${a.audit_year}</span>
+      <span class="badge badge-${statusCls}">${a.status}</span>
+      ${invBadge}
+      <span class="text-muted" style="font-size:12px;">${a.audit_date ? fmtDate(a.audit_date) : '–'}</span>
+      <div class="audit-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editAudit('${a.audit_id}')" title="Edit">✎</button>
+        <button class="btn btn-ghost btn-sm" onclick="copyAudit('${a.audit_id}')" title="Copy">⧉</button>
+        ${!a.invoice_id && a.status !== 'Cancelled' ? `<button class="btn btn-success btn-sm" onclick="openInvoiceModal('${a.audit_id}')" title="Create Invoice">€</button>` : ''}
+        ${a.invoice_id ? `<button class="btn btn-ghost btn-sm" onclick="viewInvoice('${a.audit_id}')" title="View Invoice">📄</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="confirmCancelAudit('${a.audit_id}')" title="Cancel">✕</button>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function openAddAuditModal() {
+  editingAuditId = null;
+  document.getElementById('audit-modal-title').textContent = 'New Audit';
+  document.getElementById('f-operator').value = '';
+  document.getElementById('f-scheme').value = '';
+  document.getElementById('f-audit-year').value = '';
+  document.getElementById('f-version').value = '1';
+  document.getElementById('f-audit-date').value = '';
+  document.getElementById('f-status').value = 'Planned';
+  document.getElementById('f-notes').value = '';
+  document.getElementById('audit-contract-alert').innerHTML = '';
+  populateAuditFormDropdowns();
+  openModal('audit-modal');
+}
+
+async function editAudit(id) {
+  const { data } = await db.from('audit').select('*').eq('audit_id', id).single();
+  if (!data) return;
+  editingAuditId = id;
+  document.getElementById('audit-modal-title').textContent = 'Edit Audit';
+  populateAuditFormDropdowns();
+  setTimeout(() => {
+    document.getElementById('f-operator').value = data.operator_id || '';
+    document.getElementById('f-scheme').value = data.scheme || '';
+    document.getElementById('f-audit-year').value = data.audit_year || '';
+    document.getElementById('f-version').value = data.version || 1;
+    document.getElementById('f-audit-date').value = data.audit_date || '';
+    document.getElementById('f-status').value = data.status || 'Planned';
+    document.getElementById('f-auditor').value = data.auditor_id || '';
+    document.getElementById('f-reviewer').value = data.reviewer_id || '';
+    document.getElementById('f-notes').value = data.notes || '';
+    checkContract();
+  }, 50);
+  openModal('audit-modal');
+}
+
+function populateAuditFormDropdowns() {
+  const opSel = document.getElementById('f-operator');
+  opSel.innerHTML = '<option value="">Select operator…</option>' + operatorsCache.map(o => `<option value="${o.operator_id}">${o.operator}</option>`).join('');
+  const audSel = document.getElementById('f-auditor');
+  const revSel = document.getElementById('f-reviewer');
+  const audOpts = '<option value="">– None –</option>' + auditorsCache.filter(a => a.role === 'auditor' || a.role === 'both').map(a => `<option value="${a.auditor_id}">${a.auditor_name}</option>`).join('');
+  const revOpts = '<option value="">– None –</option>' + auditorsCache.filter(a => a.role === 'reviewer' || a.role === 'both').map(a => `<option value="${a.auditor_id}">${a.auditor_name}</option>`).join('');
+  audSel.innerHTML = audOpts;
+  revSel.innerHTML = revOpts;
+}
+
+async function checkContract() {
+  const opId   = document.getElementById('f-operator').value;
+  const scheme = document.getElementById('f-scheme').value;
+  const year   = parseInt(document.getElementById('f-audit-year').value);
+  const alertEl = document.getElementById('audit-contract-alert');
+  if (!opId || !scheme || !year) { alertEl.innerHTML = ''; return; }
+  const { data } = await db.from('contract_coverage')
+    .select('coverage_id, contract:contract_id(operator_id, active)')
+    .eq('scheme', scheme).eq('valid_year', year);
+  const valid = (data || []).some(c => c.contract?.operator_id === opId && c.contract?.active);
+  if (valid) { alertEl.innerHTML = ''; }
+  else {
+    alertEl.innerHTML = `<div class="alert alert-warning">⚠ No active contract found for this operator / scheme / year combination. The audit can still be saved, but please verify the contract situation.</div>`;
+  }
+}
+
+async function saveAudit() {
+  const operator_id = document.getElementById('f-operator').value;
+  const scheme      = document.getElementById('f-scheme').value;
+  const audit_year  = parseInt(document.getElementById('f-audit-year').value);
+  const version     = parseInt(document.getElementById('f-version').value) || 1;
+  if (!operator_id || !scheme || !audit_year) { alert('Please fill in Operator, Scheme and Audit Year.'); return; }
+
+  const payload = {
+    operator_id, scheme, audit_year, version,
+    audit_date:  document.getElementById('f-audit-date').value || null,
+    status:      document.getElementById('f-status').value,
+    auditor_id:  document.getElementById('f-auditor').value || null,
+    reviewer_id: document.getElementById('f-reviewer').value || null,
+    notes:       document.getElementById('f-notes').value || null,
+  };
+
+  let error;
+  if (editingAuditId) {
+    ({ error } = await db.from('audit').update(payload).eq('audit_id', editingAuditId));
+  } else {
+    // check unique
+    const { data: existing } = await db.from('audit').select('audit_id')
+      .eq('operator_id', operator_id).eq('scheme', scheme).eq('audit_year', audit_year).eq('version', version);
+    if (existing?.length) { alert(`An audit for this operator, scheme, year and version already exists.`); return; }
+    ({ error } = await db.from('audit').insert(payload));
+  }
+  if (error) { alert(`Error: ${error.message}`); return; }
+  closeModal('audit-modal');
+  if (document.getElementById('page-audits').classList.contains('active')) loadAudits();
+  if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
+}
+
+async function copyAudit(id) {
+  const { data } = await db.from('audit').select('*').eq('audit_id', id).single();
+  if (!data) return;
+  const newVersion = data.version + 1;
+  const { data: existing } = await db.from('audit').select('audit_id')
+    .eq('operator_id', data.operator_id).eq('scheme', data.scheme).eq('audit_year', data.audit_year).eq('version', newVersion);
+  if (existing?.length) { alert(`Version ${newVersion} already exists for this audit.`); return; }
+  const { error } = await db.from('audit').insert({
+    operator_id: data.operator_id, scheme: data.scheme, audit_year: data.audit_year,
+    version: newVersion, audit_date: data.audit_date, status: 'Planned',
+    auditor_id: data.auditor_id, reviewer_id: data.reviewer_id, notes: data.notes,
+    invoice_id: null
+  });
+  if (error) { alert(`Error: ${error.message}`); return; }
+  loadAudits();
+}
+
+function confirmCancelAudit(id) {
+  showConfirm('Cancel Audit', 'Mark this audit as Cancelled? This cannot be undone easily.', async () => {
+    await db.from('audit').update({ status: 'Cancelled' }).eq('audit_id', id);
+    loadAudits();
+  });
+}
+
+// ── INVOICE ───────────────────────────────────────────────
+async function openInvoiceModal(auditId) {
+  const { data: audit } = await db.from('audit').select('*, operator:operator_id(*), contract:contract_id(agreement_date, agreement_reference)').eq('audit_id', auditId).single();
+  if (!audit) return;
+  currentInvoiceAudit = audit;
+
+  const today = new Date();
+  const invYear = today.getFullYear();
+  // auto-generate invoice number
+  const { data: numData } = await db.rpc('get_next_invoice_number', { inv_year: invYear });
+
+  document.getElementById('inv-amount').value = '';
+  document.getElementById('inv-date').value = today.toISOString().split('T')[0];
+  document.getElementById('inv-year').value = invYear;
+  document.getElementById('inv-number').value = numData || `FA ${invYear} - 01`;
+  document.getElementById('inv-service-desc').value = `Full Year Audit of ${audit.audit_year} ${audit.scheme} AEm Reports`;
+  document.getElementById('inv-agreement-ref').value = audit.contract?.agreement_reference || 'Verification Auditing Services Extension Agreement';
+  document.getElementById('inv-agreement-date').value = audit.contract?.agreement_date || '';
+  openModal('invoice-modal');
+}
+
+async function saveInvoice() {
+  const amount = parseFloat(document.getElementById('inv-amount').value);
+  const invDate = document.getElementById('inv-date').value;
+  const invYear = parseInt(document.getElementById('inv-year').value);
+  const invNumber = document.getElementById('inv-number').value;
+  const serviceDesc = document.getElementById('inv-service-desc').value;
+  const agreementRef = document.getElementById('inv-agreement-ref').value;
+  const agreementDate = document.getElementById('inv-agreement-date').value;
+
+  if (!amount || !invDate) { alert('Please fill in Amount and Invoice Date.'); return; }
+
+  const { data: inv, error } = await db.from('invoice').insert({
+    operator_id: currentInvoiceAudit.operator_id,
+    year: invYear,
+    monitored_year: currentInvoiceAudit.audit_year,
+    invoice_number: invNumber,
+    invoice_date: invDate,
+    invoice_amount: amount.toString(),
+    invoice_paid_amount: '0',
+    invoice_status: 'Draft'
+  }).select().single();
+
+  if (error) { alert(`Error creating invoice: ${error.message}`); return; }
+
+  // link invoice to audit
+  await db.from('audit').update({ invoice_id: inv.invoice_id }).eq('audit_id', currentInvoiceAudit.audit_id);
+
+  currentInvoiceData = {
+    ...inv, amount, serviceDesc, agreementRef, agreementDate,
+    operator: currentInvoiceAudit.operator,
+    auditYear: currentInvoiceAudit.audit_year,
+    scheme: currentInvoiceAudit.scheme
+  };
+
+  closeModal('invoice-modal');
+  renderInvoicePreview(currentInvoiceData);
+  openModal('pdf-modal');
+  if (document.getElementById('page-audits').classList.contains('active')) loadAudits();
+  if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
+}
+
+async function viewInvoice(auditId) {
+  const { data: audit } = await db.from('audit').select('*, operator:operator_id(*), invoice:invoice_id(*)').eq('audit_id', auditId).single();
+  if (!audit?.invoice) return;
+  const inv = audit.invoice;
+  currentInvoiceData = {
+    ...inv,
+    amount: parseFloat(inv.invoice_amount),
+    serviceDesc: `Full Year Audit of ${audit.audit_year} ${audit.scheme} AEm Reports`,
+    agreementRef: 'Verification Auditing Services Extension Agreement',
+    agreementDate: null,
+    operator: audit.operator,
+    auditYear: audit.audit_year,
+    scheme: audit.scheme
+  };
+  renderInvoicePreview(currentInvoiceData);
+  openModal('pdf-modal');
+}
+
+function renderInvoicePreview(d) {
+  const op = d.operator || {};
+  const fmtEur = v => v ? Number(v).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0,00';
+  const fmtInvDate = s => {
+    if (!s) return '';
+    const dt = new Date(s);
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  const agDate = d.agreementDate ? new Date(d.agreementDate).toLocaleDateString('de-DE') : '';
+  const agLine = d.agreementRef ? `${d.agreementRef}${agDate ? ' dated (' + agDate + ')' : ''}` : '';
+
+  document.getElementById('invoice-preview').innerHTML = `
+  <div id="invoice-preview">
+    <div class="inv-header">
+      <div>
+        <div class="inv-logo-text">&#9992; Aviation <span>ETS</span> Compliance</div>
+        <div class="inv-logo-sub">www.ETSVerification.com</div>
+      </div>
+      <div class="inv-logo-right">
+        <div class="ets-mark">
+          <span class="e">E</span>mission<br>
+          <span class="t">T</span>rading<br>
+          <span class="e">S</span>cheme
+        </div>
+        <div class="inv-ets-v">&#10003; erification</div>
+      </div>
+    </div>
+
+    <div class="inv-address-row">
+      <div class="inv-client">
+        <strong>${op.operator || ''}</strong><br>
+        ${op.operator_address ? op.operator_address + '<br>' : ''}
+        ${op.operator_country || ''}
+      </div>
+      <div class="inv-box">
+        <h3>Invoice</h3>
+        Invoice-Number: &nbsp;<strong>${d.invoice_number || ''}</strong><br>
+        Customer-Nr: &nbsp;${op.internal_number_code || ''}<br>
+        Date of Issue: &nbsp;${fmtInvDate(d.invoice_date)}<br>
+        Reverse charge for VAT
+      </div>
+    </div>
+
+    <div class="inv-service-bar">
+      <span>${d.serviceDesc || ''}</span>
+      <span>Invoice-Date</span>
+    </div>
+
+    ${agLine ? `<div class="inv-ref-line"><span>${agLine}</span><span>${fmtInvDate(d.invoice_date)}</span></div>` : ''}
+
+    <div class="inv-body-text">
+      Dear Ladies and Gentlemen,<br><br>
+      According to the above agreement, we are invoicing the following professional fee for our Full-Year Verification services of your ${d.auditYear} ${d.scheme} annual emissions reports.
+    </div>
+
+    <table class="inv-table">
+      <thead><tr><th>Service</th><th style="text-align:right;">Amount in EUR</th></tr></thead>
+      <tbody>
+        <tr><td>Auditors Fee / Charges ${d.scheme}</td><td style="text-align:right;">€ ${fmtEur(d.amount)}</td></tr>
+        <tr><td>&nbsp;</td><td></td></tr>
+        <tr class="total"><td><strong>Total Amount</strong></td><td style="text-align:right;"><strong>${fmtEur(d.amount)}</strong></td></tr>
+      </tbody>
+    </table>
+    <div class="inv-payment-note">Payment is due in full <strong>2 weeks</strong> after receipt</div>
+
+    <div class="inv-closing">
+      With kind regards<br>
+      Mit freundlichem Gruß<br><br><br>
+      <div class="inv-sig">Guido Harling</div>
+    </div>
+
+    <div class="inv-footer">
+      <div class="inv-footer-col">
+        <strong>ETSverification GmbH</strong>
+        Address: Clara-Ratzka-Weg 34,<br>
+        48155 Münster, Germany<br>
+        Phone: +49 172 6767 929<br>
+        Fax: +49 251 3740 7200
+      </div>
+      <div class="inv-footer-col">
+        <strong>Executive Director:</strong>
+        Guido Harling<br>
+        Amtsgericht Münster<br>
+        HRB 16461<br>
+        Int. VAT-ID: DE272910682
+      </div>
+      <div class="inv-footer-col">
+        <strong>Housebank Details:</strong>
+        Bank: Kreissparkasse Steinfurt,<br>
+        Account: ETSverification GmbH<br>
+        Bank Address: Bachstrasse 14,<br>
+        49477 Ibbenbueren
+      </div>
+      <div class="inv-footer-col">
+        <strong>International Wires:</strong>
+        SWIFT / BIC:<br>
+        WELADED1STF<br>
+        IBAN:<br>
+        DE36 4035 1060 0073 0811 43
+      </div>
+    </div>
+  </div>`;
+}
+
+function downloadInvoicePDF() {
+  if (!currentInvoiceData) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const el = document.getElementById('invoice-preview');
+  // Use html method if available
+  doc.html(el, {
+    callback: function(pdf) {
+      pdf.save(`Invoice_${currentInvoiceData.invoice_number?.replace(/ /g,'_') || 'invoice'}.pdf`);
+    },
+    x: 0, y: 0, width: 210, windowWidth: 794
+  });
+}
+
+// ── CONTRACTS ─────────────────────────────────────────────
+async function loadContracts() {
+  const { data } = await db.from('contract').select('*, operator:operator_id(operator), contract_coverage(scheme, valid_year)').order('created_at', { ascending: false });
+  const el = document.getElementById('contracts-list-container');
+  if (!data?.length) { el.innerHTML = '<div class="empty-state"><p>No contracts yet. Add your first contract above.</p></div>'; return; }
+  el.innerHTML = `<div class="card"><table class="data-table">
+    <thead><tr><th>Operator</th><th>Agreement Date</th><th>Reference</th><th>Coverage</th><th>Status</th><th style="width:100px"></th></tr></thead>
+    <tbody>${data.map(c => {
+      const coverage = (c.contract_coverage || []).sort((a,b) => a.valid_year - b.valid_year);
+      const byScheme = {};
+      coverage.forEach(cv => { if (!byScheme[cv.scheme]) byScheme[cv.scheme] = []; byScheme[cv.scheme].push(cv.valid_year); });
+      const tags = Object.entries(byScheme).map(([s,yrs]) => `<span class="coverage-tag">${s}: ${yrs.join(', ')}</span>`).join('');
+      return `<tr>
+        <td><strong>${c.operator?.operator || '–'}</strong></td>
+        <td>${c.agreement_date ? fmtDate(c.agreement_date) : '–'}</td>
+        <td style="font-size:12px;">${c.agreement_reference || '–'}</td>
+        <td><div class="coverage-list">${tags || '<span class="text-muted">–</span>'}</div></td>
+        <td>${c.active ? '<span class="badge badge-completed">Active</span>' : '<span class="badge badge-cancelled">Inactive</span>'}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="editContract('${c.contract_id}')">Edit</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+function openContractModal() {
+  editingContractId = null;
+  document.getElementById('contract-modal-title').textContent = 'New Contract';
+  document.getElementById('c-agreement-date').value = '';
+  document.getElementById('c-reference').value = 'Verification Auditing Services Extension Agreement';
+  document.getElementById('c-notes').value = '';
+  document.getElementById('coverage-builder').innerHTML = '';
+  populateContractOperatorDropdown();
+  addCoverageRow();
+  openModal('contract-modal');
+}
+
+async function editContract(id) {
+  const { data } = await db.from('contract').select('*, contract_coverage(*)').eq('contract_id', id).single();
+  if (!data) return;
+  editingContractId = id;
+  document.getElementById('contract-modal-title').textContent = 'Edit Contract';
+  populateContractOperatorDropdown();
+  setTimeout(() => {
+    document.getElementById('c-operator').value = data.operator_id;
+    document.getElementById('c-agreement-date').value = data.agreement_date || '';
+    document.getElementById('c-reference').value = data.agreement_reference || '';
+    document.getElementById('c-notes').value = data.notes || '';
+    document.getElementById('coverage-builder').innerHTML = '';
+    if (data.contract_coverage?.length) {
+      data.contract_coverage.forEach(cv => addCoverageRow(cv.scheme, cv.valid_year));
+    } else { addCoverageRow(); }
+  }, 50);
+  openModal('contract-modal');
+}
+
+function populateContractOperatorDropdown() {
+  const sel = document.getElementById('c-operator');
+  sel.innerHTML = '<option value="">Select operator…</option>' + operatorsCache.map(o => `<option value="${o.operator_id}">${o.operator}</option>`).join('');
+}
+
+function addCoverageRow(scheme = '', year = '') {
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:8px;margin-bottom:6px;align-items:center;';
+  div.innerHTML = `
+    <select style="flex:2;">
+      <option value="">Scheme…</option>
+      ${SCHEMES.map(s => `<option value="${s}" ${s===scheme?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <input type="number" placeholder="Year" min="2020" max="2099" value="${year}" style="flex:1;"/>
+    <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()" style="padding:5px 8px;">✕</button>`;
+  document.getElementById('coverage-builder').appendChild(div);
+}
+
+async function saveContract() {
+  const operator_id = document.getElementById('c-operator').value;
+  const agreement_date = document.getElementById('c-agreement-date').value;
+  if (!operator_id || !agreement_date) { alert('Please select an operator and agreement date.'); return; }
+
+  const coverageRows = [...document.getElementById('coverage-builder').children].map(row => {
+    const sel = row.querySelector('select');
+    const inp = row.querySelector('input');
+    return { scheme: sel?.value, valid_year: parseInt(inp?.value) };
+  }).filter(c => c.scheme && c.valid_year);
+
+  const contractPayload = {
+    operator_id, agreement_date,
+    agreement_reference: document.getElementById('c-reference').value || null,
+    notes: document.getElementById('c-notes').value || null,
+    active: true
+  };
+
+  let contractId = editingContractId;
+  if (editingContractId) {
+    const { error } = await db.from('contract').update(contractPayload).eq('contract_id', editingContractId);
+    if (error) { alert(error.message); return; }
+    await db.from('contract_coverage').delete().eq('contract_id', editingContractId);
+  } else {
+    const { data, error } = await db.from('contract').insert(contractPayload).select().single();
+    if (error) { alert(error.message); return; }
+    contractId = data.contract_id;
+  }
+
+  if (coverageRows.length) {
+    await db.from('contract_coverage').insert(coverageRows.map(c => ({ contract_id: contractId, ...c })));
+  }
+  closeModal('contract-modal');
+  loadContracts();
+}
+
+// ── AUDITORS ──────────────────────────────────────────────
+async function loadAuditors() {
+  const { data } = await db.from('auditor').select('*').order('auditor_name');
+  const tbody = document.getElementById('auditors-tbody');
+  if (!data?.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No auditors added yet.</td></tr>'; return; }
+  tbody.innerHTML = data.map(a => `<tr>
+    <td><strong>${a.auditor_name}</strong></td>
+    <td>${a.auditor_email}</td>
+    <td><span class="badge badge-eu-ets">${a.role}</span></td>
+    <td>${a.active ? '<span class="badge badge-completed">Active</span>' : '<span class="badge badge-cancelled">Inactive</span>'}</td>
+    <td style="display:flex;gap:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="editAuditor('${a.auditor_id}')">Edit</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleAuditor('${a.auditor_id}', ${a.active})">${a.active ? 'Deactivate' : 'Activate'}</button>
+    </td>
+  </tr>`).join('');
+}
+
+function openAuditorModal() {
+  editingAuditorId = null;
+  document.getElementById('auditor-modal-title').textContent = 'Add Person';
+  document.getElementById('aud-name').value = '';
+  document.getElementById('aud-email').value = '';
+  document.getElementById('aud-role').value = 'auditor';
+  openModal('auditor-modal');
+}
+
+async function editAuditor(id) {
+  const { data } = await db.from('auditor').select('*').eq('auditor_id', id).single();
+  if (!data) return;
+  editingAuditorId = id;
+  document.getElementById('auditor-modal-title').textContent = 'Edit Person';
+  document.getElementById('aud-name').value = data.auditor_name;
+  document.getElementById('aud-email').value = data.auditor_email;
+  document.getElementById('aud-role').value = data.role;
+  openModal('auditor-modal');
+}
+
+async function saveAuditor() {
+  const auditor_name = document.getElementById('aud-name').value.trim();
+  const auditor_email = document.getElementById('aud-email').value.trim();
+  const role = document.getElementById('aud-role').value;
+  if (!auditor_name || !auditor_email) { alert('Please fill in all required fields.'); return; }
+  let error;
+  if (editingAuditorId) {
+    ({ error } = await db.from('auditor').update({ auditor_name, auditor_email, role }).eq('auditor_id', editingAuditorId));
+  } else {
+    ({ error } = await db.from('auditor').insert({ auditor_name, auditor_email, role }));
+  }
+  if (error) { alert(error.message); return; }
+  closeModal('auditor-modal');
+  await loadAuditorsCache();
+  loadAuditors();
+}
+
+async function toggleAuditor(id, current) {
+  await db.from('auditor').update({ active: !current }).eq('auditor_id', id);
+  await loadAuditorsCache();
+  loadAuditors();
+}
+
+// ── OPERATORS PAGE ────────────────────────────────────────
+async function loadOperatorsPage() {
+  await loadOperatorsCache();
+  const tbody = document.getElementById('operators-tbody');
+  if (!operatorsCache.length) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted" style="padding:32px;">No operators found.</td></tr>'; return; }
+  tbody.innerHTML = operatorsCache.map(o => `<tr>
+    <td><strong>${o.operator || '–'}</strong></td>
+    <td>${o.operator_code || '–'}</td>
+    <td>${o.internal_number_code || '–'}</td>
+    <td>${o.operator_country || '–'}</td>
+    <td>${o.operator_contact_person || '–'}</td>
+  </tr>`).join('');
+}
+
+// ── REPORT ────────────────────────────────────────────────
+function populateReportYears() {
+  const sel = document.getElementById('report-year');
+  const cur = new Date().getFullYear();
+  sel.innerHTML = '';
+  for (let y = cur + 1; y >= cur - 5; y--) sel.innerHTML += `<option value="${y}">${y}</option>`;
+  sel.value = cur;
+}
+
+async function loadReport() {
+  const year = document.getElementById('report-year')?.value;
+  if (!year) return;
+  const { data } = await db.from('audit')
+    .select('*, operator:operator_id(operator, operator_country), auditor:auditor_id(auditor_name), reviewer:reviewer_id(auditor_name), invoice:invoice_id(invoice_number, invoice_amount, invoice_status)')
+    .eq('audit_year', year).order('operator_id');
+  const el = document.getElementById('report-content');
+  if (!data?.length) { el.innerHTML = '<div class="empty-state"><p>No audits found for this year.</p></div>'; return; }
+
+  const total = data.length;
+  const byScheme = {};
+  SCHEMES.forEach(s => byScheme[s] = data.filter(a => a.scheme === s).length);
+  const invoiced = data.filter(a => a.invoice_id).length;
+  const completed = data.filter(a => a.status === 'Completed').length;
+  const cancelled = data.filter(a => a.status === 'Cancelled').length;
+
+  el.innerHTML = `
+    <div class="report-section">
+      <h3>Summary — ${year}</h3>
+      <div class="summary-grid">
+        <div class="summary-card"><div class="val">${total}</div><div class="lbl">Total Audits</div></div>
+        <div class="summary-card"><div class="val">${completed}</div><div class="lbl">Completed</div></div>
+        <div class="summary-card"><div class="val">${invoiced}</div><div class="lbl">Invoiced</div></div>
+        <div class="summary-card"><div class="val">${total - invoiced}</div><div class="lbl">Not Invoiced</div></div>
+        <div class="summary-card"><div class="val">${cancelled}</div><div class="lbl">Cancelled</div></div>
+        ${SCHEMES.map(s => `<div class="summary-card"><div class="val">${byScheme[s]}</div><div class="lbl">${s}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="report-section">
+      <h3>Audit Details</h3>
+      <div class="card">
+        <table class="data-table" id="report-table">
+          <thead><tr>
+            <th>Operator</th><th>Country</th><th>Scheme</th><th>Version</th>
+            <th>Status</th><th>Auditor</th><th>Reviewer</th>
+            <th>Invoice Nr</th><th>Amount (EUR)</th><th>Inv. Status</th>
+          </tr></thead>
+          <tbody>${data.map(a => `<tr>
+            <td><strong>${a.operator?.operator || '–'}</strong></td>
+            <td>${a.operator?.operator_country || '–'}</td>
+            <td>${a.scheme}</td>
+            <td>v${a.version}</td>
+            <td>${a.status}</td>
+            <td>${a.auditor?.auditor_name || '–'}</td>
+            <td>${a.reviewer?.auditor_name || '–'}</td>
+            <td>${a.invoice?.invoice_number || '–'}</td>
+            <td>${a.invoice?.invoice_amount ? '€ ' + Number(a.invoice.invoice_amount).toLocaleString('de-DE', {minimumFractionDigits:2}) : '–'}</td>
+            <td>${a.invoice?.invoice_status || '–'}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function exportReportExcel() {
+  const table = document.getElementById('report-table');
+  if (!table) return;
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(table);
+  XLSX.utils.book_append_sheet(wb, ws, 'Audit Report');
+  XLSX.writeFile(wb, `Audit_Report_${document.getElementById('report-year').value}.xlsx`);
+}
+
+function exportReportPDF() {
+  const year = document.getElementById('report-year').value;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  doc.setFontSize(14);
+  doc.setTextColor(26, 58, 92);
+  doc.text(`ETSverification – Audit Report ${year}`, 14, 16);
+  doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, 14, 22);
+  const table = document.getElementById('report-table');
+  if (table) {
+    const headers = [...table.querySelectorAll('th')].map(th => th.textContent);
+    const rows = [...table.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('td')].map(td => td.textContent));
+    doc.autoTable?.({ head: [headers], body: rows, startY: 28, styles: { fontSize: 7 }, headStyles: { fillColor: [26, 58, 92] } });
+  }
+  doc.save(`Audit_Report_${year}.pdf`);
+}
+
+// ── MODAL HELPERS ─────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+
+function showConfirm(title, message, onConfirm) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  const btn = document.getElementById('confirm-ok-btn');
+  btn.onclick = () => { onConfirm(); closeModal('confirm-modal'); };
+  openModal('confirm-modal');
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '–';
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+</script>
+</body>
+</html>
