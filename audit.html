@@ -709,8 +709,38 @@ let currentInvoiceData = null;
 let operatorsCache = [];
 let auditorsCache = [];
 
+// ── REDIRECT URL (dynamic — always points back to this page) ──
+function getRedirectUrl() {
+  return window.location.origin + window.location.pathname;
+}
+
 // ── INIT ──────────────────────────────────────────────────
 window.addEventListener('load', async () => {
+  // Handle magic link callback — Supabase returns ?code= in the URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  const urlError = urlParams.get('error');
+
+  if (urlError) {
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('auth-alert').innerHTML = `<div class="alert alert-danger">Sign-in failed: ${urlParams.get('error_description') || urlError}</div>`;
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
+
+  if (code) {
+    // Exchange the code for a session
+    const { data, error } = await db.auth.exchangeCodeForSession(window.location.href);
+    // Clean the URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    if (!error && data?.session) {
+      currentUser = data.session.user;
+      showApp();
+      return;
+    }
+  }
+
+  // Normal session check (already logged in)
   const { data: { session } } = await db.auth.getSession();
   if (session) {
     currentUser = session.user;
@@ -738,7 +768,7 @@ async function sendMagicLink() {
   const alertEl = document.getElementById('auth-alert');
   if (!email) { alertEl.innerHTML = '<div class="alert alert-danger">Please enter your email address.</div>'; return; }
   alertEl.innerHTML = '';
-  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: 'https://volatuscarbo.com/audit.html' } });
+  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: getRedirectUrl() } });
   if (error) { alertEl.innerHTML = `<div class="alert alert-danger">${error.message}</div>`; return; }
   document.getElementById('auth-success').style.display = 'block';
 }
