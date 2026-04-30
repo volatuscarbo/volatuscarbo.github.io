@@ -5,7 +5,7 @@
   "flights": [
     {
       "flight_date": "2026-04-30",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Larnaca",
         "timezone": "Asia/Nicosia",
@@ -76,7 +76,7 @@
         "timezone": "Asia/Nicosia",
         "iata": "LCA",
         "icao": "LCLK",
-        "terminal": "N",
+        "terminal": "2",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-30T19:30:00+00:00",
@@ -107,7 +107,7 @@
     },
     {
       "flight_date": "2026-04-30",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Larnaca",
         "timezone": "Asia/Nicosia",
@@ -209,7 +209,7 @@
     },
     {
       "flight_date": "2026-04-30",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Athens International Airport \"Eleftherios Venizelos\"",
         "timezone": "Europe/Athens",
@@ -280,7 +280,7 @@
         "timezone": "Asia/Nicosia",
         "iata": "LCA",
         "icao": "LCLK",
-        "terminal": "N",
+        "terminal": "2",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-30T17:45:00+00:00",
@@ -311,7 +311,7 @@
     },
     {
       "flight_date": "2026-04-30",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Larnaca",
         "timezone": "Asia/Nicosia",
@@ -382,7 +382,7 @@
         "timezone": "Asia/Nicosia",
         "iata": "LCA",
         "icao": "LCLK",
-        "terminal": "N",
+        "terminal": "2",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-30T16:00:00+00:00",
@@ -433,7 +433,7 @@
         "timezone": "Asia/Nicosia",
         "iata": "LCA",
         "icao": "LCLK",
-        "terminal": null,
+        "terminal": "2",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-30T14:15:00+00:00",
@@ -506,21 +506,12 @@
         "codeshared": null
       },
       "aircraft": {
-        "registration": "4X-IHD",
-        "iata": "AT76",
-        "icao": "AT76",
+        "registration": null,
+        "iata": null,
+        "icao": null,
         "icao24": "739603"
       },
-      "live": {
-        "updated": "2026-04-30T12:45:34+00:00",
-        "latitude": 33.0206,
-        "longitude": 34.6565,
-        "altitude": 2133.6,
-        "direction": 91,
-        "speed_horizontal": 240.76,
-        "speed_vertical": 0,
-        "is_ground": false
-      }
+      "live": null
     },
     {
       "flight_date": "2026-04-30",
@@ -697,7 +688,7 @@
         "timezone": "Asia/Nicosia",
         "iata": "LCA",
         "icao": "LCLK",
-        "terminal": null,
+        "terminal": "2B",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-30T10:45:00+00:00",
@@ -799,7 +790,7 @@
         "timezone": "Asia/Nicosia",
         "iata": "LCA",
         "icao": "LCLK",
-        "terminal": null,
+        "terminal": "N",
         "gate": null,
         "baggage": null,
         "scheduled": "2026-04-30T09:00:00+00:00",
