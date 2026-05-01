@@ -424,7 +424,7 @@
     <!-- DASHBOARD -->
     <div id="page-dashboard" class="page">
       <div class="page-header">
-        <div><h1>Dashboard</h1><p>Overview of your audit activities</p></div>
+        <div><h1>Dashboard</h1><p>Overview of your audit activities &nbsp;<span style="font-size:11px;font-weight:600;background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:10px;vertical-align:middle;">v<span id="app-version-badge"></span></span></p></div>
         <button class="btn btn-primary" onclick="openAddAuditModal()">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New Audit
@@ -894,6 +894,8 @@
 
 <!-- ══════════════════ SCRIPT ══════════════════ -->
 <script>
+const APP_VERSION = '1.4.0';
+
 const SUPABASE_URL = 'https://jogkaopvrchcjplaxjpx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_MlQCKnmxeXbQADBvt2IZHQ_0ybhllTR';
 const { createClient } = supabase;
@@ -1010,6 +1012,9 @@ async function loadAuditorsCache() {
 
 // ── DASHBOARD ─────────────────────────────────────────────
 async function loadDashboard() {
+  const vb = document.getElementById('app-version-badge');
+  if (vb) vb.textContent = APP_VERSION;
+
   const year = new Date().getFullYear();
   const { data: all } = await db.from('audit').select('*, operator:operator_id(operator), invoice:invoice_id(invoice_id)').order('created_at', { ascending: false });
   if (!all) return;
