@@ -1036,9 +1036,13 @@ function populateYearFilter() {
   const cur = new Date().getFullYear();
   sel.innerHTML = '<option value="">All Years</option>';
   for (let y = cur + 1; y >= cur - 5; y--) sel.innerHTML += `<option value="${y}">${y}</option>`;
+  // Default to current year so audits are visible immediately on first load
+  if (!sel.value) sel.value = String(cur);
 }
 
 async function loadAudits() {
+  const el = document.getElementById('audit-list-container');
+  if (el) el.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
   const year   = document.getElementById('filter-year')?.value;
   const scheme = document.getElementById('filter-scheme')?.value;
   const status = document.getElementById('filter-status')?.value;
@@ -1050,7 +1054,12 @@ async function loadAudits() {
   if (status) q = q.eq('status', status);
 
   const { data, error } = await q;
-  if (error) { console.error(error); return; }
+  if (error) {
+    console.error(error);
+    const elErr = document.getElementById('audit-list-container');
+    if (elErr) elErr.innerHTML = `<div class="empty-state"><p style="color:#c62828;">Failed to load audits: ${error.message}</p></div>`;
+    return;
+  }
   let rows = data || [];
   if (search) rows = rows.filter(a => a.operator?.operator?.toLowerCase().includes(search));
   document.getElementById('audit-count').textContent = `${rows.length} audit${rows.length !== 1 ? 's' : ''}`;
