@@ -1034,10 +1034,21 @@ async function loadDashboard() {
 function populateYearFilter() {
   const sel = document.getElementById('filter-year');
   const cur = new Date().getFullYear();
-  sel.innerHTML = '<option value="">All Years</option>';
-  for (let y = cur + 1; y >= cur - 5; y--) sel.innerHTML += `<option value="${y}">${y}</option>`;
-  // Default to current year so audits are visible immediately on first load
-  if (!sel.value) sel.value = String(cur);
+  // Preserve existing selection; only default to current year on very first load
+  const firstLoad = sel.dataset.initialized !== 'true';
+  const prev = firstLoad ? String(cur) : sel.value;
+  // Rebuild options using createElement to avoid innerHTML += DOM churn
+  sel.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = ''; allOpt.textContent = 'All Years';
+  sel.appendChild(allOpt);
+  for (let y = cur + 1; y >= cur - 5; y--) {
+    const opt = document.createElement('option');
+    opt.value = String(y); opt.textContent = String(y);
+    sel.appendChild(opt);
+  }
+  sel.dataset.initialized = 'true';
+  sel.value = prev;
 }
 
 async function loadAudits() {
