@@ -177,12 +177,15 @@
     display: inline-block; padding: 3px 9px; border-radius: 20px;
     font-size: 11px; font-weight: 600; white-space: nowrap;
   }
-  .badge-planned   { background: #e3f2fd; color: #1565c0; }
-  .badge-progress  { background: #fff8e1; color: #e65100; }
-  .badge-completed { background: #e8f5e9; color: #2e7d32; }
-  .badge-cancelled { background: #fce4ec; color: #c62828; }
-  .badge-invoiced  { background: #e8f5e9; color: #2e7d32; }
-  .badge-noinvoice { background: #f5f5f5; color: #757575; }
+  .badge-planned      { background: #e3f2fd; color: #1565c0; }
+  .badge-progress     { background: #fff8e1; color: #e65100; }
+  .badge-completed    { background: #e8f5e9; color: #2e7d32; }
+  .badge-cancelled    { background: #fce4ec; color: #c62828; }
+  .badge-invoiced     { background: #e8f5e9; color: #2e7d32; }
+  .badge-noinvoice    { background: #f5f5f5; color: #757575; }
+  .badge-notpaid      { background: #fce4ec; color: #c62828; }
+  .badge-notfullypaid { background: #fff8e1; color: #e65100; }
+  .badge-paidinfull   { background: #e8f5e9; color: #2e7d32; }
   .badge-eu-ets    { background: #e8eaf6; color: #283593; }
   .badge-corsia    { background: #e0f2f1; color: #00695c; }
   .badge-uk-ets    { background: #fce4ec; color: #880e4f; }
@@ -662,6 +665,45 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('invoice-modal')">Cancel</button>
       <button class="btn btn-success" onclick="saveInvoice()">Generate Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="payment-modal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <h2>Record Payment</h2>
+      <button class="modal-close" onclick="closeModal('payment-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:20px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Invoice</span>
+          <strong id="pay-invoice-number" style="font-size:15px;color:var(--primary);"></strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Total amount due</span>
+          <strong id="pay-invoice-total" style="font-size:17px;color:var(--text);"></strong>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Payment Date <span style="color:#c62828">*</span></label>
+        <input type="date" id="pay-date" class="form-control">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount Paid (EUR) <span style="color:#c62828">*</span></label>
+        <input type="number" id="pay-amount" class="form-control" step="0.01" min="0" placeholder="0.00"
+               oninput="updatePaymentStatusPreview()">
+        <div id="pay-status-preview" style="margin-top:6px;font-size:12px;color:var(--text-muted);"></div>
+      </div>
+      <input type="hidden" id="pay-invoice-id">
+      <input type="hidden" id="pay-invoice-number-hidden">
+      <input type="hidden" id="pay-invoice-total-hidden">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('payment-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayment()">Save Payment</button>
     </div>
   </div>
 </div>
@@ -1181,41 +1223,134 @@ async function loadInvoices() {
 
   const { data, error } = await db
     .from('invoice')
-    .select('*, audit(audit_id, scheme, audit_year, version, operator:operator_id(operator))')
-    .order('invoice_date', { ascending: false });
+    .select('*, audit(audit_id, scheme, audit_year, version, operator:operator_id(operator))');
 
   if (!data?.length) {
     el.innerHTML = '<div class="empty-state"><p>No invoices yet. Create one from the Audits page or using the button above.</p></div>';
     return;
   }
 
+  // Sort by invoice number: extract year and sequence, e.g. "FA 2025 - 03"
+  data.sort((a, b) => {
+    const parseNum = n => {
+      if (!n) return [0, 0];
+      const m = n.match(/(\d{4})\s*-\s*(\d+)/);
+      return m ? [parseInt(m[1]), parseInt(m[2])] : [0, 0];
+    };
+    const [ay, as_] = parseNum(a.invoice_number);
+    const [by, bs]  = parseNum(b.invoice_number);
+    return ay !== by ? by - ay : bs - as_;   // newest year first, then highest number first
+  });
+
+  // Helper: map invoice_status to badge class and display label
+  function statusInfo(inv) {
+    const st = inv.invoice_status || 'Not Paid';
+    if (st === 'Cancelled')       return { cls: 'badge-cancelled',    label: 'Cancelled' };
+    if (st === 'Paid in Full')    return { cls: 'badge-paidinfull',   label: 'Paid in Full' };
+    if (st === 'Not Fully Paid')  return { cls: 'badge-notfullypaid', label: 'Not Fully Paid' };
+    return                               { cls: 'badge-notpaid',      label: 'Not Paid' };
+  }
+
   el.innerHTML = `<table class="data-table">
     <thead><tr>
       <th>Invoice No.</th><th>Date</th><th>Operator</th>
-      <th>Audits</th><th>Amount (EUR)</th><th>Status</th><th style="width:90px;"></th>
+      <th>Audits</th><th>Amount (EUR)</th><th>Payment</th><th>Status</th><th style="width:110px;"></th>
     </tr></thead>
     <tbody>${data.map(inv => {
-      const audits  = inv.audit || [];
+      const audits   = inv.audit || [];
       const operator = audits[0]?.operator?.operator || '–';
       const schemes  = [...new Set(audits.map(a => a.scheme))].join(', ') || '–';
       const cnt      = audits.length;
-      const amt      = inv.invoice_amount ? Number(inv.invoice_amount).toLocaleString('de-DE', {minimumFractionDigits:2}) : '–';
-      const st       = inv.invoice_status || 'Active';
-      const stCls    = st === 'Cancelled' ? 'badge-cancelled' : st === 'Paid' ? 'badge-completed' : 'badge-planned';
+      const total    = inv.invoice_amount ? Number(inv.invoice_amount) : 0;
+      const amt      = total ? total.toLocaleString('de-DE', {minimumFractionDigits:2}) : '–';
+      const paid     = inv.invoice_paid_amount != null ? Number(inv.invoice_paid_amount) : null;
+      const paidStr  = paid != null ? '€ ' + paid.toLocaleString('de-DE', {minimumFractionDigits:2}) : '–';
+      const payDate  = inv.payment_date ? new Date(inv.payment_date).toLocaleDateString('en-GB') : '';
+      const { cls, label } = statusInfo(inv);
+      const isCancelled = label === 'Cancelled';
       return `<tr>
         <td><strong>${inv.invoice_number || '–'}</strong></td>
         <td>${inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString('en-GB') : '–'}</td>
         <td>${operator}</td>
         <td>${cnt} audit${cnt !== 1 ? 's' : ''}<br><small class="text-muted">${schemes}</small></td>
         <td>€ ${amt}</td>
-        <td><span class="badge ${stCls}">${st}</span></td>
+        <td>${paidStr}${payDate ? `<br><small class="text-muted">${payDate}</small>` : ''}</td>
+        <td><span class="badge ${cls}">${label}</span></td>
         <td style="white-space:nowrap;">
           <button class="btn btn-ghost btn-sm" onclick="viewInvoiceById('${inv.invoice_id}')" title="View">📄</button>
-          ${st !== 'Cancelled' ? `<button class="btn btn-sm" style="background:#fce4ec;color:#c62828;" onclick="confirmCancelInvoice('${inv.invoice_id}')" title="Cancel invoice">✕</button>` : ''}
+          ${!isCancelled ? `<button class="btn btn-sm" style="background:#e8f5e9;color:#2e7d32;font-size:13px;" onclick="openPaymentModal('${inv.invoice_id}','${(inv.invoice_number||'').replace(/'/g,"\\'")}')" title="Record payment">€</button>` : ''}
+          ${!isCancelled ? `<button class="btn btn-sm" style="background:#fce4ec;color:#c62828;" onclick="confirmCancelInvoice('${inv.invoice_id}')" title="Cancel invoice">✕</button>` : ''}
         </td>
       </tr>`;
     }).join('')}</tbody>
   </table>`;
+}
+
+// ─── Open payment modal ────────────────────────────────────
+async function openPaymentModal(invoiceId, invoiceNumber) {
+  // Fetch all invoice rows with this invoice_number to compute the real total
+  const { data: rows } = await db
+    .from('invoice')
+    .select('invoice_id, invoice_amount, invoice_paid_amount, payment_date')
+    .eq('invoice_number', invoiceNumber);
+
+  const realTotal = (rows || []).reduce((s, r) => s + (Number(r.invoice_amount) || 0), 0);
+
+  // Pre-fill amount paid from existing payment (use first row that has a value)
+  const existingPaid = rows?.find(r => r.invoice_paid_amount != null)?.invoice_paid_amount ?? '';
+  const existingDate = rows?.find(r => r.payment_date != null)?.payment_date ?? new Date().toISOString().split('T')[0];
+
+  document.getElementById('pay-invoice-id').value             = invoiceId;
+  document.getElementById('pay-invoice-number-hidden').value  = invoiceNumber;
+  document.getElementById('pay-invoice-total-hidden').value   = realTotal;
+  document.getElementById('pay-invoice-number').textContent   = invoiceNumber;
+  document.getElementById('pay-invoice-total').textContent    = '€ ' + realTotal.toLocaleString('de-DE', {minimumFractionDigits:2});
+  document.getElementById('pay-date').value   = existingDate;
+  document.getElementById('pay-amount').value = existingPaid;
+  openModal('payment-modal');
+}
+
+// ─── Live status preview while typing ─────────────────────
+function updatePaymentStatusPreview() {
+  const total  = parseFloat(document.getElementById('pay-invoice-total-hidden').value) || 0;
+  const amt    = parseFloat(document.getElementById('pay-amount').value);
+  const el     = document.getElementById('pay-status-preview');
+  if (isNaN(amt) || amt < 0) { el.textContent = ''; return; }
+  if (amt <= 0)   { el.innerHTML = '→ Status will be set to <strong>Not Paid</strong>'; return; }
+  if (amt >= total) { el.innerHTML = '→ Status will be set to <strong style="color:#2e7d32">Paid in Full</strong>'; return; }
+  const remaining = (total - amt).toLocaleString('de-DE', {minimumFractionDigits:2});
+  el.innerHTML = `→ Status: <strong style="color:#e65100">Not Fully Paid</strong> &nbsp;(€ ${remaining} remaining)`;
+}
+
+// ─── Save payment ──────────────────────────────────────────
+async function savePayment() {
+  const invoiceNumber = document.getElementById('pay-invoice-number-hidden').value;
+  const total         = parseFloat(document.getElementById('pay-invoice-total-hidden').value) || 0;
+  const payDate       = document.getElementById('pay-date').value;
+  const payAmt        = parseFloat(document.getElementById('pay-amount').value);
+
+  if (!payDate)         { alert('Please select a payment date.');    return; }
+  if (isNaN(payAmt) || payAmt < 0) { alert('Please enter a valid amount paid.'); return; }
+
+  let newStatus;
+  if (payAmt <= 0)              newStatus = 'Not Paid';
+  else if (payAmt >= total)     newStatus = 'Paid in Full';
+  else                          newStatus = 'Not Fully Paid';
+
+  // Update ALL invoices that share the same invoice_number
+  const { error } = await db
+    .from('invoice')
+    .update({
+      invoice_paid_amount: payAmt,
+      payment_date:        payDate,
+      invoice_status:      newStatus
+    })
+    .eq('invoice_number', invoiceNumber);
+
+  if (error) { alert('Error saving payment: ' + error.message); return; }
+
+  closeModal('payment-modal');
+  loadInvoices();
 }
 
 // ─── Open create invoice modal ────────────────────────────
@@ -2117,7 +2252,7 @@ function exportReportPDF() {
   doc.save(`Audit_Report_${year}.pdf`);
 }
 
-// ── MODAL HELPERS ─────────────────────────────────────────
+// ── MODAL HELPERS ───────────
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
