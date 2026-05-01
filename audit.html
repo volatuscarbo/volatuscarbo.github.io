@@ -1077,6 +1077,10 @@ async function loadAudits() {
   renderAuditRows(rows, 'audit-list-container');
 }
 
+function fmtDate(s) {
+  return s ? new Date(s).toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'}) : '';
+}
+
 function renderAuditRows(rows, containerId) {
   const el = document.getElementById(containerId);
   if (!rows.length) {
