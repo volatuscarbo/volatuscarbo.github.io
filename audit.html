@@ -508,6 +508,8 @@
           <option value="">All Statuses</option>
           <option>Planned</option><option>In Progress</option><option>Completed</option><option>Cancelled</option>
         </select>
+        <select id="filter-auditor" onchange="loadAudits()"><option value="">All Auditors</option></select>
+        <select id="filter-reviewer" onchange="loadAudits()"><option value="">All Reviewers</option></select>
         <input type="text" id="filter-search" placeholder="Search operator…" oninput="loadAudits()" style="min-width:180px;"/>
         <div class="spacer"></div>
         <span id="audit-count" class="text-muted" style="font-size:12px;"></span>
@@ -1039,7 +1041,7 @@ function navigate(page) {
   document.getElementById(`page-${page}`)?.classList.add('active');
   document.querySelector(`nav a[data-page="${page}"]`)?.classList.add('active');
   if (page === 'dashboard') loadDashboard();
-  if (page === 'audits') { populateYearFilter(); loadAudits(); }
+  if (page === 'audits') { populateYearFilter(); populateAuditPersonFilters(); loadAudits(); }
   if (page === 'contracts') loadContracts();
   if (page === 'auditors') loadAuditors();
   if (page === 'operators') loadOperatorsPage();
@@ -1147,20 +1149,40 @@ function populateYearFilter() {
   sel.value = prev;
 }
 
+function populateAuditPersonFilters() {
+  const audSel = document.getElementById('filter-auditor');
+  const revSel = document.getElementById('filter-reviewer');
+  const prevAud = audSel.value;
+  const prevRev = revSel.value;
+  audSel.innerHTML = '<option value="">All Auditors</option>' +
+    auditorsCache.filter(a => a.role === 'auditor' || a.role === 'both')
+      .map(a => `<option value="${a.auditor_id}">${a.auditor_name}</option>`).join('');
+  revSel.innerHTML = '<option value="">All Reviewers</option>' +
+    auditorsCache.filter(a => a.role === 'reviewer' || a.role === 'both')
+      .map(a => `<option value="${a.auditor_id}">${a.auditor_name}</option>`).join('');
+  // Restore previous selection if still valid
+  if (prevAud) audSel.value = prevAud;
+  if (prevRev) revSel.value = prevRev;
+}
+
 let _loadAuditsSeq = 0;
 async function loadAudits() {
   const seq = ++_loadAuditsSeq;
   const el = document.getElementById('audit-list-container');
   if (el) el.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
-  const year   = document.getElementById('filter-year')?.value;
-  const scheme = document.getElementById('filter-scheme')?.value;
-  const status = document.getElementById('filter-status')?.value;
-  const search = document.getElementById('filter-search')?.value?.toLowerCase();
+  const year     = document.getElementById('filter-year')?.value;
+  const scheme   = document.getElementById('filter-scheme')?.value;
+  const status   = document.getElementById('filter-status')?.value;
+  const auditor  = document.getElementById('filter-auditor')?.value;
+  const reviewer = document.getElementById('filter-reviewer')?.value;
+  const search   = document.getElementById('filter-search')?.value?.toLowerCase();
 
   let q = db.from('audit').select('audit_id, operator_id, scheme, audit_year, version, audit_date, status, auditor_id, reviewer_id, invoice_id, created_at, operator:operator_id(operator), auditor:auditor_id(auditor_name), reviewer:reviewer_id(auditor_name)').order('created_at', { ascending: false });
-  if (year) q = q.eq('audit_year', year);
-  if (scheme) q = q.eq('scheme', scheme);
-  if (status) q = q.eq('status', status);
+  if (year)     q = q.eq('audit_year', year);
+  if (scheme)   q = q.eq('scheme', scheme);
+  if (status)   q = q.eq('status', status);
+  if (auditor)  q = q.eq('auditor_id', auditor);
+  if (reviewer) q = q.eq('reviewer_id', reviewer);
 
   let data, error;
   try {
