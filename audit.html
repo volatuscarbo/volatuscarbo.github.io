@@ -1112,14 +1112,13 @@ async function loadDashboard() {
 
   // Row 3: invoice revenue
   const { data: invData } = await db.from('invoice')
-    .select('invoice_amount, invoice_status, monitored_year')
+    .select('invoice_amount, invoice_paid_amount, invoice_status, monitored_year')
     .eq('monitored_year', year);
   const fmt = n => '€ ' + Math.round(n || 0).toLocaleString('en-EU');
   if (invData) {
     const active       = invData.filter(r => r.invoice_status !== 'Cancelled');
     const totalAmt     = active.reduce((s, r) => s + (Number(r.invoice_amount) || 0), 0);
-    const paidAmt      = active.filter(r => r.invoice_status === 'Paid in Full')
-                               .reduce((s, r) => s + (Number(r.invoice_amount) || 0), 0);
+    const paidAmt      = active.reduce((s, r) => s + (Number(r.invoice_paid_amount) || 0), 0);
     const outstanding  = totalAmt - paidAmt;
     document.getElementById('stat-rev-total').textContent       = fmt(totalAmt);
     document.getElementById('stat-rev-paid').textContent        = fmt(paidAmt);
