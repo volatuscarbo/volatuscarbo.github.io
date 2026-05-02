@@ -2400,4 +2400,91 @@ async function loadReport() {
     </div>`;
 }
 
-function e
+// ─── Report exports ───────────────────────────────────────
+function exportReportExcel() {
+  const year  = document.getElementById('report-year')?.value;
+  const table = document.getElementById('report-table');
+  if (!table) { alert('Please load the report first.'); return; }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(table);
+  ws['!cols'] = [
+    {wch:32},{wch:14},{wch:14},{wch:8},{wch:14},
+    {wch:22},{wch:22},{wch:18},{wch:14},{wch:14}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws, 'Report ' + (year || ''));
+  XLSX.writeFile(wb, 'audit_report_' + (year || 'export') + '.xlsx');
+}
+
+function exportReportPDF() {
+  const year  = document.getElementById('report-year')?.value;
+  const table = document.getElementById('report-table');
+  if (!table) { alert('Please load the report first.'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  // Header
+  doc.setFontSize(14);
+  doc.setTextColor(26, 58, 92);
+  doc.text('ETSverification — Audit Report ' + (year || ''), 14, 15);
+  doc.setFontSize(8);
+  doc.setTextColor(120);
+  doc.text('Generated: ' + new Date().toLocaleDateString('en-GB'), 14, 21);
+
+  // Extract table data from the DOM
+  const headers = [...table.querySelectorAll('thead th')].map(th => th.textContent.trim());
+  const rows    = [...table.querySelectorAll('tbody tr')].map(tr =>
+    [...tr.querySelectorAll('td')].map(td => td.textContent.trim())
+  );
+
+  const colW    = [46, 16, 14, 10, 14, 26, 26, 20, 18, 16];
+  const totalW  = colW.reduce((a, b) => a + b, 0);
+  const rowH    = 6.5;
+  const startX  = 10;
+  let   y       = 27;
+
+  // Column header row
+  doc.setFillColor(26, 58, 92);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(7.5);
+  doc.rect(startX, y, totalW, rowH, 'F');
+  let x = startX;
+  headers.forEach((h, i) => { doc.text(h, x + 1.5, y + 4.5); x += colW[i]; });
+  y += rowH;
+
+  // Data rows
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(7);
+  rows.forEach((row, ri) => {
+    if (y > 192) { doc.addPage(); y = 14; }
+    if (ri % 2 === 0) {
+      doc.setFillColor(245, 247, 250);
+      doc.rect(startX, y, totalW, rowH, 'F');
+    }
+    let x = startX;
+    row.forEach((cell, i) => {
+      const max = Math.floor(colW[i] / 1.8);
+      const txt = cell.length > max ? cell.slice(0, max - 1) + '…' : cell;
+      doc.text(txt, x + 1.5, y + 4.5);
+      x += colW[i];
+    });
+    y += rowH;
+  });
+
+  doc.save('audit_report_' + (year || 'export') + '.pdf');
+}
+
+// ─── Modal helpers ─────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open');    }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+</script>
+</body>
+</html>
