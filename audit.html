@@ -777,9 +777,6 @@
   </div>
 </div>
 
-<!-- Hidden print area for invoice PDF output -->
-<div id="print-invoice-area"></div>
-
 <!-- Contract Modal -->
 <div class="modal-overlay" id="contract-modal">
   <div class="modal modal-lg">
@@ -1901,8 +1898,26 @@ function renderInvoicePreview(d) {
       </div>
     </div>`;
 
-  document.getElementById('invoice-preview').innerHTML = html;
-  document.getElementById('print-invoice-area').innerHTML = html;
+  // Locate preview container — create it inside the modal if somehow missing
+  let previewEl = document.getElementById('invoice-preview');
+  if (!previewEl) {
+    previewEl = document.createElement('div');
+    previewEl.id = 'invoice-preview';
+    const modalBody = document.querySelector('#pdf-modal .modal-body');
+    if (modalBody) modalBody.appendChild(previewEl);
+    else document.body.appendChild(previewEl);
+  }
+
+  // Locate print area — create as direct body child if somehow missing
+  let printEl = document.getElementById('print-invoice-area');
+  if (!printEl) {
+    printEl = document.createElement('div');
+    printEl.id = 'print-invoice-area';
+    document.body.appendChild(printEl);
+  }
+
+  if (previewEl) previewEl.innerHTML = html;
+  if (printEl)   printEl.innerHTML   = html;
 }
 
 // ─── Print invoice (window.print — no hanging) ────────────
