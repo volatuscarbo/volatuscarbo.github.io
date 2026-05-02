@@ -487,11 +487,6 @@
         </div>
       </div>
 
-      <!-- Row 4: Recent audits -->
-      <div class="card">
-        <div class="card-header">Recent Audits <span class="text-muted" style="font-weight:400;font-size:12px;">last 10</span></div>
-        <div id="dash-recent"></div>
-      </div>
     </div>
 
     <!-- AUDITS -->
@@ -1129,8 +1124,6 @@ async function loadDashboard() {
     document.getElementById('stat-rev-outstanding').textContent = fmt(outstanding);
   }
 
-  // Recent audits (last 10 overall)
-  renderAuditRows(all.slice(0, 10), 'dash-recent');
 }
 
 // ── AUDITS ────────────────────────────────────────────────
