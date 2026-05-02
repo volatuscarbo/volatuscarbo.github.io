@@ -1540,8 +1540,9 @@ async function openCreateInvoiceModal(preSelectAuditId = null) {
 
   const opMap = {};
   (audits || []).forEach(a => {
-    if (a.operator && !opMap[a.operator.operator_id])
-      opMap[a.operator.operator_id] = a.operator.operator;
+    // Use a.operator_id directly (always present) rather than the nested join result
+    if (a.operator_id && a.operator && !opMap[a.operator_id])
+      opMap[a.operator_id] = a.operator.operator;
   });
 
   const opSel = document.getElementById('inv-operator-select');
@@ -1561,9 +1562,9 @@ async function openCreateInvoiceModal(preSelectAuditId = null) {
 
   if (preSelectAuditId) {
     const found = (audits || []).find(a => a.audit_id === preSelectAuditId);
-    if (found?.operator) {
-      opSel.value = found.operator.operator_id;
-      await loadAuditsForInvoice(found.operator.operator_id, preSelectAuditId);
+    if (found?.operator_id) {
+      opSel.value = found.operator_id;
+      await loadAuditsForInvoice(found.operator_id, preSelectAuditId);
     }
   }
 
@@ -1665,9 +1666,18 @@ function schemeClass(scheme) {
 
 function updateInvoiceTotal() {
   let total = 0;
-  document.querySelectorAll('.inv-audit-cb:checked').forEach(cb => {
+  document.querySelectorAll('.inv-audit-cb').forEach(cb => {
     const amt = document.querySelector(`.inv-audit-amount[data-id="${cb.dataset.id}"]`);
-    total += parseFloat(amt?.value || 0) || 0;
+    if (!amt) return;
+    if (cb.checked) {
+      const val = parseFloat(amt.value || 0) || 0;
+      total += val;
+      amt.style.outline = val > 0 ? '' : '2px solid #e53e3e';
+      amt.style.borderColor = val > 0 ? '' : '#e53e3e';
+    } else {
+      amt.style.outline = '';
+      amt.style.borderColor = '';
+    }
   });
   document.getElementById('inv-total-display').textContent =
     total.toLocaleString('de-DE', {minimumFractionDigits:2});
@@ -1675,6 +1685,7 @@ function updateInvoiceTotal() {
 
 // ─── Save multi-audit invoice ─────────────────────────────
 async function saveInvoice() {
+  try {
   const operatorId = document.getElementById('inv-operator-select').value;
   if (!operatorId) { alert('Please select an operator.'); return; }
 
@@ -1693,17 +1704,27 @@ async function saveInvoice() {
     const id  = cb.dataset.id;
     const amt = parseFloat(document.querySelector(`.inv-audit-amount[data-id="${id}"]`)?.value || 0) || 0;
     const row = cb.closest('.inv-audit-row');
+    const badge = row.querySelector('.badge');
+    const yearEl = row.querySelector('strong');
+    const versionEl = row.querySelector('.text-muted');
+    const rawVersion = versionEl?.textContent?.trim() || 'v1';
+    const version = rawVersion.replace(/^.*?v/i, '').split(' ')[0] || '1';
     return {
-      audit_id: id,
-      amount:   amt,
-      scheme:   row.querySelector('.badge')?.textContent?.trim() || '',
-      audit_year: row.querySelector('strong')?.textContent?.trim() || '',
-      version:  (row.querySelector('.text-muted')?.textContent?.trim() || 'v1').replace('v','').split(' ')[0]
+      audit_id:   id,
+      amount:     amt,
+      scheme:     badge?.textContent?.trim() || '',
+      audit_year: yearEl?.textContent?.trim() || '',
+      version
     };
   });
 
   const total = lineItems.reduce((s, li) => s + li.amount, 0);
-  if (total <= 0) { alert('Please enter amounts greater than zero for the selected audits.'); return; }
+  const missingAmounts = lineItems.filter(li => li.amount <= 0);
+  if (missingAmounts.length) {
+    updateInvoiceTotal(); // re-highlight red fields
+    alert(`Please enter an amount (€) for all selected audits.\n\n${missingAmounts.length} audit(s) have no amount filled in — the fields are highlighted in red.`);
+    return;
+  }
 
   const { data: inv, error } = await db.from('invoice').insert({
     operator_id:         operatorId,
@@ -1739,6 +1760,10 @@ async function saveInvoice() {
       if (p === 'page-dashboard') loadDashboard();
     }
   });
+  } catch(e) {
+    console.error('saveInvoice error:', e);
+    alert(`Unexpected error creating invoice: ${e.message}`);
+  }
 }
 
 // ─── View invoice by ID ───────────────────────────────────
