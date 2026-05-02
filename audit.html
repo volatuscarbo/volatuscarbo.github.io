@@ -425,17 +425,69 @@
     <div id="page-dashboard" class="page">
       <div class="page-header">
         <div><h1>Dashboard</h1><p>Overview of your audit activities &nbsp;<span style="font-size:11px;font-weight:600;background:#e3f2fd;color:#1565c0;padding:2px 7px;border-radius:10px;vertical-align:middle;">v<span id="app-version-badge"></span></span></p></div>
-        <button class="btn btn-primary" onclick="openAddAuditModal()">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Audit
-        </button>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <select id="dash-year-filter" onchange="loadDashboard()" style="padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);cursor:pointer;"></select>
+          <button class="btn btn-primary" onclick="openAddAuditModal()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Audit
+          </button>
+        </div>
       </div>
+
+      <!-- Row 1: Audit totals -->
       <div class="stats-row" id="dash-stats">
         <div class="stat-card"><div class="stat-label">Total Audits</div><div class="stat-value" id="stat-total">–</div><div class="stat-sub">all time</div></div>
-        <div class="stat-card"><div class="stat-label">This Year</div><div class="stat-value" id="stat-year">–</div><div class="stat-sub" id="stat-year-label">–</div></div>
-        <div class="stat-card"><div class="stat-label">Invoiced</div><div class="stat-value" id="stat-invoiced">–</div><div class="stat-sub">this year</div></div>
+        <div class="stat-card"><div class="stat-label">Selected Year</div><div class="stat-value" id="stat-year">–</div><div class="stat-sub" id="stat-year-label">–</div></div>
+        <div class="stat-card"><div class="stat-label">Invoiced</div><div class="stat-value" id="stat-invoiced">–</div><div class="stat-sub">selected year</div></div>
         <div class="stat-card"><div class="stat-label">Pending Invoice</div><div class="stat-value" id="stat-pending">–</div><div class="stat-sub">completed, no invoice</div></div>
       </div>
+
+      <!-- Row 2: Status breakdown -->
+      <p style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Audit Status Breakdown</p>
+      <div class="stats-row" style="margin-bottom:24px;">
+        <div class="stat-card" style="border-left:4px solid #1976d2;">
+          <div class="stat-label">Planned</div>
+          <div class="stat-value" id="stat-planned" style="color:#1976d2;">–</div>
+          <div class="stat-sub" id="stat-planned-pct">of year total</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #e65100;">
+          <div class="stat-label">In Progress</div>
+          <div class="stat-value" id="stat-inprogress" style="color:#e65100;">–</div>
+          <div class="stat-sub" id="stat-inprogress-pct">of year total</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #2e7d32;">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="stat-completed" style="color:#2e7d32;">–</div>
+          <div class="stat-sub" id="stat-completed-pct">of year total</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #757575;">
+          <div class="stat-label">Cancelled</div>
+          <div class="stat-value" id="stat-cancelled" style="color:#757575;">–</div>
+          <div class="stat-sub" id="stat-cancelled-pct">of year total</div>
+        </div>
+      </div>
+
+      <!-- Row 3: Invoice revenue -->
+      <p style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;">Invoice Revenue</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">
+        <div class="stat-card" style="border-left:4px solid #1565c0;">
+          <div class="stat-label">Total Invoiced</div>
+          <div class="stat-value" id="stat-rev-total" style="font-size:20px;color:#1565c0;">–</div>
+          <div class="stat-sub">non-cancelled invoices</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #2e7d32;">
+          <div class="stat-label">Paid in Full</div>
+          <div class="stat-value" id="stat-rev-paid" style="font-size:20px;color:#2e7d32;">–</div>
+          <div class="stat-sub">fully settled</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #c62828;">
+          <div class="stat-label">Outstanding</div>
+          <div class="stat-value" id="stat-rev-outstanding" style="font-size:20px;color:#c62828;">–</div>
+          <div class="stat-sub">unpaid / partial</div>
+        </div>
+      </div>
+
+      <!-- Row 4: Recent audits -->
       <div class="card">
         <div class="card-header">Recent Audits <span class="text-muted" style="font-weight:400;font-size:12px;">last 10</span></div>
         <div id="dash-recent"></div>
@@ -1015,19 +1067,70 @@ async function loadDashboard() {
   const vb = document.getElementById('app-version-badge');
   if (vb) vb.textContent = APP_VERSION;
 
-  const year = new Date().getFullYear();
-  const { data: all } = await db.from('audit').select('*, operator:operator_id(operator), invoice:invoice_id(invoice_id)').order('created_at', { ascending: false });
+  // Populate year selector on first load
+  const yearSel = document.getElementById('dash-year-filter');
+  if (yearSel && !yearSel.dataset.initialized) {
+    const cur = new Date().getFullYear();
+    yearSel.innerHTML = '';
+    for (let y = cur + 1; y >= cur - 5; y--) {
+      const opt = document.createElement('option');
+      opt.value = String(y);
+      opt.textContent = String(y);
+      if (y === cur) opt.selected = true;
+      yearSel.appendChild(opt);
+    }
+    yearSel.dataset.initialized = 'true';
+  }
+  const year = parseInt(yearSel?.value || new Date().getFullYear());
+
+  // Fetch all audits (needed for "total all time" card and recent list)
+  const { data: all } = await db.from('audit')
+    .select('audit_id, status, invoice_id, audit_year, scheme, audit_date, version, operator:operator_id(operator), auditor:auditor_id(auditor_name), reviewer:reviewer_id(auditor_name)')
+    .order('created_at', { ascending: false });
   if (!all) return;
-  const thisYear = all.filter(a => a.audit_year == year);
-  const invoiced = thisYear.filter(a => a.invoice_id);
-  const pending = all.filter(a => !a.invoice_id && a.status === 'Completed');
-  document.getElementById('stat-total').textContent = all.length;
-  document.getElementById('stat-year').textContent = thisYear.length;
-  document.getElementById('stat-year-label').textContent = `audits for ${year}`;
-  document.getElementById('stat-invoiced').textContent = invoiced.length;
-  document.getElementById('stat-pending').textContent = pending.length;
-  const recent = all.slice(0, 10);
-  renderAuditRows(recent, 'dash-recent');
+
+  const yearAudits = all.filter(a => a.audit_year == year);
+  const invoiced   = yearAudits.filter(a => a.invoice_id);
+  const pending    = yearAudits.filter(a => !a.invoice_id && a.status === 'Completed');
+
+  // Row 1: totals
+  document.getElementById('stat-total').textContent           = all.length;
+  document.getElementById('stat-year').textContent            = yearAudits.length;
+  document.getElementById('stat-year-label').textContent      = `audits for ${year}`;
+  document.getElementById('stat-invoiced').textContent        = invoiced.length;
+  document.getElementById('stat-pending').textContent         = pending.length;
+
+  // Row 2: status breakdown
+  const counts = { 'Planned': 0, 'In Progress': 0, 'Completed': 0, 'Cancelled': 0 };
+  yearAudits.forEach(a => { if (counts[a.status] !== undefined) counts[a.status]++; });
+  const pct = n => yearAudits.length ? Math.round(n / yearAudits.length * 100) + '% of year total' : '–';
+  document.getElementById('stat-planned').textContent         = counts['Planned'];
+  document.getElementById('stat-planned-pct').textContent     = pct(counts['Planned']);
+  document.getElementById('stat-inprogress').textContent      = counts['In Progress'];
+  document.getElementById('stat-inprogress-pct').textContent  = pct(counts['In Progress']);
+  document.getElementById('stat-completed').textContent       = counts['Completed'];
+  document.getElementById('stat-completed-pct').textContent   = pct(counts['Completed']);
+  document.getElementById('stat-cancelled').textContent       = counts['Cancelled'];
+  document.getElementById('stat-cancelled-pct').textContent   = pct(counts['Cancelled']);
+
+  // Row 3: invoice revenue
+  const { data: invData } = await db.from('invoice')
+    .select('invoice_amount, invoice_status, monitored_year')
+    .eq('monitored_year', year);
+  const fmt = n => '€ ' + Math.round(n || 0).toLocaleString('en-EU');
+  if (invData) {
+    const active       = invData.filter(r => r.invoice_status !== 'Cancelled');
+    const totalAmt     = active.reduce((s, r) => s + (Number(r.invoice_amount) || 0), 0);
+    const paidAmt      = active.filter(r => r.invoice_status === 'Paid in Full')
+                               .reduce((s, r) => s + (Number(r.invoice_amount) || 0), 0);
+    const outstanding  = totalAmt - paidAmt;
+    document.getElementById('stat-rev-total').textContent       = fmt(totalAmt);
+    document.getElementById('stat-rev-paid').textContent        = fmt(paidAmt);
+    document.getElementById('stat-rev-outstanding').textContent = fmt(outstanding);
+  }
+
+  // Recent audits (last 10 overall)
+  renderAuditRows(all.slice(0, 10), 'dash-recent');
 }
 
 // ── AUDITS ────────────────────────────────────────────────
