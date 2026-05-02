@@ -1236,7 +1236,7 @@ function renderAuditRows(rows, containerId) {
       <div class="audit-actions">
         <button class="btn btn-ghost btn-sm" onclick="editAudit('${a.audit_id}')" title="Edit">✎</button>
         <button class="btn btn-ghost btn-sm" onclick="copyAudit('${a.audit_id}')" title="Copy">⧉</button>
-        ${!a.invoice_id && a.status !== 'Cancelled' ? `<button class="btn btn-success btn-sm" onclick="openCreateInvoiceModal('${a.audit_id}')" title="Create Invoice">€</button>` : ''}
+        ${!a.invoice_id && a.status === 'Completed' ? `<button class="btn btn-success btn-sm" onclick="openCreateInvoiceModal('${a.audit_id}')" title="Create Invoice">€</button>` : ''}
         ${a.invoice_id ? `<button class="btn btn-ghost btn-sm" onclick="viewInvoice('${a.audit_id}')" title="View Invoice">📄</button>` : ''}
         <button class="btn btn-danger btn-sm" onclick="confirmCancelAudit('${a.audit_id}')" title="Cancel">✕</button>
       </div>
@@ -1706,6 +1706,7 @@ async function saveInvoice() {
   if (total <= 0) { alert('Please enter amounts greater than zero for the selected audits.'); return; }
 
   const { data: inv, error } = await db.from('invoice').insert({
+    operator_id:         operatorId,
     invoice_number:      invNumber,
     invoice_date:        invDate,
     invoice_amount:      total.toString(),
