@@ -327,6 +327,15 @@
     }
   }
 
+  /* ── INVOICE FILTERS ── */
+  .inv-filter {
+    padding: 5px 8px; font-size: 12px; border: 1px solid var(--border);
+    border-radius: 5px; background: var(--surface); color: var(--text);
+    transition: border-color .15s;
+  }
+  .inv-filter:focus { outline: none; border-color: var(--primary); }
+  .inv-filter::placeholder { color: var(--text-muted); }
+
   /* ── UTILS ── */
   .text-muted { color: var(--text-muted); }
   .text-center { text-align: center; }
@@ -569,10 +578,16 @@
     <div id="page-invoices" class="page">
       <div class="page-header">
         <div><h1>Invoices</h1><p>All invoices created — cancel allowed, deletion not permitted</p></div>
-        <button class="btn btn-success" onclick="openCreateInvoiceModal()">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Create Invoice
-        </button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-ghost btn-sm" onclick="exportInvoicesExcel()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export Excel
+          </button>
+          <button class="btn btn-success" onclick="openCreateInvoiceModal()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Create Invoice
+          </button>
+        </div>
       </div>
       <div class="card">
         <div id="invoices-list"><div class="loading-overlay"><div class="spinner"></div></div></div>
@@ -1377,6 +1392,26 @@ function confirmCancelAudit(id) {
 let currentInvoiceData = null;
 
 // ─── Invoices page ────────────────────────────────────────
+let _invoiceData = [];
+
+// Shared status helper (used by loadInvoices, filterInvoices, exportInvoicesExcel)
+function invoiceStatusInfo(inv) {
+  const st = inv.invoice_status || 'Not Paid';
+  if (st === 'Cancelled') return { cls: 'badge-cancelled', label: 'Cancelled' };
+  const paid  = inv.invoice_paid_amount != null ? Number(inv.invoice_paid_amount) : 0;
+  const total = inv.invoice_amount      != null ? Number(inv.invoice_amount)      : 0;
+  if (paid > 0) {
+    if (total > 0)
+      return paid >= total
+        ? { cls: 'badge-paidinfull',   label: 'Paid in Full'   }
+        : { cls: 'badge-notfullypaid', label: 'Not Fully Paid' };
+    return { cls: 'badge-paidinfull', label: 'Paid in Full' };
+  }
+  if (st === 'Paid in Full')   return { cls: 'badge-paidinfull',   label: 'Paid in Full'   };
+  if (st === 'Not Fully Paid') return { cls: 'badge-notfullypaid', label: 'Not Fully Paid' };
+  return                              { cls: 'badge-notpaid',      label: 'Not Paid'       };
+}
+
 async function loadInvoices() {
   const el = document.getElementById('invoices-list');
   el.innerHTML = '<div class="loading-overlay"><div class="spinner"></div></div>';
@@ -1390,7 +1425,7 @@ async function loadInvoices() {
     return;
   }
 
-  // Sort by invoice number: extract year and sequence, e.g. "FA 2025 - 03"
+  // Sort: newest year first, then highest invoice number
   data.sort((a, b) => {
     const parseNum = n => {
       if (!n) return [0, 0];
@@ -1399,24 +1434,93 @@ async function loadInvoices() {
     };
     const [ay, as_] = parseNum(a.invoice_number);
     const [by, bs]  = parseNum(b.invoice_number);
-    return ay !== by ? by - ay : bs - as_;   // newest year first, then highest number first
+    return ay !== by ? by - ay : bs - as_;
   });
 
-  // Helper: map invoice_status to badge class and display label
-  function statusInfo(inv) {
-    const st = inv.invoice_status || 'Not Paid';
-    if (st === 'Cancelled')       return { cls: 'badge-cancelled',    label: 'Cancelled' };
-    if (st === 'Paid in Full')    return { cls: 'badge-paidinfull',   label: 'Paid in Full' };
-    if (st === 'Not Fully Paid')  return { cls: 'badge-notfullypaid', label: 'Not Fully Paid' };
-    return                               { cls: 'badge-notpaid',      label: 'Not Paid' };
+  _invoiceData = data;
+
+  // Build the persistent filter bar + table container (only on first load)
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <input  id="inv-f-num"    class="inv-filter" placeholder="Invoice No."  oninput="filterInvoices()" style="width:110px;">
+      <input  id="inv-f-date"   class="inv-filter" placeholder="Date"         oninput="filterInvoices()" style="width:88px;">
+      <input  id="inv-f-op"     class="inv-filter" placeholder="Operator"     oninput="filterInvoices()" style="width:140px;">
+      <input  id="inv-f-scheme" class="inv-filter" placeholder="Scheme"       oninput="filterInvoices()" style="width:96px;">
+      <input  id="inv-f-amt"    class="inv-filter" placeholder="Amount"       oninput="filterInvoices()" style="width:84px;">
+      <input  id="inv-f-pay"    class="inv-filter" placeholder="Payment"      oninput="filterInvoices()" style="width:84px;">
+      <select id="inv-f-status" class="inv-filter" onchange="filterInvoices()" style="width:130px;">
+        <option value="">All Statuses</option>
+        <option value="Not Paid">Not Paid</option>
+        <option value="Not Fully Paid">Not Fully Paid</option>
+        <option value="Paid in Full">Paid in Full</option>
+        <option value="Cancelled">Cancelled</option>
+      </select>
+      <button id="inv-f-clear" class="btn btn-ghost btn-sm" onclick="clearInvoiceFilters()" style="display:none;">✕ Clear</button>
+      <span   id="inv-f-count" style="font-size:12px;color:var(--text-muted);margin-left:auto;"></span>
+    </div>
+    <div id="inv-table-body"></div>`;
+
+  filterInvoices();
+}
+
+// Returns the currently filtered subset of _invoiceData
+function _getFilteredInvoices() {
+  const fNum    = (document.getElementById('inv-f-num')    ?.value || '').trim().toLowerCase();
+  const fDate   = (document.getElementById('inv-f-date')   ?.value || '').trim().toLowerCase();
+  const fOp     = (document.getElementById('inv-f-op')     ?.value || '').trim().toLowerCase();
+  const fScheme = (document.getElementById('inv-f-scheme') ?.value || '').trim().toLowerCase();
+  const fAmt    = (document.getElementById('inv-f-amt')    ?.value || '').trim().toLowerCase();
+  const fPay    = (document.getElementById('inv-f-pay')    ?.value || '').trim().toLowerCase();
+  const fStatus = (document.getElementById('inv-f-status') ?.value || '');
+  const hasFilters = !!(fNum || fDate || fOp || fScheme || fAmt || fPay || fStatus);
+
+  const filtered = _invoiceData.filter(inv => {
+    const audits   = inv.audit || [];
+    const operator = (audits[0]?.operator?.operator || '').toLowerCase();
+    const schemes  = [...new Set(audits.map(a => a.scheme))].join(', ').toLowerCase();
+    const invNum   = (inv.invoice_number || '').toLowerCase();
+    const dateStr  = inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString('en-GB') : '';
+    const total    = inv.invoice_amount ? Number(inv.invoice_amount) : 0;
+    const paid     = inv.invoice_paid_amount != null ? Number(inv.invoice_paid_amount) : null;
+    const paidStr  = paid != null ? String(paid) : '';
+    const payDate  = inv.payment_date ? new Date(inv.payment_date).toLocaleDateString('en-GB') : '';
+    const { label } = invoiceStatusInfo(inv);
+
+    if (fNum    && !invNum.includes(fNum))                                          return false;
+    if (fDate   && !dateStr.toLowerCase().includes(fDate))                          return false;
+    if (fOp     && !operator.includes(fOp))                                         return false;
+    if (fScheme && !schemes.includes(fScheme))                                      return false;
+    if (fAmt    && !String(total).includes(fAmt))                                   return false;
+    if (fPay    && !paidStr.includes(fPay) && !payDate.toLowerCase().includes(fPay)) return false;
+    if (fStatus && label !== fStatus)                                               return false;
+    return true;
+  });
+
+  return { filtered, hasFilters };
+}
+
+function filterInvoices() {
+  const { filtered, hasFilters } = _getFilteredInvoices();
+
+  const countEl = document.getElementById('inv-f-count');
+  const clearEl = document.getElementById('inv-f-clear');
+  const bodyEl  = document.getElementById('inv-table-body');
+
+  if (countEl) countEl.textContent = filtered.length + ' of ' + _invoiceData.length;
+  if (clearEl) clearEl.style.display = hasFilters ? '' : 'none';
+  if (!bodyEl) return;
+
+  if (filtered.length === 0) {
+    bodyEl.innerHTML = '<div class="empty-state"><p>No invoices match the current filters.</p></div>';
+    return;
   }
 
-  el.innerHTML = `<table class="data-table">
+  bodyEl.innerHTML = `<table class="data-table">
     <thead><tr>
       <th>Invoice No.</th><th>Date</th><th>Operator</th>
-      <th>Audits</th><th>Amount (EUR)</th><th>Payment</th><th>Status</th><th style="width:110px;"></th>
+      <th>Audits</th><th>Amount (EUR)</th><th style="min-width:170px;">Payment</th><th>Status</th><th style="width:110px;"></th>
     </tr></thead>
-    <tbody>${data.map(inv => {
+    <tbody>${filtered.map(inv => {
       const audits   = inv.audit || [];
       const operator = audits[0]?.operator?.operator || '–';
       const schemes  = [...new Set(audits.map(a => a.scheme))].join(', ') || '–';
@@ -1426,7 +1530,7 @@ async function loadInvoices() {
       const paid     = inv.invoice_paid_amount != null ? Number(inv.invoice_paid_amount) : null;
       const paidStr  = paid != null ? '€ ' + paid.toLocaleString('de-DE', {minimumFractionDigits:2}) : '–';
       const payDate  = inv.payment_date ? new Date(inv.payment_date).toLocaleDateString('en-GB') : '';
-      const { cls, label } = statusInfo(inv);
+      const { cls, label } = invoiceStatusInfo(inv);
       const isCancelled = label === 'Cancelled';
       return `<tr>
         <td><strong>${inv.invoice_number || '–'}</strong></td>
@@ -1444,6 +1548,47 @@ async function loadInvoices() {
       </tr>`;
     }).join('')}</tbody>
   </table>`;
+}
+
+function clearInvoiceFilters() {
+  ['inv-f-num','inv-f-date','inv-f-op','inv-f-scheme','inv-f-amt','inv-f-pay','inv-f-status']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  filterInvoices();
+}
+
+function exportInvoicesExcel() {
+  const { filtered } = _getFilteredInvoices();
+
+  const rows = filtered.map(inv => {
+    const audits   = inv.audit || [];
+    const operator = audits[0]?.operator?.operator || '';
+    const schemes  = [...new Set(audits.map(a => a.scheme))].join(', ');
+    const cnt      = audits.length;
+    const total    = inv.invoice_amount != null ? Number(inv.invoice_amount) : null;
+    const paid     = inv.invoice_paid_amount != null ? Number(inv.invoice_paid_amount) : null;
+    const { label } = invoiceStatusInfo(inv);
+    return {
+      'Invoice No.':    inv.invoice_number  || '',
+      'Invoice Date':   inv.invoice_date    || '',
+      'Operator':       operator,
+      'No. of Audits':  cnt,
+      'Schemes':        schemes,
+      'Amount (EUR)':   total,
+      'Paid Amount':    paid,
+      'Payment Date':   inv.payment_date    || '',
+      'Status':         label,
+      'Monitored Year': inv.monitored_year  || ''
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    {wch:18},{wch:14},{wch:32},{wch:13},{wch:32},
+    {wch:14},{wch:14},{wch:14},{wch:16},{wch:14}
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Invoices');
+  XLSX.writeFile(wb, 'invoices_' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 
 // ─── Open payment modal ────────────────────────────────────
@@ -2385,53 +2530,4 @@ async function loadReport() {
     </div>`;
 }
 
-function exportReportExcel() {
-  const table = document.getElementById('report-table');
-  if (!table) return;
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.table_to_sheet(table);
-  XLSX.utils.book_append_sheet(wb, ws, 'Audit Report');
-  XLSX.writeFile(wb, `Audit_Report_${document.getElementById('report-year').value}.xlsx`);
-}
-
-function exportReportPDF() {
-  const year = document.getElementById('report-year').value;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  doc.setFontSize(14);
-  doc.setTextColor(26, 58, 92);
-  doc.text(`ETSverification – Audit Report ${year}`, 14, 16);
-  doc.setFontSize(8); doc.setTextColor(100, 116, 139);
-  doc.text(`Generated: ${new Date().toLocaleDateString('en-GB')}`, 14, 22);
-  const table = document.getElementById('report-table');
-  if (table) {
-    const headers = [...table.querySelectorAll('th')].map(th => th.textContent);
-    const rows = [...table.querySelectorAll('tbody tr')].map(tr => [...tr.querySelectorAll('td')].map(td => td.textContent));
-    doc.autoTable?.({ head: [headers], body: rows, startY: 28, styles: { fontSize: 7 }, headStyles: { fillColor: [26, 58, 92] } });
-  }
-  doc.save(`Audit_Report_${year}.pdf`);
-}
-
-// ── MODAL HELPERS ───────────
-function openModal(id)  { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-// Close modal when clicking the backdrop
-document.querySelectorAll('.modal-overlay').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeModal(overlay.id);
-  });
-});
-
-// Escape key closes topmost open modal
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    const open = document.querySelector('.modal-overlay.open');
-    if (open) closeModal(open.id);
-  }
-});
-</script>
-
-<div id="print-invoice-area"></div>
-</body>
-</html>
+function e
