@@ -1226,6 +1226,52 @@ window.addEventListener('DOMContentLoaded', async () => {
   renderSyncPill();
 });
 
+// ── EVENT BINDING (called once sb is ready) ───────────────────
+function bindEvents() {
+  // Top bar auth
+  document.getElementById('btn-signin').addEventListener('click', openSignInModal);
+  document.getElementById('btn-signout').addEventListener('click', signOut);
+
+  // Sign-in modal
+  document.getElementById('btn-modal-cancel').addEventListener('click', closeSignInModal);
+  document.getElementById('btn-send-link').addEventListener('click', signInWithMagicLink);
+  document.getElementById('signin-email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') signInWithMagicLink();
+  });
+  document.getElementById('signin-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeSignInModal();
+  });
+
+  // New version banner
+  document.getElementById('btn-scroll-ack').addEventListener('click', scrollToAck);
+
+  // Tabs
+  document.getElementById('tab-reader').addEventListener('click', () => switchTab('reader'));
+  document.getElementById('tab-roster').addEventListener('click', () => switchTab('roster'));
+
+  // Diff toggles
+  document.getElementById('btn-diff-unified').addEventListener('click', () => setDiffView('unified'));
+  document.getElementById('btn-diff-sidebyside').addEventListener('click', () => setDiffView('sidebyside'));
+
+  // Acknowledge button
+  document.getElementById('btn-ack').addEventListener('click', acknowledgeVersion);
+
+  // Roster controls
+  document.getElementById('roster-filter').addEventListener('change', filterRoster);
+  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+
+  // Roster sort headers
+  document.querySelectorAll('.roster-table th[data-sort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => sortRoster(th.dataset.sort));
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeSignInModal();
+  });
+}
+
 // ── AUTH ──────────────────────────────────────────────────────
 function openSignInModal() {
   document.getElementById('signin-modal').classList.remove('hidden');
@@ -1426,58 +1472,62 @@ function renderTimeline(items) {
 }
 
 async function selectVersion(v) {
-  currentVersionId    = v.id;
-  currentVersionLabel = v.version_label;
+  try {
+    currentVersionId    = v.id;
+    currentVersionLabel = v.version_label;
 
-  const act    = v._act || {};
-  const actNum = act.official_number || v.version_label;
-  const displayLabel = v.amendment_ref
-    ? `${actNum} — ${v.amendment_ref}`
-    : actNum;
+    const act    = v._act || {};
+    const actNum = act.official_number || v.version_label;
+    const displayLabel = v.amendment_ref
+      ? `${actNum} — ${v.amendment_ref}`
+      : actNum;
 
-  document.getElementById('ack-version-label').textContent = displayLabel;
-  document.getElementById('lt-version-label').textContent  = displayLabel;
+    document.getElementById('ack-version-label').textContent = displayLabel;
+    document.getElementById('lt-version-label').textContent  = displayLabel;
 
-  // Update EUR-Lex link if present
-  const eurLexLink = document.getElementById('eurlex-link');
-  if (eurLexLink && v.source_url) {
-    eurLexLink.href = v.source_url;
-    eurLexLink.style.display = 'inline';
-  } else if (eurLexLink) {
-    eurLexLink.style.display = 'none';
-  }
+    // EUR-Lex link
+    const eurLexLink = document.getElementById('eurlex-link');
+    if (eurLexLink && v.source_url) {
+      eurLexLink.href = v.source_url;
+      eurLexLink.style.display = 'inline';
+    } else if (eurLexLink) {
+      eurLexLink.style.display = 'none';
+    }
 
-  // Change summary header
-  const prevLabel = v.is_baseline ? 'original publication' : (v.amendment_ref || 'previous version');
-  document.getElementById('cs-prev-version').textContent = prevLabel;
-  document.getElementById('cs-date').textContent = fmtDate(v.published_at);
+    // Change summary header
+    const prevLabel = v.is_baseline ? 'original publication' : (v.amendment_ref || 'previous version');
+    document.getElementById('cs-prev-version').textContent = prevLabel;
+    document.getElementById('cs-date').textContent = fmtDate(v.published_at);
 
-  await loadChanges(v.id);
-  renderLegalText(v);
+    await loadChanges(v.id);
+    renderLegalText(v);
 
-  if (currentUser) {
-    checkUserAck();
+    if (currentUser) checkUserAck();
+
+  } catch (err) {
+    console.error('selectVersion error:', err);
+    // Still try to render legal text even if something else failed
+    try { renderLegalText(v); } catch(e) { console.error('renderLegalText error:', e); }
   }
 }
 
 // ── CHANGES ──────────────────────────────────────────────────
 async function loadChanges(versionId) {
-  let changes = [];
-  if (!versionId.startsWith('demo-') && !versionId.startsWith('baseline-')) {
-    const { data, error } = await sb
-      .from('legislation_changes')
-      .select('*')
-      .eq('version_id', versionId)
-      .order('article_ref');
-    if (!error && data && data.length > 0) {
-      changes = data;
-    } else {
-      changes = DEMO_CHANGES;
+  let changes = DEMO_CHANGES; // safe default
+  try {
+    if (versionId && !versionId.startsWith('demo-') && !versionId.startsWith('baseline-')) {
+      const { data, error } = await sb
+        .from('legislation_changes')
+        .select('*')
+        .eq('version_id', versionId)
+        .order('article_ref');
+      if (!error && data && data.length > 0) {
+        changes = data;
+      }
     }
-  } else {
-    changes = DEMO_CHANGES;
+  } catch (err) {
+    console.warn('loadChanges fetch failed, using demo data:', err);
   }
-
   renderChangeSummary(changes);
   renderDiff(changes);
 }
@@ -1765,41 +1815,39 @@ function renderRoster(data) {
   tbody.innerHTML = filtered.map(r => `
     <tr>
       <td>${escHtml(r.email)}</td>
-      <td class="text-mono" style="font-size:12px">${escHtml(r.version || '—')}</td>
-      <td>${r.date ? fmtDateFull(r.date) : '—'}</td>
+      <td>${escHtml(r.name || '—')}</td>
+      <td><span style="font-family:monospace;font-size:12px">${escHtml(r.version)}</span></td>
       <td>
         ${r.current
-          ? '<span class="status-badge status-ok">Up to date</span>'
-          : '<span class="status-badge status-behind">Behind by 1+</span>'}
+          ? '<span style="color:var(--forest);font-weight:600">✓ Current</span>'
+          : '<span style="color:var(--coral)">Behind</span>'}
+        <span style="color:var(--slate);font-size:11px;margin-left:6px">${fmtDate(r.date)}</span>
       </td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
 function filterRoster() { renderRoster(rosterData); }
 
 function sortRoster(key) {
-  if (rosterSortKey === key) rosterSortDir *= -1;
-  else { rosterSortKey = key; rosterSortDir = 1; }
+  if (rosterSortKey === key) {
+    rosterSortDir = rosterSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    rosterSortKey = key;
+    rosterSortDir = 'asc';
+  }
   renderRoster(rosterData);
 }
 
 function exportCSV() {
-  const rows = [['Email', 'Last Acknowledged Version', 'Date', 'Status']];
-  rosterData.forEach(r => {
-    rows.push([
-      r.email,
-      r.version || '',
-      r.date ? fmtDateFull(r.date) : '',
-      r.current ? 'Up to date' : 'Behind',
-    ]);
-  });
-  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const rows = [['Email','Name','Version','Date','Status']];
+  rosterData.forEach(r => rows.push([r.email, r.name||'', r.version, r.date, r.current ? 'Current' : 'Behind']));
+  const csv  = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a'); a.href = url; a.download = 'ets_reader_roster.csv';
-  a.click(); URL.revokeObjectURL(url);
-};
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'reader-roster.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ── TABS ──────────────────────────────────────────────────────
 function switchTab(tab) {
