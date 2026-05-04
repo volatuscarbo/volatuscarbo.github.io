@@ -10,9 +10,14 @@ from supabase import create_client
 # =========================
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_KEY"]
-BASE_CELEX = "32003L0087"  # Directive 2003/87/EC
 
 sb = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+TRACKED_ACTS = [
+    "32003L0087",
+    "32018R2066",
+    "32018R2067"
+]
 
 # =========================
 # HELPERS
@@ -21,20 +26,18 @@ def hash_text(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 # =========================
-# STEP 1: GET LATEST VERSION
+# STEP 1: FETCH EUR-LEX
 # =========================
-def get_latest_consolidated():
-    # EUR-Lex consolidated URL pattern
-    url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:0{BASE_CELEX}"
+def get_latest_consolidated(celex):
+    url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:0{celex}"
 
     r = requests.get(url)
     r.raise_for_status()
 
-    # crude detection of consolidation date
     today = datetime.utcnow().date()
 
     return {
-        "celex": f"0{BASE_CELEX}-{today.strftime('%Y%m%d')}",
+        "celex": f"0{celex}-{today.strftime('%Y%m%d')}",
         "date": today,
         "html": r.text,
         "url": url
@@ -70,27 +73,27 @@ def parse_articles(html):
     return articles
 
 # =========================
-# STEP 3: GET OR CREATE ACT
+# STEP 3: ACT MANAGEMENT
 # =========================
-def get_act():
-    res = sb.table("legal_acts").select("*").eq("celex", BASE_CELEX).execute()
+def get_act(celex):
+    res = sb.table("legal_acts").select("*").eq("celex", celex).execute()
 
     if res.data:
         return res.data[0]["id"]
 
     res = sb.table("legal_acts").insert({
-        "celex": BASE_CELEX,
-        "title": "EU ETS Directive"
+        "celex": celex,
+        "title": f"EU Act {celex}"
     }).execute()
 
     return res.data[0]["id"]
 
 # =========================
-# STEP 4: CHECK VERSION
+# STEP 4: VERSION CHECK
 # =========================
 def version_exists(act_id, date):
     res = sb.table("versions") \
-        .select("*") \
+        .select("id") \
         .eq("act_id", act_id) \
         .eq("version_date", str(date)) \
         .execute()
@@ -98,7 +101,7 @@ def version_exists(act_id, date):
     return len(res.data) > 0
 
 # =========================
-# STEP 5: LOAD LAST VERSION
+# STEP 5: LOAD PREVIOUS STATE
 # =========================
 def load_last_articles(act_id):
     res = sb.table("versions") \
@@ -123,7 +126,7 @@ def load_last_articles(act_id):
     }
 
 # =========================
-# STEP 6: DIFF
+# STEP 6: DIFF ENGINE
 # =========================
 def diff_articles(old, new):
     changes = []
@@ -132,32 +135,77 @@ def diff_articles(old, new):
 
     for k in all_keys:
         if k not in old:
-            changes.append((k, "added", None, new[k]["hash"]))
+            changes.append({
+                "article": k,
+                "type": "added",
+                "old_hash": None,
+                "new_hash": new[k]["hash"],
+                "old_text": None,
+                "new_text": new[k]["content"]
+            })
+
         elif k not in new:
-            changes.append((k, "removed", old[k]["hash"], None))
+            changes.append({
+                "article": k,
+                "type": "removed",
+                "old_hash": old[k]["hash"],
+                "new_hash": None,
+                "old_text": old[k]["content"],
+                "new_text": None
+            })
+
         elif old[k]["hash"] != new[k]["hash"]:
-            changes.append((k, "modified", old[k]["hash"], new[k]["hash"]))
+            changes.append({
+                "article": k,
+                "type": "modified",
+                "old_hash": old[k]["hash"],
+                "new_hash": new[k]["hash"],
+                "old_text": old[k]["content"],
+                "new_text": new[k]["content"]
+            })
 
     return changes
 
 # =========================
-# MAIN PIPELINE
+# STEP 7: IMPACT CLASSIFICATION
 # =========================
-def run():
-    print("🚀 Running EU law tracker")
+def classify_change(text):
+    t = text.lower()
 
-    act_id = get_act()
+    if "monitoring" in t or "reporting" in t:
+        return "MRR_IMPACT", 5
 
-    latest = get_latest_consolidated()
+    if "allowance" in t or "allocation" in t:
+        return "FREE_ALLOCATION_IMPACT", 4
+
+    if "penalty" in t or "fine" in t:
+        return "COMPLIANCE_PENALTY_IMPACT", 5
+
+    if "scope" in t or "installation" in t:
+        return "SCOPE_CHANGE_IMPACT", 5
+
+    if "definition" in t:
+        return "DEFINITION_CHANGE", 3
+
+    return "GENERAL_CHANGE", 1
+
+# =========================
+# STEP 8: PROCESS ACT
+# =========================
+def process_act(celex):
+    print(f"\n📘 Processing {celex}")
+
+    act_id = get_act(celex)
+    latest = get_latest_consolidated(celex)
 
     if version_exists(act_id, latest["date"]):
         print("✅ No new version")
         return
 
-    print("📄 Parsing new version")
+    print("📄 Parsing")
     new_articles = parse_articles(latest["html"])
 
-    print("📚 Loading previous version")
+    print("📚 Loading previous")
     _, old_articles = load_last_articles(act_id)
 
     print("🔬 Diffing")
@@ -174,27 +222,73 @@ def run():
 
     version_id = v.data[0]["id"]
 
-    print("💾 Saving articles")
-    for k, v in new_articles.items():
-        sb.table("articles").insert({
+    # =========================
+    # SAVE ARTICLES
+    # =========================
+    sb.table("articles").insert([
+        {
             "version_id": version_id,
             "article_number": k,
             "content": v["content"],
             "hash": v["hash"]
-        }).execute()
+        }
+        for k, v in new_articles.items()
+    ]).execute()
 
-    print("💾 Saving diffs")
-    for (k, t, old_h, new_h) in changes:
-        sb.table("article_changes").insert({
+    # =========================
+    # SAVE RAW CHANGES
+    # =========================
+    sb.table("article_changes").insert([
+        {
             "version_id": version_id,
-            "article_number": k,
-            "change_type": t,
-            "previous_hash": old_h,
-            "new_hash": new_h,
-            "summary": t
-        }).execute()
+            "article_number": c["article"],
+            "change_type": c["type"],
+            "previous_hash": c["old_hash"],
+            "new_hash": c["new_hash"],
+            "summary": (c["new_text"] or "")[:300]
+        }
+        for c in changes
+    ]).execute()
 
-    print("✅ Done")
+    # =========================
+    # IMPACT ANALYSIS (NEW CORE FEATURE)
+    # =========================
+    impacts = []
+
+    for c in changes:
+        combined_text = (c["old_text"] or "") + " " + (c["new_text"] or "")
+        change_type, score = classify_change(combined_text)
+
+        impacts.append({
+            "version_id": version_id,
+            "article_number": c["article"],
+            "change_type": c["type"],
+            "legal_change_type": change_type,
+            "impact_score": score,
+            "summary": combined_text[:300]
+        })
+
+    sb.table("article_impacts").insert(impacts).execute()
+
+    # =========================
+    # ALERT (OPTIONAL)
+    # =========================
+    if any(i["impact_score"] >= 4 for i in impacts):
+        print("🚨 HIGH IMPACT REGULATORY CHANGE DETECTED")
+
+    print("✅ Done:", celex)
+
+# =========================
+# MAIN
+# =========================
+def run():
+    print("🚀 EU Compliance Intelligence System")
+
+    for celex in TRACKED_ACTS:
+        try:
+            process_act(celex)
+        except Exception as e:
+            print(f"❌ Error {celex}: {e}")
 
 if __name__ == "__main__":
     run()
