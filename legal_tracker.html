@@ -1562,8 +1562,8 @@ async function selectVersion(v) {
     document.getElementById('cs-prev-version').textContent = prevLabel;
     document.getElementById('cs-date').textContent = fmtDate(v.published_at);
 
-    await loadChanges(v.id);
-    renderLegalText(v);
+    try { await loadChanges(v.id); } catch(e) { console.error('loadChanges threw:', e); }
+    try { renderLegalText(v); } catch(e) { console.error('renderLegalText threw:', e); }
 
     if (currentUser) checkUserAck();
 
@@ -1576,23 +1576,26 @@ async function selectVersion(v) {
 
 // ── CHANGES ──────────────────────────────────────────────────
 async function loadChanges(versionId) {
-  let changes = DEMO_CHANGES; // safe default
+  let changes = DEMO_CHANGES; // safe default — always falls back
   try {
-    if (versionId && !versionId.startsWith('demo-') && !versionId.startsWith('baseline-')) {
-      const { data, error } = await sb
+    const isReal = versionId
+      && !versionId.startsWith('demo-')
+      && !versionId.startsWith('baseline-');
+    if (isReal) {
+      const result = await sb
         .from('legislation_changes')
         .select('*')
         .eq('version_id', versionId)
         .order('article_ref');
-      if (!error && data && data.length > 0) {
-        changes = data;
+      if (result && !result.error && result.data && result.data.length > 0) {
+        changes = result.data;
       }
     }
   } catch (err) {
-    console.warn('loadChanges fetch failed, using demo data:', err);
+    console.warn('loadChanges: using demo data because:', err.message);
   }
-  renderChangeSummary(changes);
-  renderDiff(changes);
+  try { renderChangeSummary(changes); } catch(e) { console.error('renderChangeSummary:', e); }
+  try { renderDiff(changes); } catch(e) { console.error('renderDiff:', e); }
 }
 
 function renderChangeSummary(changes) {
