@@ -1171,6 +1171,38 @@ function renderUserUI() {
   }
 }
 
+// ── UTILITIES ─────────────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
+
+function fmtDateFull(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('en-GB', {
+    day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function renderSyncPill() {
+  const pill = document.getElementById('sync-pill');
+  if (!pill) return;
+  const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  pill.title = `Page loaded at ${now}`;
+}
+
 // ── VERSIONS ──────────────────────────────────────────────────
 async function loadVersions() {
   // Try to load acts + their current (latest) version from Supabase.
