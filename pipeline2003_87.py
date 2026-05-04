@@ -20,7 +20,7 @@ HEADERS = {
 def get_act():
     url = f"{SUPABASE_URL}/rest/v1/acts?celex=eq.{CELEX}"
     res = requests.get(url, headers=HEADERS).json()
-
+    print("acts_id =", res[0]["id"])
     if res:
         return res[0]["id"]
 
@@ -131,6 +131,7 @@ def run():
     print(f"🚀 Updating {CELEX}")
 
     acts_id = get_act()
+    print("acts_id =", acts_id)
     versions = fetch_versions()
     existing = get_existing_versions(acts_id)
 
