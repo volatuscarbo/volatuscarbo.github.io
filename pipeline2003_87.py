@@ -13,7 +13,7 @@ Environment variables:
     SUPABASE_KEY  – Your Supabase service-role or anon key
 
 Tables required:
-    act-versions         – stores full text of each version
+    act_versions         – stores full text of each version
     act_versions_diffs   – stores line-level diffs between consecutive versions
 """
 
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL: str = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY: str = os.environ.get("SUPABASE_KEY", "")
 
-TABLE_VERSIONS = "act-versions"
+TABLE_VERSIONS = "act_versions"
 TABLE_DIFFS = "act_versions_diffs"
 
 
