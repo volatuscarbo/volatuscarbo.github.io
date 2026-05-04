@@ -80,7 +80,7 @@ def fetch_versions():
             "content": v_html,
             "hash": content_hash
         })
-
+        print(versions)
     return versions
 
 
