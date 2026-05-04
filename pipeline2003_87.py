@@ -157,7 +157,7 @@ def update_latest(acts_id):
 # MAIN
 # -----------------------------
 def run():
-    print(f"🚀 Updating {CELEX}")
+    
     print("DEBUG get_act object:", get_act, type(get_act), flush=True)
     acts_id = get_act()
     print("acts_id = test", flush=True)
