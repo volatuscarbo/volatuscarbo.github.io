@@ -1,179 +1,112 @@
+from supabase import create_client
 import hashlib
-import difflib
-import re
 
-# -------------------------
-# MEMORY STORE (SIMULATED DB)
-# -------------------------
-store = {}
+SUPABASE_URL = "YOUR_SUPABASE_URL"
+SUPABASE_KEY = "YOUR_SUPABASE_KEY"
 
-# -------------------------
-# INTERNAL STATE (SIMULATES EUR-Lex snapshots over time)
-# -------------------------
-state = {}
-
-CELEX_LIST = [
-    "32003L0087",
-    "32018R2066",
-    "32018R2067"
-]
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # -------------------------
-# 1. STABLE LEGAL TEXT SOURCE
-#    (NO timestamps, NO randomness)
-# -------------------------
-def fetch_legislation_text(celex):
-    """
-    Deterministic legal evolution per CELEX.
-    Each CELEX progresses only when state increases.
-    """
-
-    versions = {
-        "32003L0087": [
-            "Article 1 defines scope of application.",
-            "Article 1 defines scope. Article 5 introduces compliance obligations.",
-            "Article 1 revised. Article 5 expanded enforcement rules.",
-        ],
-        "32018R2066": [
-            "Monitoring and reporting of greenhouse gas emissions.",
-            "Monitoring, reporting and verification framework established.",
-            "Expanded MRV system with digital reporting obligations.",
-        ],
-        "32018R2067": [
-            "Rules on verification of emissions data.",
-            "Verification procedures updated and accredited verifiers introduced.",
-            "Full verification regime aligned with EU ETS Phase IV.",
-        ]
-    }
-
-    s = state.setdefault(celex, {"i": 0})
-    i = s["i"]
-
-    # IMPORTANT: clamp index (no artificial extension)
-    text = versions[celex][min(i, len(versions[celex]) - 1)]
-
-    return text
-
-
-# -------------------------
-# 2. NORMALIZATION (CRITICAL FIX)
-# -------------------------
-def normalize(text):
-    text = text.lower()
-    text = re.sub(r"\s+", " ", text)
-    text = re.sub(r"[^\w\s]", "", text)
-    return text.strip()
-
-
-# -------------------------
-# 3. HASH FUNCTION (ONLY NORMALIZED LEGAL CONTENT)
+# HASH FUNCTION (ONLY FOR CHANGE DETECTION)
 # -------------------------
 def hash_text(text):
-    return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 # -------------------------
-# 4. DIFF ENGINE
+# FETCH LATEST VERSION ONLY
 # -------------------------
-def diff(old, new):
-    return "\n".join(
-        difflib.unified_diff(
-            old.splitlines(),
-            new.splitlines(),
-            lineterm=""
-        )
-    )
+def get_latest_version(act_id):
+    res = supabase.table("legislation_versions") \
+        .select("*") \
+        .eq("act_id", act_id) \
+        .order("version_number", desc=True) \
+        .limit(1) \
+        .execute()
 
-
-# -------------------------
-# 5. CORE PROCESSOR
-# -------------------------
-def process_celex(celex):
-    print("\n" + "=" * 80)
-    print(f"📘 CELEX: {celex}")
-    print("=" * 80)
-
-    raw_text = fetch_legislation_text(celex)
-
-    print("\n📄 RAW TEXT:")
-    print(raw_text)
-
-    normalized = normalize(raw_text)
-    new_hash = hash_text(raw_text)
-
-    print("\n🧼 NORMALIZED:")
-    print(normalized)
-
-    print("\n🔐 HASH:")
-    print(new_hash)
-
-    previous = store.get(celex)
-
-    # -------------------------
-    # FIRST VERSION
-    # -------------------------
-    if not previous:
-        print("\n🆕 FIRST VERSION CREATED")
-        store[celex] = {
-            "text": raw_text,
-            "hash": new_hash,
-            "version": 1
-        }
-        state[celex]["i"] += 1
-        return
-
-    print("\n📄 PREVIOUS VERSION FOUND")
-    print("OLD HASH:", previous["hash"])
-
-    # -------------------------
-    # NO CHANGE DETECTED
-    # -------------------------
-    if previous["hash"] == new_hash:
-        print("\n⏭ NO LEGAL CHANGE DETECTED → NO NEW VERSION")
-        return
-
-    # -------------------------
-    # CHANGE DETECTED
-    # -------------------------
-    print("\n🔥 LEGAL CHANGE DETECTED → CREATING NEW VERSION")
-
-    print("\n📊 DIFF:")
-    print(diff(previous["text"], raw_text))
-
-    new_version = previous["version"] + 1
-
-    store[celex] = {
-        "text": raw_text,
-        "hash": new_hash,
-        "version": new_version
-    }
-
-    print(f"\n✅ VERSION UPDATED → v{new_version}")
-
-    # IMPORTANT: only advance state AFTER confirmed change
-    state[celex]["i"] += 1
+    return res.data[0] if res.data else None
 
 
 # -------------------------
-# 6. RUN LOOP (REALISTIC BEHAVIOR TEST)
+# CREATE NEW VERSION
 # -------------------------
-def run():
-    print("\n🚀 CELEX VERSION ENGINE v3 (STABLE DEBUG)\n")
+def create_version(act_id, celex, new_text, new_hash, latest_version):
+    new_version_number = 1 if not latest_version else latest_version["version_number"] + 1
 
-    for i in range(6):
-        print("\n" + "#" * 50)
-        print(f"🔁 ITERATION {i+1}")
-        print("#" * 50)
+    supabase.table("legislation_versions").insert({
+        "act_id": act_id,
+        "celex": celex,
+        "content": new_text,
+        "content_hash": new_hash,
+        "version_number": new_version_number,
+        "is_latest": True
+    }).execute()
 
-        for celex in CELEX_LIST:
-            process_celex(celex)
+    # mark old latest as not latest
+    if latest_version:
+        supabase.table("legislation_versions") \
+            .update({"is_latest": False}) \
+            .eq("id", latest_version["id"]) \
+            .execute()
 
-    print("\n\n🎯 FINAL STATE:\n")
-
-    for celex, data in store.items():
-        print(f"{celex} → version {data['version']}")
+    print(f"✅ Created version {new_version_number}")
 
 
+# -------------------------
+# MAIN PIPELINE
+# -------------------------
+def process_celex(act_id, celex, new_text):
+    print("\n" + "=" * 60)
+    print(f"📘 Processing CELEX: {celex}")
+    print("=" * 60)
+
+    new_hash = hash_text(new_text)
+
+    print("\n🔐 New hash:", new_hash)
+
+    latest = get_latest_version(act_id)
+
+    if latest:
+        print("📄 Latest version:", latest["version_number"])
+        print("🔐 Old hash:", latest["content_hash"])
+
+        if latest["content_hash"] == new_hash:
+            print("⏭ No change detected → skipping")
+            return
+    else:
+        print("🆕 No previous version found")
+
+    create_version(act_id, celex, new_text, new_hash, latest)
+
+
+# -------------------------
+# EXAMPLE USAGE
+# -------------------------
 if __name__ == "__main__":
-    run()
+
+    # Example input (replace with real EUR-Lex fetch later)
+    test_data = [
+        {
+            "act_id": "ec657d4c-eb3c-4855-9a40-3d9688934c47",
+            "celex": "32003L0087",
+            "text": "Article 1 defines scope of application."
+        },
+        {
+            "act_id": "331f64b3-7c4f-42c2-ad82-e1e4d7bec8f2",
+            "celex": "32018R2066",
+            "text": "Monitoring and reporting framework established."
+        },
+        {
+            "act_id": "919d4fb5-a896-41cf-a641-7d587d895850",
+            "celex": "32018R2067",
+            "text": "Verification procedures updated."
+        }
+    ]
+
+    for item in test_data:
+        process_celex(
+            item["act_id"],
+            item["celex"],
+            item["text"]
+        )
