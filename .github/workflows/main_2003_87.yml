@@ -25,6 +25,6 @@ jobs:
       - name: Run pipeline
         env:
           SUPABASE_URL: ${{ secrets.LEGAL_SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.LEGAL_PUBLIC_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           python pipeline2003_87.py
