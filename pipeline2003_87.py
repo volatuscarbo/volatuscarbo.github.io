@@ -1,15 +1,14 @@
 import hashlib
 import difflib
 import re
-import time
 
 # -------------------------
-# IN-MEMORY VERSION STORE
+# MEMORY STORE (SIMULATED DB)
 # -------------------------
 store = {}
 
 # -------------------------
-# SIMULATED CELEX STATE
+# INTERNAL STATE (SIMULATES EUR-Lex snapshots over time)
 # -------------------------
 state = {}
 
@@ -21,13 +20,13 @@ CELEX_LIST = [
 
 
 # -------------------------
-# 1. SIMULATED LEGAL DATA SOURCE
-# (NO timestamps, only real content changes)
+# 1. STABLE LEGAL TEXT SOURCE
+#    (NO timestamps, NO randomness)
 # -------------------------
 def fetch_legislation_text(celex):
     """
-    Simulates how EUR-Lex would evolve consolidated texts.
-    Each CELEX evolves independently.
+    Deterministic legal evolution per CELEX.
+    Each CELEX progresses only when state increases.
     """
 
     versions = {
@@ -51,33 +50,31 @@ def fetch_legislation_text(celex):
     s = state.setdefault(celex, {"i": 0})
     i = s["i"]
 
+    # IMPORTANT: clamp index (no artificial extension)
     text = versions[celex][min(i, len(versions[celex]) - 1)]
-
-    state[celex]["i"] += 1
 
     return text
 
 
 # -------------------------
 # 2. NORMALIZATION (CRITICAL FIX)
-# removes noise so false versions are not created
 # -------------------------
 def normalize(text):
     text = text.lower()
-    text = re.sub(r"\s+", " ", text)      # collapse whitespace
-    text = re.sub(r"[^\w\s]", "", text)   # remove punctuation
+    text = re.sub(r"\s+", " ", text)
+    text = re.sub(r"[^\w\s]", "", text)
     return text.strip()
 
 
 # -------------------------
-# 3. HASH FUNCTION (BASED ON NORMALIZED TEXT)
+# 3. HASH FUNCTION (ONLY NORMALIZED LEGAL CONTENT)
 # -------------------------
 def hash_text(text):
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()
 
 
 # -------------------------
-# 4. DIFF ENGINE (LEGAL VIEW)
+# 4. DIFF ENGINE
 # -------------------------
 def diff(old, new):
     return "\n".join(
@@ -90,12 +87,12 @@ def diff(old, new):
 
 
 # -------------------------
-# 5. CORE VERSION PROCESSOR
+# 5. CORE PROCESSOR
 # -------------------------
 def process_celex(celex):
-    print("\n" + "=" * 90)
+    print("\n" + "=" * 80)
     print(f"📘 CELEX: {celex}")
-    print("=" * 90)
+    print("=" * 80)
 
     raw_text = fetch_legislation_text(celex)
 
@@ -105,7 +102,7 @@ def process_celex(celex):
     normalized = normalize(raw_text)
     new_hash = hash_text(raw_text)
 
-    print("\n🧼 NORMALIZED TEXT:")
+    print("\n🧼 NORMALIZED:")
     print(normalized)
 
     print("\n🔐 HASH:")
@@ -120,10 +117,10 @@ def process_celex(celex):
         print("\n🆕 FIRST VERSION CREATED")
         store[celex] = {
             "text": raw_text,
-            "normalized": normalized,
             "hash": new_hash,
             "version": 1
         }
+        state[celex]["i"] += 1
         return
 
     print("\n📄 PREVIOUS VERSION FOUND")
@@ -133,13 +130,13 @@ def process_celex(celex):
     # NO CHANGE DETECTED
     # -------------------------
     if previous["hash"] == new_hash:
-        print("\n⏭ NO LEGAL CHANGE DETECTED → SKIP VERSION")
+        print("\n⏭ NO LEGAL CHANGE DETECTED → NO NEW VERSION")
         return
 
     # -------------------------
-    # NEW VERSION DETECTED
+    # CHANGE DETECTED
     # -------------------------
-    print("\n🔥 LEGAL CHANGE DETECTED → NEW VERSION")
+    print("\n🔥 LEGAL CHANGE DETECTED → CREATING NEW VERSION")
 
     print("\n📊 DIFF:")
     print(diff(previous["text"], raw_text))
@@ -148,19 +145,21 @@ def process_celex(celex):
 
     store[celex] = {
         "text": raw_text,
-        "normalized": normalized,
         "hash": new_hash,
         "version": new_version
     }
 
     print(f"\n✅ VERSION UPDATED → v{new_version}")
 
+    # IMPORTANT: only advance state AFTER confirmed change
+    state[celex]["i"] += 1
+
 
 # -------------------------
-# 6. SIMULATION LOOP
+# 6. RUN LOOP (REALISTIC BEHAVIOR TEST)
 # -------------------------
 def run():
-    print("\n🚀 EU LEGAL VERSION ENGINE v2 STARTED\n")
+    print("\n🚀 CELEX VERSION ENGINE v3 (STABLE DEBUG)\n")
 
     for i in range(6):
         print("\n" + "#" * 50)
@@ -169,8 +168,6 @@ def run():
 
         for celex in CELEX_LIST:
             process_celex(celex)
-
-        time.sleep(1)
 
     print("\n\n🎯 FINAL STATE:\n")
 
