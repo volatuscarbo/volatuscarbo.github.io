@@ -3,17 +3,18 @@ EU Legislative Act Version Tracker
 ===================================
 Tracks changes to EU legislative acts in Supabase.
 
-- First run (no versions in DB): bulk-inserts all provided versions,
-  marks only the last as `is_latest`, and stores diffs between consecutive versions.
-- Subsequent runs: compares the newest incoming text against the DB's latest version
-  and inserts only if a change is detected.
+Two entry points:
+
+- `process_act`       – single text; compares against DB latest, inserts if changed.
+- `process_act_bulk`  – list of texts (oldest → newest); used on first run to
+                        seed all known historical versions into the DB.
 
 Environment variables:
     SUPABASE_URL  – Your Supabase project URL
     SUPABASE_KEY  – Your Supabase service-role or anon key
 
 Tables required:
-    act_versions         – stores full text of each version
+    act-versions         – stores full text of each version
     act_versions_diffs   – stores line-level diffs between consecutive versions
 """
 
@@ -58,7 +59,7 @@ def get_supabase_client() -> Client:
 # Text utilities
 # ---------------------------------------------------------------------------
 def normalize(text: str) -> str:
-    """Normalize text for consistent hash comparison (lowercase, strip punctuation/whitespace)."""
+    """Normalize text for consistent hash comparison."""
     text = text.lower()
     text = re.sub(r"\s+", " ", text)
     text = re.sub(r"[^\w\s]", "", text)
@@ -71,11 +72,7 @@ def hash_text(text: str) -> str:
 
 
 def generate_diff(old_text: str, new_text: str) -> str:
-    """
-    Generate a simple line-level diff.
-    Lines present only in the new text are prefixed with '+'.
-    Lines present only in the old text are prefixed with '-'.
-    """
+    """Generate a simple line-level diff between two texts."""
     old_lines = old_text.splitlines()
     new_lines = new_text.splitlines()
 
@@ -102,13 +99,6 @@ def get_latest_version(client: Client, act_id: str) -> Optional[dict]:
     return res.data[0] if res.data else None
 
 
-def get_next_version_number(latest: Optional[dict]) -> int:
-    """Determine the next version number based on the current latest."""
-    if not latest:
-        return 1
-    return int(latest["version_number"]) + 1
-
-
 def insert_version(
     client: Client,
     act_id: str,
@@ -116,9 +106,9 @@ def insert_version(
     text: str,
     content_hash: str,
     version_number: int,
-    is_latest: bool,
+    is_latest: bool = True,
 ) -> Optional[dict]:
-    """Insert a new version row. Returns the inserted row or None on failure."""
+    """Insert a new version row."""
     res = (
         client.table(TABLE_VERSIONS)
         .insert(
@@ -138,7 +128,7 @@ def insert_version(
         logger.error("Failed to insert version %d for act %s", version_number, act_id)
         return None
 
-    logger.info("Inserted v%d for act %s (is_latest=%s)", version_number, act_id, is_latest)
+    logger.info("Inserted v%d for act %s", version_number, act_id)
     return res.data[0]
 
 
@@ -175,10 +165,75 @@ def process_act(
     client: Client,
     act_id: str,
     celex: str,
+    current_text: str,
+) -> None:
+    """
+    Process a single act version.
+
+    Parameters
+    ----------
+    client : Client
+        Authenticated Supabase client.
+    act_id : str
+        Unique identifier for the act.
+    celex : str
+        The CELEX number of the act.
+    current_text : str
+        The full text of the act as it exists right now.
+    """
+    if not current_text.strip():
+        logger.warning("Empty text provided for %s – skipping.", celex)
+        return
+
+    logger.info("Processing CELEX %s (act_id=%s)", celex, act_id)
+
+    current_hash = hash_text(normalize(current_text))
+    latest = get_latest_version(client, act_id)
+
+    # ----- First version ever -----
+    if latest is None:
+        logger.info("No existing versions – storing as v1.")
+        insert_version(client, act_id, celex, current_text, current_hash, version_number=1)
+        return
+
+    # ----- No change -----
+    logger.info(
+        "Latest in DB: v%d | DB hash: %s | New hash: %s",
+        latest["version_number"],
+        latest["content_hash"],
+        current_hash,
+    )
+
+    if latest["content_hash"] == current_hash:
+        logger.info("No change detected – skipping.")
+        return
+
+    # ----- Change detected -----
+    next_version = int(latest["version_number"]) + 1
+
+    inserted = insert_version(client, act_id, celex, current_text, current_hash, next_version)
+    if not inserted:
+        return
+
+    unmark_latest(client, latest["id"])
+
+    diff_text = generate_diff(latest["content"], current_text)
+    insert_diff(client, act_id, celex, latest["version_number"], next_version, diff_text)
+
+    logger.info("Update complete – new version: v%d", next_version)
+
+
+def process_act_bulk(
+    client: Client,
+    act_id: str,
+    celex: str,
     versions: list[str],
 ) -> None:
     """
-    Main entry point for processing an act.
+    Seed all known historical versions of an act into the DB.
+
+    If versions already exist in the DB, only the last element in the list
+    is compared against the latest stored version (same as process_act).
 
     Parameters
     ----------
@@ -190,8 +245,6 @@ def process_act(
         The CELEX number of the act.
     versions : list[str]
         Ordered list of full-text versions (oldest → newest).
-        On first run all are stored; on subsequent runs only the last
-        element is compared against the DB.
     """
     if not versions:
         logger.warning("No versions provided for %s – skipping.", celex)
@@ -201,70 +254,34 @@ def process_act(
 
     latest = get_latest_version(client, act_id)
 
-    if latest is None:
-        _bulk_insert(client, act_id, celex, versions)
-    else:
-        _incremental_update(client, act_id, celex, versions[-1], latest)
+    # ----- Versions already in DB → incremental update only -----
+    if latest is not None:
+        logger.info("Versions already exist in DB – falling back to incremental update.")
+        process_act(client, act_id, celex, versions[-1])
+        return
 
-
-def _bulk_insert(
-    client: Client,
-    act_id: str,
-    celex: str,
-    versions: list[str],
-) -> None:
-    """Insert all versions when no prior data exists in the DB."""
-    logger.info("No existing versions found – bulk inserting %d version(s).", len(versions))
+    # ----- Empty DB → bulk insert all versions -----
+    logger.info("No existing versions – bulk inserting %d version(s).", len(versions))
 
     for i, text in enumerate(versions):
+        if not text.strip():
+            logger.warning("Empty text at position %d – skipping.", i)
+            continue
+
         version_number = i + 1
         is_last = i == len(versions) - 1
         content_hash = hash_text(normalize(text))
 
         inserted = insert_version(
-            client, act_id, celex, text, content_hash, version_number, is_last
+            client, act_id, celex, text, content_hash, version_number, is_latest=is_last
         )
         if not inserted:
             logger.error("Bulk insert aborted at v%d.", version_number)
             return
 
+        # Store diff between consecutive versions
         if i > 0:
             diff_text = generate_diff(versions[i - 1], text)
             insert_diff(client, act_id, celex, version_number - 1, version_number, diff_text)
 
     logger.info("Bulk insert complete – %d version(s) stored.", len(versions))
-
-
-def _incremental_update(
-    client: Client,
-    act_id: str,
-    celex: str,
-    new_text: str,
-    latest: dict,
-) -> None:
-    """Compare incoming text against the latest DB version; insert if changed."""
-    new_hash = hash_text(normalize(new_text))
-
-    logger.info(
-        "Latest in DB: v%d | DB hash: %s | New hash: %s",
-        latest["version_number"],
-        latest["content_hash"],
-        new_hash,
-    )
-
-    if latest["content_hash"] == new_hash:
-        logger.info("No change detected – skipping.")
-        return
-
-    next_version = get_next_version_number(latest)
-
-    inserted = insert_version(client, act_id, celex, new_text, new_hash, next_version, True)
-    if not inserted:
-        return
-
-    unmark_latest(client, latest["id"])
-
-    diff_text = generate_diff(latest["content"], new_text)
-    insert_diff(client, act_id, celex, latest["version_number"], next_version, diff_text)
-
-    logger.info("Update complete – new version: v%d", next_version)
