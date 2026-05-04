@@ -18,7 +18,7 @@ def hash_text(text):
 # FETCH LATEST VERSION ONLY
 # -------------------------
 def get_latest_version(act_id):
-    res = supabase.table("legislation_versions") \
+    res = supabase.table("act_versions") \
         .select("*") \
         .eq("act_id", act_id) \
         .order("version_number", desc=True) \
@@ -34,7 +34,7 @@ def get_latest_version(act_id):
 def create_version(act_id, celex, new_text, new_hash, latest_version):
     new_version_number = 1 if not latest_version else latest_version["version_number"] + 1
 
-    supabase.table("legislation_versions").insert({
+    supabase.table("act_versions").insert({
         "act_id": act_id,
         "celex": celex,
         "content": new_text,
@@ -45,7 +45,7 @@ def create_version(act_id, celex, new_text, new_hash, latest_version):
 
     # mark old latest as not latest
     if latest_version:
-        supabase.table("legislation_versions") \
+        supabase.table("act_versions") \
             .update({"is_latest": False}) \
             .eq("id", latest_version["id"]) \
             .execute()
