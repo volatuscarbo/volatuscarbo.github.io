@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 
 SUPABASE_URL = "https://eeuedfwjnaupakapmvwi.supabase.co"
-SUPABASE_KEY = "sb_secret_KGEAj-UMur_awENGB3NIIA_YndbMfYy"
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 
 CELEX = "32003L0087"
 
@@ -65,7 +65,8 @@ def fetch_versions():
     for link in soup.select("[data-celex]"):
         celex_version = link.get("data-celex")
         date = link.get("data-date")
-
+        print("Versions :",versions)
+        print("Date :",date)
         if not celex_version or not date:
             continue
 
@@ -80,7 +81,7 @@ def fetch_versions():
             "content": v_html,
             "hash": content_hash
         })
-        print(versions)
+        print("Versions :",versions)
     return versions
 
 
