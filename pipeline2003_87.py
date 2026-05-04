@@ -18,20 +18,36 @@ HEADERS = {
 # 1. GET OR CREATE ACT
 # -----------------------------
 def get_act():
-    print("Start get_act ")
-    url = f"{SUPABASE_URL}/rest/v1/acts?celex=eq.{CELEX}"
-    res = requests.get(url, headers=HEADERS).json()
-    print("acts_id =", res[0]["id"])
-    if res:
-        return res[0]["id"]
+    print("Start get_act", flush=True)
 
+    url = f"{SUPABASE_URL}/rest/v1/acts?celex=eq.{CELEX}"
+
+    res = requests.get(url, headers=HEADERS).json()
+    print("DEBUG response:", res, flush=True)
+
+    # 🔒 validate response type
+    if not isinstance(res, list):
+        raise Exception(f"Unexpected response from Supabase: {res}")
+
+    # ✅ existing act found
+    if len(res) > 0:
+        act_id = res[0].get("id")
+        print("acts_id =", act_id, flush=True)
+        return act_id
+
+    # 🆕 insert new act
     insert = requests.post(
         f"{SUPABASE_URL}/rest/v1/acts",
         headers=HEADERS,
         json={"celex": CELEX, "title": "Directive 2003/87/EC"}
     ).json()
 
-    return insert[0]["id"]
+    print("DEBUG insert response:", insert, flush=True)
+
+    if isinstance(insert, list) and len(insert) > 0:
+        return insert[0]["id"]
+
+    raise Exception(f"Insert failed: {insert}")
 
 
 # -----------------------------
