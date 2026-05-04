@@ -158,7 +158,7 @@ def update_latest(acts_id):
 # -----------------------------
 def run():
     print(f"🚀 Updating {CELEX}")
-
+    print("get_act =", get_act, type(get_act))
     acts_id = get_act()
     print("acts_id = test", flush=True)
     versions = fetch_versions()
