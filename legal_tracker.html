@@ -1,5 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
+<!--
+=================================================================
+  SECTION MAP — use line numbers to read targeted sections only
+  (avoids loading the whole file; update after structural edits)
+=================================================================
+
+  HTML STRUCTURE
+  ~~~~~~~~~~~~~~
+    1      <!DOCTYPE> / <head> / fonts
+   11      <style> block starts
+  628      </style> / <body> starts
+  634      #topbar
+  657      #layout / #sidebar
+  669      #main / #new-version-banner
+  681      .tab-bar (reader / roster tabs)
+  686      #change-summary panel
+  718      #reader-legal-panel (legal text + TOC)
+  738      #roster-panel
+  770      #ack-footer (acknowledgement strip)
+  785      #signin-modal
+  796      </body> structure ends
+  800      <script type="module"> starts
+
+  CSS SECTIONS  (inside <style>, lines 11–627)
+  ~~~~~~~~~~~~
+   12      CSS VARIABLES (:root)
+   44      TOP BAR
+  140      LAYOUT
+  147      SIDEBAR
+  208      MAIN PANE
+  216      NEW VERSION BANNER
+  234      TABS
+  255      CHANGE SUMMARY CARD
+  320      DIFF TOGGLE
+  356      LEGAL TEXT PANEL
+  422      STICKY TOC
+  453      ROSTER
+  497      FOOTER / ACK STRIP
+  539      MODAL
+  578      LOADING SKELETON
+  587      RESPONSIVE (mobile)
+  608      UTILITIES
+
+  JAVASCRIPT SECTIONS  (inside <script>, lines 800–end)
+  ~~~~~~~~~~~~~~~~~~~
+  810      SUPABASE INIT (createClient)
+  817      STATE (global variables)
+  828      FALLBACK DEMO DATA (DEMO_CHANGES)
+  831      LEGISLATION CATALOGUE (DEMO_ACTS / DEMO_VERSIONS) ← edit acts here
+  984      LEGAL TEXT (ETS_LEGAL_TEXT static HTML)           ← edit legal text here
+ 1197      BOOT (DOMContentLoaded)
+ 1229      EVENT BINDING (bindEvents)
+ 1275      AUTH (openSignInModal, signInWithMagicLink, signOut)
+ 1348      UTILITIES (escHtml, fmtDate, fmtDateFull, renderSyncPill)
+ 1380      VERSIONS (loadVersions, renderTimeline, selectVersion)
+ 1514      CHANGES (loadChanges, renderChangeSummary, setDiffView, renderDiff)
+ 1604      LEGAL TEXT RENDER (renderLegalText, buildTOC)
+ 1631      ACKNOWLEDGEMENT (checkUserAck, acknowledgeVersion, showAckConfirmed)
+ 1732      ROSTER (checkRosterAccess, loadRoster, renderMockRoster, renderRoster)
+ 1852      TABS (switchTab)
+
+=================================================================
+-->
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
