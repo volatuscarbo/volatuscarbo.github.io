@@ -159,9 +159,9 @@ def update_latest(acts_id):
 # -----------------------------
 def run():
     
-    print("DEBUG get_act object:", get_act, type(get_act), flush=True)
+    
     acts_id = get_act()
-    print("acts_id = test", flush=True)
+    print("acts_id:  ", acts_id, flush=True)    
     versions = fetch_versions()
     existing = get_existing_versions(acts_id)
 
