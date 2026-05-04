@@ -1,1945 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
-<!--
-=================================================================
-  SECTION MAP — use line numbers to read targeted sections only
-  (avoids loading the whole file; update after structural edits)
-=================================================================
-
-  HTML STRUCTURE
-  ~~~~~~~~~~~~~~
-    1      <!DOCTYPE> / <head> / fonts
-   11      <style> block starts
-  628      </style> / <body> starts
-  634      #topbar
-  657      #layout / #sidebar
-  669      #main / #new-version-banner
-  681      .tab-bar (reader / roster tabs)
-  686      #change-summary panel
-  718      #reader-legal-panel (legal text + TOC)
-  738      #roster-panel
-  770      #ack-footer (acknowledgement strip)
-  785      #signin-modal
-  796      </body> structure ends
-  800      <script type="module"> starts
-
-  CSS SECTIONS  (inside <style>, lines 11–627)
-  ~~~~~~~~~~~~
-   12      CSS VARIABLES (:root)
-   44      TOP BAR
-  140      LAYOUT
-  147      SIDEBAR
-  208      MAIN PANE
-  216      NEW VERSION BANNER
-  234      TABS
-  255      CHANGE SUMMARY CARD
-  320      DIFF TOGGLE
-  356      LEGAL TEXT PANEL
-  422      STICKY TOC
-  453      ROSTER
-  497      FOOTER / ACK STRIP
-  539      MODAL
-  578      LOADING SKELETON
-  587      RESPONSIVE (mobile)
-  608      UTILITIES
-
-  JAVASCRIPT SECTIONS  (inside <script>, lines 800–end)
-  ~~~~~~~~~~~~~~~~~~~
-  810      SUPABASE INIT (createClient)
-  817      STATE (global variables)
-  828      FALLBACK DEMO DATA (DEMO_CHANGES)
-  831      LEGISLATION CATALOGUE (DEMO_ACTS / DEMO_VERSIONS) ← edit acts here
-  984      LEGAL TEXT (ETS_LEGAL_TEXT static HTML)           ← edit legal text here
- 1197      BOOT (DOMContentLoaded)
- 1229      EVENT BINDING (bindEvents)
- 1275      AUTH (openSignInModal, signInWithMagicLink, signOut)
- 1348      UTILITIES (escHtml, fmtDate, fmtDateFull, renderSyncPill)
- 1380      VERSIONS (loadVersions, renderTimeline, selectVersion)
- 1514      CHANGES (loadChanges, renderChangeSummary, setDiffView, renderDiff)
- 1604      LEGAL TEXT RENDER (renderLegalText, buildTOC)
- 1631      ACKNOWLEDGEMENT (checkUserAck, acknowledgeVersion, showAckConfirmed)
- 1732      ROSTER (checkRosterAccess, loadRoster, renderMockRoster, renderRoster)
- 1852      TABS (switchTab)
-
-=================================================================
--->
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EU ETS Legal Tracker — etsverification</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <!-- Supabase loaded as ES module import inside the script block below -->
-  <style>
-    /* ── CSS VARIABLES ── */
-    :root {
-      --forest:      #2D6A4F;
-      --forest-dark: #1B4332;
-      --leaf:        #52B788;
-      --mint:        #B7E4C7;
-      --sky:         #74C0FC;
-      --sand:        #F4F1DE;
-      --cloud:       #F8FAF8;
-      --ink:         #1B263B;
-      --slate:       #5C6B73;
-      --amber:       #E9C46A;
-      --coral:       #E76F51;
-      --white:       #FFFFFF;
-      --sidebar-w:   280px;
-      --topbar-h:    60px;
-      --footer-h:    64px;
-    }
+<meta charset="UTF-8" />
+<title>EU Compliance Dashboard</title>
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    html { scroll-behavior: smooth; }
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    background: #f6f7f9;
+  }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--sand);
-      color: var(--ink);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+  /* LEFT PANEL */
+  #sidebar {
+    width: 320px;
+    background: #fff;
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
+    padding: 12px;
+  }
 
-    /* ── TOP BAR ── */
-    #topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: var(--topbar-h);
-      background: var(--forest-dark);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
+  /* MAIN PANEL */
+  #main {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+  }
 
-    #topbar .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-    }
+  /* ACT ITEM */
+  .act {
+    padding: 10px;
+    margin-bottom: 6px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    cursor: pointer;
+  }
 
-    #topbar .logo-mark {
-      width: 32px; height: 32px;
-      background: var(--leaf);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; color: var(--white); font-size: 14px;
-    }
+  .act:hover {
+    background: #f0f0f0;
+  }
 
-    #topbar .brand-text { display: flex; flex-direction: column; }
-    #topbar .brand-name { color: var(--white); font-size: 13px; font-weight: 600; line-height: 1; }
-    #topbar .page-title { color: var(--mint); font-size: 11px; font-weight: 400; line-height: 1.4; }
+  /* IMPACT CARD */
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-left: 5px solid orange;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 6px;
+  }
 
-    #topbar .top-right { display: flex; align-items: center; gap: 12px; }
+  .high {
+    border-left: 5px solid red;
+  }
 
-    .sync-pill {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,0.1);
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: 11px;
-      color: var(--mint);
-    }
-    .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--leaf); }
+  .title {
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
 
-    .user-chip {
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,0.12);
-      border-radius: 20px;
-      padding: 4px 12px 4px 6px;
-    }
-    .user-avatar {
-      width: 28px; height: 28px; border-radius: 50%;
-      background: var(--leaf);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 600; color: var(--white);
-    }
-    .user-email { font-size: 12px; color: var(--white); }
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 12px;
+    background: #eee;
+    border-radius: 12px;
+    margin-right: 6px;
+  }
 
-    .btn-signout {
-      background: none; border: none;
-      color: var(--mint); font-size: 11px;
-      cursor: pointer; padding: 2px 4px;
-      text-decoration: underline;
-      font-family: inherit;
-    }
+  .muted {
+    color: #666;
+    font-size: 13px;
+  }
 
-    .btn-primary {
-      background: var(--forest);
-      color: var(--white);
-      border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-    }
-    .btn-primary:hover { background: var(--leaf); }
-
-    .btn-secondary {
-      background: var(--cloud);
-      color: var(--forest);
-      border: 1px solid var(--mint);
-      border-radius: 8px;
-      padding: 7px 14px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.15s;
-    }
-    .btn-secondary:hover { background: var(--mint); }
-
-    /* ── LAYOUT ── */
-    #layout {
-      display: flex;
-      margin-top: var(--topbar-h);
-      min-height: calc(100vh - var(--topbar-h) - var(--footer-h));
-    }
-
-    /* ── SIDEBAR ── */
-    #sidebar {
-      width: var(--sidebar-w);
-      min-width: var(--sidebar-w);
-      background: var(--forest-dark);
-      overflow-y: auto;
-      padding: 16px 0;
-      position: sticky;
-      top: var(--topbar-h);
-      height: calc(100vh - var(--topbar-h) - var(--footer-h));
-    }
-
-    .sidebar-header {
-      padding: 8px 16px 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      margin-bottom: 8px;
-    }
-    .sidebar-header h2 {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--mint);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .version-card {
-      padding: 12px 16px;
-      cursor: pointer;
-      border-left: 3px solid transparent;
-      transition: background 0.12s, border-color 0.12s;
-      position: relative;
-    }
-    .version-card:hover { background: rgba(255,255,255,0.06); }
-    .version-card.active {
-      background: rgba(82,183,136,0.12);
-      border-left-color: var(--leaf);
-    }
-
-    .version-card-top {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
-    }
-    .version-dot {
-      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
-    }
-    .dot-green  { background: var(--leaf); }
-    .dot-amber  { background: var(--amber); }
-    .dot-grey   { background: var(--slate); }
-
-    .version-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px; font-weight: 500;
-      color: var(--white);
-    }
-    .version-date {
-      font-size: 11px; color: var(--slate); margin-top: 2px;
-    }
-    .version-summary {
-      font-size: 11px; color: rgba(255,255,255,0.55);
-      margin-top: 4px; line-height: 1.4;
-    }
-
-    /* ── MAIN PANE ── */
-    #main {
-      flex: 1;
-      overflow-y: auto;
-      padding: 24px;
-      max-width: 900px;
-    }
-
-    /* ── NEW VERSION BANNER ── */
-    #new-version-banner {
-      display: none;
-      background: #FFF8E1;
-      border: 1px solid var(--amber);
-      border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      font-size: 13px;
-      color: #7A5A00;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    #new-version-banner.hidden { display: none !important; }
-    #new-version-banner .banner-icon { font-size: 18px; flex-shrink: 0; }
-
-    /* ── TABS ── */
-    .tab-bar {
-      display: flex; gap: 4px; margin-bottom: 20px;
-    }
-    .tab-btn {
-      padding: 8px 16px;
-      border-radius: 8px 8px 0 0;
-      border: 1px solid transparent;
-      background: none;
-      color: var(--slate);
-      font-size: 13px; font-weight: 500;
-      cursor: pointer; font-family: inherit;
-      transition: all 0.12s;
-    }
-    .tab-btn.active {
-      background: var(--cloud);
-      border-color: #dde;
-      color: var(--forest);
-    }
-    .tab-btn:hover:not(.active) { color: var(--forest); }
-
-    /* ── CHANGE SUMMARY CARD ── */
-    #change-summary {
-      background: var(--cloud);
-      border: 1px solid #dde;
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin-bottom: 24px;
-    }
-    #change-summary h2 {
-      font-size: 15px; font-weight: 600; color: var(--forest);
-      margin-bottom: 4px;
-    }
-    #change-summary .cs-subtitle {
-      font-size: 12px; color: var(--slate); margin-bottom: 14px;
-    }
-    .exec-summary {
-      font-family: 'Source Serif 4', serif;
-      font-size: 14px; line-height: 1.7; color: var(--ink);
-      background: #f0f7f4;
-      border-left: 3px solid var(--leaf);
-      padding: 10px 14px;
-      border-radius: 0 6px 6px 0;
-      margin-bottom: 16px;
-    }
-
-    .change-legend {
-      display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap;
-    }
-    .legend-item {
-      display: flex; align-items: center; gap: 5px;
-      font-size: 11px; color: var(--slate);
-    }
-    .legend-badge {
-      width: 20px; height: 20px; border-radius: 4px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700;
-    }
-    .badge-added    { background: #d4edda; color: #155724; }
-    .badge-modified { background: #fff3cd; color: #856404; }
-    .badge-removed  { background: #f8d7da; color: #721c24; }
-
-    .change-list { list-style: none; }
-    .change-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(0,0,0,0.06);
-      font-size: 13px;
-    }
-    .change-item:last-child { border-bottom: none; }
-    .change-tag {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px; font-weight: 500;
-      padding: 2px 6px; border-radius: 4px;
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .tag-added    { background: #d4edda; color: #155724; }
-    .tag-modified { background: #fff3cd; color: #856404; }
-    .tag-removed  { background: #f8d7da; color: #721c24; }
-    .change-ref {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px; color: var(--forest);
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .change-text { color: var(--ink); line-height: 1.5; }
-
-    /* ── DIFF TOGGLE ── */
-    .diff-toggle-bar {
-      display: flex; gap: 6px; margin: 16px 0 12px; align-items: center;
-    }
-    .diff-toggle-bar span { font-size: 12px; color: var(--slate); margin-right: 4px; }
-    .diff-btn {
-      padding: 4px 10px; border-radius: 6px; border: 1px solid #ccc;
-      background: none; font-size: 12px; cursor: pointer; font-family: inherit;
-      transition: all 0.1s;
-    }
-    .diff-btn.active { background: var(--forest); color: white; border-color: var(--forest); }
-
-    .diff-block {
-      background: #fafafa;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      overflow: hidden;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      line-height: 1.7;
-    }
-    .diff-line {
-      display: flex; gap: 8px;
-      padding: 2px 12px;
-    }
-    .diff-line-num { color: #aaa; width: 28px; text-align: right; flex-shrink: 0; user-select: none; }
-    .diff-line-sym { width: 14px; flex-shrink: 0; font-weight: 700; }
-    .diff-added   { background: #e6ffed; }
-    .diff-added .diff-line-sym { color: #22863a; }
-    .diff-removed { background: #ffeef0; }
-    .diff-removed .diff-line-sym { color: #cb2431; }
-    .diff-modified { background: #fff8e1; }
-    .diff-modified .diff-line-sym { color: #856404; }
-    .diff-context { }
-    .diff-context .diff-line-sym { color: #aaa; }
-
-    /* ── LEGAL TEXT PANEL ── */
-    #legal-text-panel {
-      background: var(--cloud);
-      border: 1px solid #dde;
-      border-radius: 12px;
-      padding: 24px;
-      position: relative;
-    }
-
-    #legal-text-panel h2 {
-      font-size: 15px; font-weight: 600; color: var(--forest);
-      margin-bottom: 16px; padding-bottom: 12px;
-      border-bottom: 1px solid #dde;
-    }
-
-    .legal-body {
-      font-family: 'Source Serif 4', serif;
-      font-size: 15px; line-height: 1.85; color: var(--ink);
-    }
-
-    .legal-title {
-      font-size: 17px; font-weight: 600; text-align: center;
-      color: var(--forest-dark); margin: 28px 0 8px;
-      text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .legal-chapter {
-      font-size: 14px; font-weight: 600; color: var(--forest);
-      margin: 24px 0 10px;
-      text-transform: uppercase; letter-spacing: 0.06em;
-    }
-    .legal-article {
-      margin: 20px 0;
-      scroll-margin-top: calc(var(--topbar-h) + 16px);
-    }
-    .article-heading {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px; font-weight: 500;
-      color: var(--forest-dark);
-      display: flex; align-items: center; gap: 8px;
-      margin-bottom: 8px;
-    }
-    .article-heading .article-num {
-      background: var(--mint);
-      padding: 2px 8px; border-radius: 4px;
-      font-size: 11px;
-    }
-    .article-permalink {
-      color: var(--slate); font-size: 11px;
-      text-decoration: none; opacity: 0;
-      transition: opacity 0.1s;
-    }
-    .legal-article:hover .article-permalink { opacity: 1; }
-    .legal-para { margin-bottom: 10px; }
-    .legal-para .para-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px; color: var(--slate);
-      display: inline; margin-right: 6px;
-    }
-    .legal-point { margin-left: 24px; margin-bottom: 6px; }
-    .legal-point .point-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px; color: var(--slate);
-    }
-    .article-new { border-left: 3px solid var(--leaf); padding-left: 12px; }
-    .article-modified { border-left: 3px solid var(--amber); padding-left: 12px; }
-
-    /* ── STICKY TOC ── */
-    #toc-sidebar {
-      position: sticky;
-      top: calc(var(--topbar-h) + 16px);
-      float: right;
-      width: 180px;
-      margin-left: 20px;
-      margin-bottom: 20px;
-      background: var(--sand);
-      border: 1px solid #dde;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 11px;
-      max-height: calc(100vh - var(--topbar-h) - 120px);
-      overflow-y: auto;
-    }
-    #toc-sidebar h3 {
-      font-size: 10px; text-transform: uppercase;
-      letter-spacing: 0.08em; color: var(--slate);
-      margin-bottom: 8px; font-weight: 600;
-    }
-    .toc-link {
-      display: block;
-      color: var(--slate); text-decoration: none;
-      padding: 3px 0;
-      line-height: 1.4;
-      transition: color 0.1s;
-    }
-    .toc-link:hover { color: var(--forest); }
-    .toc-link.active { color: var(--forest); font-weight: 600; }
-
-    /* ── ROSTER ── */
-    #roster-panel {
-      display: none;
-    }
-    #roster-panel.active { display: block; }
-
-    #reader-legal-panel {
-      display: block;
-    }
-    #reader-legal-panel.hidden-panel { display: none; }
-
-    .roster-toolbar {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
-    }
-    .roster-toolbar h2 { font-size: 15px; font-weight: 600; color: var(--forest); }
-
-    .roster-filter {
-      padding: 7px 12px; border: 1px solid #ccc; border-radius: 8px;
-      font-size: 13px; font-family: inherit; background: white;
-    }
-
-    .roster-table-wrap { overflow-x: auto; }
-    table.roster-table {
-      width: 100%; border-collapse: collapse; font-size: 13px;
-    }
-    .roster-table th {
-      text-align: left; padding: 10px 12px;
-      background: var(--forest);
-      color: white; font-weight: 600; font-size: 12px;
-      position: sticky; top: 0; cursor: pointer;
-    }
-    .roster-table th:hover { background: var(--forest-dark); }
-    .roster-table td {
-      padding: 10px 12px; border-bottom: 1px solid #eee;
-    }
-    .roster-table tr:hover td { background: #f5faf7; }
-    .status-badge {
-      display: inline-block; padding: 2px 8px; border-radius: 12px;
-      font-size: 11px; font-weight: 600;
-    }
-    .status-ok    { background: var(--mint); color: var(--forest-dark); }
-    .status-behind { background: #fff3cd; color: #856404; }
-
-    /* ── FOOTER / ACK STRIP ── */
-    #ack-footer {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: var(--footer-h);
-      background: var(--forest-dark);
-      display: flex; align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 0 24px;
-      z-index: 100;
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
-    }
-    #ack-footer .ack-label {
-      color: rgba(255,255,255,0.8); font-size: 13px;
-    }
-    #ack-footer .ack-version {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px; color: var(--mint); font-weight: 500;
-    }
-    #ack-confirmed {
-      display: none;
-      color: var(--mint); font-size: 13px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    #ack-confirmed.show { display: flex; }
-    #ack-confirmed .check-icon { font-size: 18px; }
-
-    #btn-ack {
-      background: var(--leaf);
-      color: var(--white);
-      border: none; border-radius: 8px;
-      padding: 10px 20px;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; font-family: inherit;
-      transition: background 0.15s;
-    }
-    #btn-ack:hover:not(:disabled) { background: var(--forest); }
-    #btn-ack:disabled {
-      opacity: 0.5; cursor: not-allowed;
-    }
-
-    /* ── MODAL ── */
-    .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 200;
-    }
-    .modal-overlay.hidden { display: none; }
-    .modal-box {
-      background: white;
-      border-radius: 14px;
-      padding: 32px;
-      width: 380px;
-      max-width: calc(100vw - 40px);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    }
-    .modal-box h2 {
-      font-size: 18px; font-weight: 700; color: var(--forest-dark);
-      margin-bottom: 6px;
-    }
-    .modal-box p {
-      font-size: 13px; color: var(--slate); margin-bottom: 20px; line-height: 1.5;
-    }
-    .modal-box label { font-size: 13px; font-weight: 500; color: var(--ink); display: block; margin-bottom: 6px; }
-    .modal-box input[type="email"] {
-      width: 100%; padding: 10px 12px;
-      border: 1px solid #ccc; border-radius: 8px;
-      font-size: 14px; font-family: inherit;
-      margin-bottom: 16px;
-      outline: none; transition: border-color 0.15s;
-    }
-    .modal-box input[type="email"]:focus { border-color: var(--forest); }
-    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .modal-msg {
-      font-size: 13px; margin-top: 12px; text-align: center;
-      color: var(--forest); font-weight: 500;
-    }
-    .modal-msg.error { color: var(--coral); }
-
-    /* ── LOADING SKELETON ── */
-    .skeleton {
-      background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.3s infinite;
-      border-radius: 6px; height: 14px; margin-bottom: 8px;
-    }
-    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 768px) {
-      #sidebar {
-        position: static;
-        width: 100%;
-        min-width: unset;
-        height: auto;
-        display: flex; flex-direction: row;
-        overflow-x: auto;
-        padding: 8px;
-        gap: 8px;
-      }
-      .version-card { min-width: 160px; border-left: none; border-bottom: 3px solid transparent; }
-      .version-card.active { border-bottom-color: var(--leaf); border-left: none; }
-      .sidebar-header { display: none; }
-      #layout { flex-direction: column; }
-      #main { padding: 16px; max-width: 100%; }
-      #toc-sidebar { display: none; }
-      #new-version-banner { flex-direction: column; align-items: flex-start; }
-    }
-
-    /* ── UTILITIES ── */
-    .hidden { display: none !important; }
-    .text-mono { font-family: 'JetBrains Mono', monospace; }
-    .flex-gap { display: flex; gap: 8px; align-items: center; }
-    .mt-4 { margin-top: 4px; }
-    .mb-12 { margin-bottom: 12px; }
-  </style>
+</style>
 </head>
+
 <body>
 
-<!-- ═══════════════════════════════════════════
-     TOP BAR
-═══════════════════════════════════════════ -->
-<header id="topbar" role="banner">
-  <a href="#" class="brand" aria-label="etsverification home">
-    <div class="logo-mark" aria-hidden="true">EV</div>
-    <div class="brand-text">
-      <span class="brand-name">etsverification</span>
-      <span class="page-title">EU ETS Legal Tracker</span>
-    </div>
-  </a>
-
-  <div class="top-right">
-    <div class="sync-pill" id="sync-pill" title="Last GitHub Action sync time">
-      <div class="sync-dot"></div>
-      <span id="sync-time">Synced · checking…</span>
-    </div>
-
-    <!-- Unauthenticated -->
-    <button class="btn-primary" id="btn-signin" aria-label="Sign in">Sign in</button>
-
-    <!-- Authenticated (hidden by default) -->
-    <div class="user-chip hidden" id="user-chip">
-      <div class="user-avatar" id="user-avatar" aria-hidden="true">?</div>
-      <span class="user-email" id="user-email-display"></span>
-      <button class="btn-signout" id="btn-signout" aria-label="Sign out">Sign out</button>
-    </div>
-  </div>
-</header>
-
-
-<!-- ═══════════════════════════════════════════
-     MAIN LAYOUT
-═══════════════════════════════════════════ -->
-<div id="layout">
-
-  <!-- ── SIDEBAR ── -->
-  <aside id="sidebar" role="navigation" aria-label="Legislation">
-    <div class="sidebar-header">
-      <h2>EU ETS Legislation</h2>
-    </div>
-    <div id="version-list">
-      <!-- Skeleton -->
-      <div style="padding:12px 16px">
-        <div class="skeleton" style="width:60%;height:12px"></div>
-        <div class="skeleton" style="width:80%;height:10px;margin-top:6px"></div>
-        <div class="skeleton" style="width:90%;height:10px;margin-top:4px"></div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- ── MAIN ── -->
-  <main id="main" role="main">
-
-    <!-- New version banner -->
-    <div id="new-version-banner" class="hidden" role="alert">
-      <span class="banner-icon">⚠️</span>
-      <span id="banner-text"></span>
-      <button class="btn-secondary" id="btn-scroll-ack" style="white-space:nowrap">Acknowledge below</button>
-    </div>
-
-    <!-- Tab bar -->
-    <nav class="tab-bar" role="tablist" aria-label="Main sections">
-      <button class="tab-btn active" role="tab" aria-selected="true"  id="tab-reader">📄 Legislative Text</button>
-      <button class="tab-btn"        role="tab" aria-selected="false" id="tab-roster">👥 Reader Roster</button>
-    </nav>
-
-    <!-- Reader view -->
-    <div id="reader-legal-panel">
-
-      <!-- Change summary -->
-      <section id="change-summary" aria-labelledby="cs-heading">
-        <h2 id="cs-heading">What changed since <span id="cs-prev-version">previous version</span></h2>
-        <p class="cs-subtitle">Auto-generated from article-level diff · <span id="cs-date"></span></p>
-
-        <div class="exec-summary" id="exec-summary-text">
-          <div class="skeleton" style="width:100%"></div>
-          <div class="skeleton" style="width:85%"></div>
-          <div class="skeleton" style="width:70%"></div>
-        </div>
-
-        <div class="change-legend">
-          <div class="legend-item"><span class="legend-badge badge-added">+</span> Added</div>
-          <div class="legend-item"><span class="legend-badge badge-modified">~</span> Modified</div>
-          <div class="legend-item"><span class="legend-badge badge-removed">−</span> Removed</div>
-        </div>
-
-        <ul class="change-list" id="change-list" aria-label="Article-level changes"></ul>
-
-        <div class="diff-toggle-bar">
-          <span>Diff view:</span>
-          <button class="diff-btn active" id="btn-diff-unified">Unified</button>
-          <button class="diff-btn"        id="btn-diff-sidebyside">Side-by-side</button>
-        </div>
-
-        <div class="diff-block" id="diff-block" role="region" aria-label="Diff viewer"></div>
-      </section>
-
-      <!-- Legal text -->
-      <section id="legal-text-panel" aria-labelledby="lt-heading">
-        <div id="toc-sidebar" role="navigation" aria-label="Table of contents">
-          <h3>Articles</h3>
-          <div id="toc-links"></div>
-        </div>
-        <h2 id="lt-heading" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
-          <span id="lt-version-label" class="text-mono"></span>
-          <span style="font-size:13px;font-weight:400;color:var(--slate)">· Full Consolidated Text</span>
-          <a id="eurlex-link" href="#" target="_blank" rel="noopener"
-             style="display:none;font-size:12px;font-weight:500;color:var(--forest);
-                    text-decoration:none;border:1px solid var(--mint);border-radius:6px;
-                    padding:2px 8px;white-space:nowrap">
-            View on EUR-Lex ↗
-          </a>
-        </h2>
-        <div class="legal-body" id="legal-body"></div>
-      </section>
-    </div>
-
-    <!-- Roster panel -->
-    <div id="roster-panel" role="region" aria-label="Reader roster">
-      <div class="roster-toolbar">
-        <h2>Reader Roster</h2>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <select class="roster-filter" id="roster-filter" aria-label="Filter roster">
-            <option value="all">All users</option>
-            <option value="behind">Behind on versions</option>
-            <option value="current">Up to date</option>
-          </select>
-          <button class="btn-secondary" id="btn-export-csv">Export CSV</button>
-        </div>
-      </div>
-      <div class="roster-table-wrap">
-        <table class="roster-table" id="roster-table" aria-label="Reader acknowledgement status">
-          <thead>
-            <tr>
-              <th data-sort="email">Email ↕</th>
-              <th data-sort="version">Last Acknowledged Version ↕</th>
-              <th data-sort="date">Date ↕</th>
-              <th data-sort="status">Status ↕</th>
-            </tr>
-          </thead>
-          <tbody id="roster-body">
-            <tr><td colspan="4" style="color:var(--slate);padding:20px;text-align:center">Sign in to view the reader roster.</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-  </main>
+<div id="sidebar">
+  <h3>EU Legal Acts</h3>
+  <div id="acts"></div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     ACKNOWLEDGEMENT FOOTER
-═══════════════════════════════════════════ -->
-<footer id="ack-footer" role="contentinfo">
-  <div id="ack-strip">
-    <span class="ack-label">I have read and understood version</span>
-    <span class="ack-version" id="ack-version-label">…</span>
-    <button id="btn-ack" disabled aria-label="Acknowledge this version">
-      Acknowledge
-    </button>
-  </div>
-  <div id="ack-confirmed" aria-live="polite">
-    <span class="check-icon">✅</span>
-    <span id="ack-confirmed-text"></span>
-  </div>
-</footer>
-
-<!-- ═══════════════════════════════════════════
-     SIGN-IN MODAL
-═══════════════════════════════════════════ -->
-<div class="modal-overlay hidden" id="signin-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-  <div class="modal-box">
-    <h2 id="modal-title">Sign in to EU ETS Legal Tracker</h2>
-    <p>Enter your work email and we'll send you a secure, one-time sign-in link. No password needed.</p>
-    <label for="signin-email">Work email address</label>
-    <input type="email" id="signin-email" placeholder="you@etsverification.com" autocomplete="email" />
-    <div class="modal-actions">
-      <button class="btn-secondary" id="btn-modal-cancel">Cancel</button>
-      <button class="btn-primary" id="btn-send-link">Send magic link</button>
-    </div>
-    <p class="modal-msg hidden" id="modal-msg"></p>
-  </div>
+<div id="main">
+  <h2>Compliance Impacts</h2>
+  <div id="content" class="muted">Select an act</div>
 </div>
 
+<script>
+/* =========================
+   SUPABASE INIT
+========================= */
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
 
-<!-- ═══════════════════════════════════════════
-     JAVASCRIPT
-═══════════════════════════════════════════ -->
-<script type="module">
-'use strict';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ── SUPABASE INIT ──────────────────────────────────────────────
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+/* =========================
+   STATE
+========================= */
+let currentAct = null;
 
-const SUPABASE_URL  = 'https://wgsknwmczjjqucfueanx.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_9gyHR3xwGCSjUpJs4T060w_sEGFs8FQ';
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+/* =========================
+   LOAD ACTS
+========================= */
+async function loadActs() {
+  const { data, error } = await sb
+    .from("legal_acts")
+    .select("*");
 
-// ── STATE ──────────────────────────────────────────────────────
-let currentUser       = null;
-let currentVersionId  = null;
-let currentVersionLabel = null;
-let currentAckId      = null;
-let allVersions       = [];
-let rosterData        = [];
-let rosterSortKey     = 'email';
-let rosterSortDir     = 1;
-let diffView          = 'unified';
+  const el = document.getElementById("acts");
+  el.innerHTML = "";
 
-// ── FALLBACK DEMO DATA ─────────────────────────────────────────
-// Shown when Supabase tables are empty (before GitHub Action populates them).
-// Each entry represents one EU ETS act + its current baseline version.
-// ── LEGISLATION CATALOGUE ─────────────────────────────────────
-// Each entry: official_number shown in sidebar, celex for EUR-Lex links,
-// consolidated_date = date of the latest consolidated version on EUR-Lex,
-// consolidated_label = the amendment that produced that version.
-// Sources: EUR-Lex consolidated versions list (verified May 2026).
-const DEMO_ACTS = [
-  {
-    id: 'demo-act-1',
-    official_number: '2003/87/EC',
-    celex: '32003L0087',
-    short_title: 'EU ETS Directive',
-    full_title: 'Directive 2003/87/EC establishing a system for GHG emission allowance trading',
-    sort_order: 10,
-    adopted_date: '2003-10-13',
-    in_force_from: '2003-10-25',
-    // Latest consolidated version: amended by Dir. 2023/959/EU, in force 5 Jun 2023
-    consolidated_date: '2024-05-11',
-    consolidated_label: 'as amended by Dir. (EU) 2024/1275',
-  },
-  {
-    id: 'demo-act-2',
-    official_number: '2004/101/EC',
-    celex: '32004L0101',
-    short_title: 'Linking Directive',
-    full_title: 'Directive 2004/101/EC amending Dir. 2003/87/EC re Kyoto project mechanisms',
-    sort_order: 20,
-    adopted_date: '2004-10-27',
-    in_force_from: '2004-11-13',
-    // No further amendments — original version remains in force
-    consolidated_date: '2004-11-13',
-    consolidated_label: 'original version',
-  },
-  {
-    id: 'demo-act-3',
-    official_number: '2008/101/EC',
-    celex: '32008L0101',
-    short_title: 'Aviation Directive',
-    full_title: 'Directive 2008/101/EC including aviation in the EU ETS',
-    sort_order: 30,
-    adopted_date: '2008-11-19',
-    in_force_from: '2009-02-02',
-    // Amended by Dir. 2023/958/EU
-    consolidated_date: '2023-06-05',
-    consolidated_label: 'as amended by Dir. (EU) 2023/958',
-  },
-  {
-    id: 'demo-act-4',
-    official_number: '2009/29/EC',
-    celex: '32009L0029',
-    short_title: 'Phase 3 Directive',
-    full_title: 'Directive 2009/29/EC improving and extending the GHG allowance trading scheme',
-    sort_order: 40,
-    adopted_date: '2009-04-23',
-    in_force_from: '2009-06-25',
-    // Amended by Dir. 2018/410/EU
-    consolidated_date: '2018-03-19',
-    consolidated_label: 'as amended by Dir. (EU) 2018/410',
-  },
-  {
-    id: 'demo-act-5',
-    official_number: '2018/410/EU',
-    celex: '32018L0410',
-    short_title: 'Phase 4 Directive',
-    full_title: 'Directive (EU) 2018/410 enhancing cost-effective emission reductions and low-carbon investments',
-    sort_order: 50,
-    adopted_date: '2018-03-14',
-    in_force_from: '2018-04-08',
-    // Amended by Dir. 2023/959/EU
-    consolidated_date: '2023-06-05',
-    consolidated_label: 'as amended by Dir. (EU) 2023/959',
-  },
-  {
-    id: 'demo-act-6',
-    official_number: '2023/958/EU',
-    celex: '32023L0958',
-    short_title: 'Revised Aviation Directive',
-    full_title: 'Directive (EU) 2023/958 — aviation contribution and global market-based measure',
-    sort_order: 60,
-    adopted_date: '2023-05-10',
-    in_force_from: '2023-06-05',
-    // No further amendments yet
-    consolidated_date: '2023-06-05',
-    consolidated_label: 'original version',
-  },
-  {
-    id: 'demo-act-7',
-    official_number: '2023/959/EU',
-    celex: '32023L0959',
-    short_title: 'ETS2 Directive',
-    full_title: 'Directive (EU) 2023/959 — buildings, road transport and maritime in EU ETS',
-    sort_order: 70,
-    adopted_date: '2023-05-10',
-    in_force_from: '2023-06-05',
-    // No further amendments yet
-    consolidated_date: '2023-06-05',
-    consolidated_label: 'original version',
-  },
-  {
-    id: 'demo-act-8',
-    official_number: '2018/2066/EU',
-    celex: '32018R2066',
-    short_title: 'MRR — Monitoring & Reporting',
-    full_title: 'Commission Implementing Regulation (EU) 2018/2066 on monitoring and reporting of GHG emissions',
-    sort_order: 80,
-    adopted_date: '2018-12-19',
-    in_force_from: '2019-01-01',
-    // Last amended by Reg. 2023/2122
-    consolidated_date: '2024-01-01',
-    consolidated_label: 'as amended by Reg. (EU) 2023/2122',
-  },
-  {
-    id: 'demo-act-9',
-    official_number: '2018/2067/EU',
-    celex: '32018R2067',
-    short_title: 'AVR — Accreditation & Verification',
-    full_title: 'Commission Implementing Regulation (EU) 2018/2067 on verification and accreditation of verifiers',
-    sort_order: 90,
-    adopted_date: '2018-12-19',
-    in_force_from: '2019-01-01',
-    // Last amended by Reg. 2023/2126
-    consolidated_date: '2024-01-01',
-    consolidated_label: 'as amended by Reg. (EU) 2023/2126',
-  },
-];
-
-// One version entry per act — shows the current consolidated version
-const DEMO_VERSIONS = DEMO_ACTS.map(act => ({
-  id:               'demo-ver-' + act.id,
-  act_id:           act.id,
-  version_label:    act.official_number,
-  amendment_ref:    act.consolidated_label !== 'original version' ? act.consolidated_label : null,
-  is_baseline:      act.consolidated_label === 'original version',
-  published_at:     act.consolidated_date + 'T00:00:00Z',
-  effective_from:   act.consolidated_date,
-  // Link to latest consolidated version on EUR-Lex
-  source_url: act.consolidated_label === 'original version'
-    ? `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:${act.celex}`
-    : `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:0${act.celex}-${act.consolidated_date.replace(/-/g,'')}`,
-  change_summary:   act.consolidated_label === 'original version'
-    ? 'Original version — no further amendments have been adopted.'
-    : `Current consolidated version: ${act.consolidated_label}. Click "View on EUR-Lex" to read the full consolidated text.`,
-  full_text:        null,
-  _act:             act,
-}));
-
-const DEMO_CHANGES = [
-  { change_type: 'added',    article_ref: 'Art. 3ge',    summary: 'New article on carbon capture utilisation (CCU) — establishes eligibility criteria for CCU installations and their surrender obligations.' },
-  { change_type: 'modified', article_ref: 'Art. 10a(1)', summary: 'Free allocation benchmarks updated to reflect 2026 performance benchmarks; aviation sector adjustments included.' },
-  { change_type: 'modified', article_ref: 'Art. 12(3a)', summary: 'Surrender deadline extended to 30 September (previously 30 April) to align with the Carbon Border Adjustment Mechanism calendar.' },
-  { change_type: 'removed',  article_ref: 'Art. 10c',    summary: 'Optional free allocation for the modernisation of electricity generation repealed following full phase-out in all Member States.' },
-  { change_type: 'added',    article_ref: 'Art. 30d',    summary: 'ETS2 provisions for road transport and buildings enter into force — separate cap, auctioning rules, and price stabilisation mechanism.' },
-];
-
-// ── FULL EU ETS DIRECTIVE TEXT (excerpted) ─────────────────────
-const ETS_LEGAL_TEXT = `
-<div class="legal-title">Directive 2003/87/EC of the European Parliament and of the Council</div>
-<div style="text-align:center;font-size:13px;color:var(--slate);margin-bottom:24px">
-  of 13 October 2003 — establishing a system for greenhouse gas emission allowance trading<br>
-  within the Union and amending Council Directive 96/61/EC<br>
-  <strong>Consolidated text incorporating all amendments through Directive (EU) 2023/959</strong>
-</div>
-
-<div class="legal-chapter" id="ch-general">Chapter I — General Provisions</div>
-
-<div class="legal-article" id="art-1">
-  <div class="article-heading">
-    <span class="article-num">Art. 1</span>
-    Subject matter
-    <a href="#art-1" class="article-permalink" title="Permalink to Article 1">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    This Directive establishes a system for greenhouse gas emission allowance trading within the Union (hereinafter referred to as 'the Union scheme') in order to promote reductions of greenhouse gas emissions in a cost-effective and economically efficient manner.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    This Directive also provides for reductions of greenhouse gas emissions to be increased so as to contribute to the levels of reductions considered scientifically necessary to avoid dangerous climate change.
-  </div>
-</div>
-
-<div class="legal-article" id="art-2">
-  <div class="article-heading">
-    <span class="article-num">Art. 2</span>
-    Scope
-    <a href="#art-2" class="article-permalink" title="Permalink to Article 2">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    This Directive shall apply to emissions from the activities listed in Annex I and to greenhouse gases listed in Annex II. This Directive shall apply without prejudice to any requirements pursuant to Directive 96/61/EC.
-  </div>
-</div>
-
-<div class="legal-article" id="art-3">
-  <div class="article-heading">
-    <span class="article-num">Art. 3</span>
-    Definitions
-    <a href="#art-3" class="article-permalink" title="Permalink to Article 3">¶</a>
-  </div>
-  <div class="legal-para">For the purposes of this Directive the following definitions shall apply:</div>
-  <div class="legal-point"><span class="point-label">(a)</span>&nbsp;'allowance' means an allowance to emit one tonne of carbon dioxide equivalent during a specified period, which shall be valid only for the purposes of meeting the requirements of this Directive and shall be transferable in accordance with the provisions of this Directive;</div>
-  <div class="legal-point"><span class="point-label">(b)</span>&nbsp;'greenhouse gases' means the gases listed in Annex II;</div>
-  <div class="legal-point"><span class="point-label">(c)</span>&nbsp;'greenhouse gas emissions permit' means the permit issued in accordance with Articles 5 and 6;</div>
-  <div class="legal-point"><span class="point-label">(d)</span>&nbsp;'installation' means a stationary technical unit where one or more activities listed in Annex I are carried out and any other directly associated activities which have a technical connection with the activities carried out on that site and which could have an effect on emissions and pollution;</div>
-  <div class="legal-point"><span class="point-label">(e)</span>&nbsp;'operator' means any person who operates or controls an installation or, where this is provided for in national legislation, to whom decisive economic power over the technical functioning of the installation has been delegated;</div>
-  <div class="legal-point"><span class="point-label">(f)</span>&nbsp;'aircraft operator' means the person who operates an aircraft at the time it performs an aviation activity listed in Annex I or, where that person is not known or is not identified by the aircraft owner, the owner of the aircraft;</div>
-</div>
-
-<div class="legal-chapter" id="ch-ii">Chapter II — Aviation Activities</div>
-
-<div class="legal-article" id="art-3a">
-  <div class="article-heading">
-    <span class="article-num">Art. 3a</span>
-    Scope for aviation
-    <a href="#art-3a" class="article-permalink" title="Permalink to Article 3a">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    The provisions of this Chapter shall apply to aviation allowances and to the allocation and issue of aviation allowances in respect of the aviation activities listed in Annex I.
-  </div>
-</div>
-
-<div class="legal-article article-new" id="art-3ge">
-  <div class="article-heading">
-    <span class="article-num">Art. 3ge</span>
-    Carbon capture and utilisation (NEW)
-    <a href="#art-3ge" class="article-permalink" title="Permalink to Article 3ge">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    Carbon dioxide that is captured from an installation covered by this Directive and transferred for use in a product or process such that the carbon dioxide does not enter the atmosphere — and where the permanence of storage can be demonstrated for at least 100 years — shall be treated as not emitted for the purposes of this Directive.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    Operators of CCU installations shall surrender allowances equivalent to any CO₂ that escapes the product or process over its lifetime. The Commission shall adopt delegated acts in accordance with Article 23 to specify monitoring and surrender rules.
-  </div>
-</div>
-
-<div class="legal-chapter" id="ch-iii">Chapter III — Union-Wide Measures</div>
-
-<div class="legal-article" id="art-9">
-  <div class="article-heading">
-    <span class="article-num">Art. 9</span>
-    Union-wide quantity of allowances
-    <a href="#art-9" class="article-permalink" title="Permalink to Article 9">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    The Union-wide quantity of allowances issued each year shall decrease in a linear manner beginning from 2013. From 2024, the linear reduction factor shall be 4.3 % with respect to the average annual total quantity of allowances issued in the period 2013–2020.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    Following the determination of the total quantity of allowances for 2021, the Commission shall review the linear reduction factor referred to in paragraph 1. The Commission shall present a report to the European Parliament and the Council by 30 June 2025.
-  </div>
-</div>
-
-<div class="legal-article article-modified" id="art-10a">
-  <div class="article-heading">
-    <span class="article-num">Art. 10a</span>
-    Transitional Union-wide rules for harmonised free allocation (AMENDED)
-    <a href="#art-10a" class="article-permalink" title="Permalink to Article 10a">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    The Commission shall adopt implementing acts containing Union-wide fully harmonised implementing measures for the allocation of allowances referred to in Articles 10a(4) to 10a(7) free of charge. The product benchmarks used for the calculation of free allocations shall be updated for the period 2026–2030 based on the 2026 performance benchmark values, applying the 2020 reduction trajectory.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    The benchmark values shall reflect the average performance of the 10 % most greenhouse-gas-efficient installations in a sector or subsector in the Union in 2021 and 2022.
-  </div>
-</div>
-
-<div class="legal-article" id="art-12">
-  <div class="article-heading">
-    <span class="article-num">Art. 12</span>
-    Transfer, surrender and cancellation of allowances
-    <a href="#art-12" class="article-permalink" title="Permalink to Article 12">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    Member States shall ensure that allowances can be transferred between persons within the Union.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    Member States shall ensure that allowances issued by a competent authority of another Member State are recognised for the purpose of meeting an operator's obligations under this Directive.
-  </div>
-  <div class="legal-para article-modified" id="art-12-3a">
-    <span class="para-num">3a.</span>
-    Operators shall surrender a number of allowances equal to the total emissions from the installation during the preceding calendar year by <strong>30 September</strong> of each year (amended from 30 April to align with the Carbon Border Adjustment Mechanism reporting calendar under Regulation (EU) 2023/956).
-  </div>
-</div>
-
-<div class="legal-chapter" id="ch-ivb">Chapter IVb — ETS2 for Road Transport and Buildings</div>
-
-<div class="legal-article article-new" id="art-30d">
-  <div class="article-heading">
-    <span class="article-num">Art. 30d</span>
-    Auctioning of allowances for buildings, road transport and additional sectors (NEW)
-    <a href="#art-30d" class="article-permalink" title="Permalink to Article 30d">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    From 2027 (or 2028 if exceptional circumstances apply), regulated entities covered by Chapter IVb shall surrender allowances equal to the total quantity of fuels they have released for consumption in the preceding calendar year in respect of fuel combustion in road transport, buildings, and additional sectors specified by Member States.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    A price stabilisation mechanism shall apply: where the price of an ETS2 allowance exceeds EUR 45 (in 2020 values) for more than two consecutive months, the Commission shall release additional allowances from a dedicated reserve not exceeding 20 million allowances in any 12-month period.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">3.</span>
-    The cap for the ETS2 system shall be set at the 2005 emission levels of the covered sectors and shall decrease at a linear reduction factor of 5.38 % annually from 2024 onwards.
-  </div>
-</div>
-
-<div class="legal-chapter" id="ch-monitoring">Chapter V — Monitoring and Reporting</div>
-
-<div class="legal-article" id="art-14">
-  <div class="article-heading">
-    <span class="article-num">Art. 14</span>
-    Monitoring and reporting of emissions
-    <a href="#art-14" class="article-permalink" title="Permalink to Article 14">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    The Commission shall adopt a regulation for the monitoring and reporting of emissions from the activities listed in Annex I, and, where relevant, activity data, from those activities, based on the principles set out in Annex IV.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    The regulation referred to in paragraph 1 shall also set out requirements for the use of automated measuring systems and electronic data exchange protocols for reporting emissions to the competent authority.
-  </div>
-</div>
-
-<div class="legal-article" id="art-15">
-  <div class="article-heading">
-    <span class="article-num">Art. 15</span>
-    Verification
-    <a href="#art-15" class="article-permalink" title="Permalink to Article 15">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    Member States shall ensure that the reports submitted by operators and aircraft operators pursuant to the monitoring and reporting regulation are verified by an independent, accredited verifier in accordance with the criteria set out in Annex V and any detailed provisions adopted by the Commission in accordance with this Article.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    Member States shall ensure that an operator or aircraft operator whose report has not been verified as satisfactory by 31 March of the year following the year of emission cannot make further transfers of allowances until a report from that operator or aircraft operator has been verified as satisfactory.
-  </div>
-</div>
-
-<div class="legal-chapter" id="ch-registry">Chapter VI — Registries</div>
-
-<div class="legal-article" id="art-19">
-  <div class="article-heading">
-    <span class="article-num">Art. 19</span>
-    Registries
-    <a href="#art-19" class="article-permalink" title="Permalink to Article 19">¶</a>
-  </div>
-  <div class="legal-para">
-    <span class="para-num">1.</span>
-    Allowances shall be held in accounts in the Union Registry. The Union Registry shall be established and maintained by the Commission in a standardised and secure manner.
-  </div>
-  <div class="legal-para">
-    <span class="para-num">2.</span>
-    Any person may hold allowances. The registry shall be accessible to the public and shall contain separate accounts to record the allowances held by each person to whom and from whom allowances are issued or transferred.
-  </div>
-</div>
-`;
-
-// ── BOOT ──────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', async () => {
-  // Wire all events now that sb is initialised
-  bindEvents();
-
-  // Handle magic link token in URL hash
-  const hash = window.location.hash;
-  if (hash.includes('access_token=') || hash.includes('type=magiclink') || hash.includes('type=recovery')) {
-    // Supabase JS v2 auto-parses this on getSession()
-    history.replaceState(null, '', window.location.pathname + window.location.search);
-  }
-
-  // Session listener
-  sb.auth.onAuthStateChange((_event, session) => {
-    currentUser = session?.user ?? null;
-    renderUserUI();
-    if (currentUser) {
-      checkRosterAccess();
-      checkUserAck();
-    } else {
-      resetAckStrip();
-    }
-  });
-
-  const { data: { session } } = await sb.auth.getSession();
-  currentUser = session?.user ?? null;
-  renderUserUI();
-
-  await loadVersions();
-  renderSyncPill();
-});
-
-// ── EVENT BINDING (called once sb is ready) ───────────────────
-function bindEvents() {
-  // Top bar auth
-  document.getElementById('btn-signin').addEventListener('click', openSignInModal);
-  document.getElementById('btn-signout').addEventListener('click', signOut);
-
-  // Sign-in modal
-  document.getElementById('btn-modal-cancel').addEventListener('click', closeSignInModal);
-  document.getElementById('btn-send-link').addEventListener('click', signInWithMagicLink);
-  document.getElementById('signin-email').addEventListener('keydown', e => {
-    if (e.key === 'Enter') signInWithMagicLink();
-  });
-  document.getElementById('signin-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeSignInModal();
-  });
-
-  // New version banner
-  document.getElementById('btn-scroll-ack').addEventListener('click', scrollToAck);
-
-  // Tabs
-  document.getElementById('tab-reader').addEventListener('click', () => switchTab('reader'));
-  document.getElementById('tab-roster').addEventListener('click', () => switchTab('roster'));
-
-  // Diff toggles
-  document.getElementById('btn-diff-unified').addEventListener('click', () => setDiffView('unified'));
-  document.getElementById('btn-diff-sidebyside').addEventListener('click', () => setDiffView('sidebyside'));
-
-  // Acknowledge button
-  document.getElementById('btn-ack').addEventListener('click', acknowledgeVersion);
-
-  // Roster controls
-  document.getElementById('roster-filter').addEventListener('change', filterRoster);
-  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
-
-  // Roster sort headers
-  document.querySelectorAll('.roster-table th[data-sort]').forEach(th => {
-    th.style.cursor = 'pointer';
-    th.addEventListener('click', () => sortRoster(th.dataset.sort));
-  });
-
-  // Keyboard shortcuts
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeSignInModal();
-  });
-}
-
-// ── AUTH ──────────────────────────────────────────────────────
-function openSignInModal() {
-  document.getElementById('signin-modal').classList.remove('hidden');
-  document.getElementById('signin-email').focus();
-}
-function closeSignInModal() {
-  document.getElementById('signin-modal').classList.add('hidden');
-  document.getElementById('modal-msg').classList.add('hidden');
-}
-
-async function signInWithMagicLink() {
-  const email = document.getElementById('signin-email').value.trim();
-  const msg   = document.getElementById('modal-msg');
-  const btn   = document.getElementById('btn-send-link');
-
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showModalMsg('Please enter a valid email address.', true);
+  if (error) {
+    el.innerHTML = "Error loading acts";
     return;
   }
 
-  btn.disabled = true;
-  btn.textContent = 'Sending…';
+  data.forEach(act => {
+    const div = document.createElement("div");
+    div.className = "act";
+    div.innerText = act.celex;
 
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href }
-  });
+    div.onclick = () => loadImpacts(act.id);
 
-  btn.disabled = false;
-  btn.textContent = 'Send magic link';
-
-  if (error) {
-    showModalMsg('Error: ' + error.message, true);
-  } else {
-    showModalMsg('✅ Link sent! Check your inbox and click the link to sign in.', false);
-    document.getElementById('btn-send-link').disabled = true;
-  }
-};
-
-async function signOut() {
-  await sb.auth.signOut();
-  currentUser = null;
-  renderUserUI();
-  resetAckStrip();
-}
-
-function showModalMsg(text, isError) {
-  const el = document.getElementById('modal-msg');
-  el.textContent = text;
-  el.classList.remove('hidden');
-  el.className = 'modal-msg' + (isError ? ' error' : '');
-}
-
-function renderUserUI() {
-  const signinBtn = document.getElementById('btn-signin');
-  const userChip  = document.getElementById('user-chip');
-  const ackBtn    = document.getElementById('btn-ack');
-
-  if (currentUser) {
-    signinBtn.classList.add('hidden');
-    userChip.classList.remove('hidden');
-    const email = currentUser.email || '';
-    document.getElementById('user-email-display').textContent = email;
-    document.getElementById('user-avatar').textContent = email.charAt(0).toUpperCase();
-    if (!currentAckId) ackBtn.disabled = false;
-  } else {
-    signinBtn.classList.remove('hidden');
-    userChip.classList.add('hidden');
-    ackBtn.disabled = true;
-    ackBtn.title = 'Sign in to record that you have read this version';
-  }
-}
-
-// ── UTILITIES ─────────────────────────────────────────────────
-function escHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function fmtDate(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric', month: 'long', year: 'numeric'
+    el.appendChild(div);
   });
 }
 
-function fmtDateFull(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', {
-    day: 'numeric', month: 'long', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
-}
+/* =========================
+   LOAD IMPACTS
+========================= */
+async function loadImpacts(actId) {
+  currentAct = actId;
 
-function renderSyncPill() {
-  const pill = document.getElementById('sync-pill');
-  if (!pill) return;
-  const now = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  pill.title = `Page loaded at ${now}`;
-}
+  document.getElementById("content").innerHTML =
+    "<div class='muted'>Loading...</div>";
 
-// ── VERSIONS ──────────────────────────────────────────────────
-async function loadVersions() {
-  // Try to load acts + their current (latest) version from Supabase.
-  // For each act we want the most-recent version row (highest published_at).
-  let items = []; // will be array of { act, version } pairs
+  const { data: versions } = await sb
+    .from("versions")
+    .select("id")
+    .eq("act_id", actId)
+    .order("version_date", { ascending: false })
+    .limit(1);
 
-  const { data: acts, error: actsErr } = await sb
-    .from('legislation_acts')
-    .select('*')
-    .order('sort_order', { ascending: true });
-
-  if (!actsErr && acts && acts.length > 0) {
-    // Fetch all versions, then pick the latest per act client-side
-    const { data: vers, error: versErr } = await sb
-      .from('legislation_versions')
-      .select('*')
-      .order('published_at', { ascending: false });
-
-    if (!versErr && vers && vers.length > 0) {
-      // For each act, find the latest version
-      items = acts.map(act => {
-        const actVers = vers.filter(v => v.act_id === act.id);
-        const latest  = actVers[0] || null; // already sorted desc
-        // Attach act info onto version for easy access
-        if (latest) latest._act = act;
-        return latest
-          ? { act, version: latest }
-          : { act, version: { id: 'baseline-' + act.id, act_id: act.id,
-              version_label: act.official_number, is_baseline: true,
-              published_at: act.in_force_from + 'T00:00:00Z',
-              amendment_ref: null, change_summary: 'Baseline — no updates tracked yet.',
-              full_text: null, _act: act } };
-      });
-    } else {
-      // Acts exist but no versions — show baseline stub for each act
-      items = acts.map(act => ({
-        act,
-        version: { id: 'baseline-' + act.id, act_id: act.id,
-          version_label: act.official_number, is_baseline: true,
-          published_at: (act.in_force_from || act.adopted_date) + 'T00:00:00Z',
-          amendment_ref: null, change_summary: 'Baseline — no updates tracked yet.',
-          full_text: null, _act: act }
-      }));
-    }
-  } else {
-    // Tables don't exist yet — use demo data
-    items = DEMO_VERSIONS.map(v => ({ act: v._act, version: v }));
+  if (!versions || versions.length === 0) {
+    document.getElementById("content").innerHTML = "No versions found";
+    return;
   }
 
-  allVersions = items.map(i => i.version);
-  renderTimeline(items);
+  const versionId = versions[0].id;
 
-  if (items.length > 0) {
-    selectVersion(items[0].version);
-  }
+  const { data: impacts } = await sb
+    .from("article_impacts")
+    .select("*")
+    .eq("version_id", versionId);
+
+  render(impacts || []);
 }
 
-function renderTimeline(items) {
-  const list = document.getElementById('version-list');
-  list.innerHTML = '';
-  items.forEach((item, i) => {
-    const { act, version: v } = item;
-    const hasAmendment = !!v.amendment_ref;
-    const dot          = hasAmendment ? 'dot-amber' : 'dot-green';
-    const consolidatedDate = v.published_at
-      ? new Date(v.published_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
-      : '—';
+/* =========================
+   RENDER UI
+========================= */
+function render(impacts) {
+  const el = document.getElementById("content");
 
-    const card = document.createElement('div');
-    card.className = 'version-card' + (i === 0 ? ' active' : '');
-    card.dataset.id = v.id;
-    card.innerHTML = `
-      <div class="version-card-top">
-        <span class="version-dot ${dot}"></span>
-        <span class="version-label">${escHtml(act.official_number)}</span>
+  if (!impacts.length) {
+    el.innerHTML = "No impacts found";
+    return;
+  }
+
+  el.innerHTML = "";
+
+  impacts.forEach(i => {
+    const div = document.createElement("div");
+
+    const isHigh = (i.impact_score || 0) >= 4;
+
+    div.className = "card " + (isHigh ? "high" : "");
+
+    div.innerHTML = `
+      <div class="title">Article ${i.article_number}</div>
+
+      <span class="badge">${i.legal_change_type || "change"}</span>
+      <span class="badge">Score: ${i.impact_score || 0}/5</span>
+
+      <div style="margin-top:8px; font-size:13px;">
+        ${i.summary || ""}
       </div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:3px;line-height:1.35">${escHtml(act.short_title)}</div>
-      <div style="font-size:10px;color:var(--slate);margin-top:5px">
-        ${hasAmendment
-          ? `<span style="color:var(--amber)">●</span> ${escHtml(v.amendment_ref)}`
-          : `<span style="color:var(--leaf)">●</span> original version`
-        }
-      </div>
-      <div style="font-size:10px;color:var(--slate);margin-top:2px">Consolidated: ${consolidatedDate}</div>
     `;
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.version-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      selectVersion(v);
-    });
-    list.appendChild(card);
+
+    el.appendChild(div);
   });
 }
 
-async function selectVersion(v) {
-  try {
-    currentVersionId    = v.id;
-    currentVersionLabel = v.version_label;
-
-    const act    = v._act || {};
-    const actNum = act.official_number || v.version_label;
-    const displayLabel = v.amendment_ref
-      ? `${actNum} — ${v.amendment_ref}`
-      : actNum;
-
-    document.getElementById('ack-version-label').textContent = displayLabel;
-    document.getElementById('lt-version-label').textContent  = displayLabel;
-
-    // EUR-Lex link
-    const eurLexLink = document.getElementById('eurlex-link');
-    if (eurLexLink && v.source_url) {
-      eurLexLink.href = v.source_url;
-      eurLexLink.style.display = 'inline';
-    } else if (eurLexLink) {
-      eurLexLink.style.display = 'none';
-    }
-
-    // Change summary header
-    const prevLabel = v.is_baseline ? 'original publication' : (v.amendment_ref || 'previous version');
-    document.getElementById('cs-prev-version').textContent = prevLabel;
-    document.getElementById('cs-date').textContent = fmtDate(v.published_at);
-
-    try { await loadChanges(v.id); } catch(e) { console.error('loadChanges threw:', e); }
-    try { renderLegalText(v); } catch(e) { console.error('renderLegalText threw:', e); }
-
-    if (currentUser) checkUserAck();
-
-  } catch (err) {
-    console.error('selectVersion error:', err);
-    // Still try to render legal text even if something else failed
-    try { renderLegalText(v); } catch(e) { console.error('renderLegalText error:', e); }
-  }
-}
-
-// ── CHANGES ──────────────────────────────────────────────────
-async function loadChanges(versionId) {
-  let changes = DEMO_CHANGES; // safe default — always falls back
-  try {
-    const isReal = versionId
-      && !versionId.startsWith('demo-')
-      && !versionId.startsWith('baseline-');
-    if (isReal) {
-      const result = await sb
-        .from('legislation_changes')
-        .select('*')
-        .eq('version_id', versionId)
-        .order('article_ref');
-      if (result && !result.error && result.data && result.data.length > 0) {
-        changes = result.data;
-      }
-    }
-  } catch (err) {
-    console.warn('loadChanges: using demo data because:', err.message);
-  }
-  try { renderChangeSummary(changes); } catch(e) { console.error('renderChangeSummary:', e); }
-  try { renderDiff(changes); } catch(e) { console.error('renderDiff:', e); }
-}
-
-function renderChangeSummary(changes) {
-  const execEl = document.getElementById('exec-summary-text');
-  const listEl = document.getElementById('change-list');
-
-  const addedCount    = changes.filter(c => c.change_type === 'added').length;
-  const modifiedCount = changes.filter(c => c.change_type === 'modified').length;
-  const removedCount  = changes.filter(c => c.change_type === 'removed').length;
-
-  execEl.innerHTML = `This version introduces <strong>${addedCount} new article${addedCount !== 1 ? 's' : ''}</strong>,
-    modifies <strong>${modifiedCount} existing provision${modifiedCount !== 1 ? 's' : ''}</strong>,
-    and removes <strong>${removedCount} article${removedCount !== 1 ? 's' : ''}</strong>.
-    Key changes include the introduction of ETS2 for road transport and buildings (Art. 30d),
-    updated free allocation benchmarks for the 2026–2030 period, and the extension of the surrender
-    deadline to 30 September to align with the Carbon Border Adjustment Mechanism.`;
-
-  listEl.innerHTML = changes.map(c => {
-    const typeClass  = { added: 'tag-added', modified: 'tag-modified', removed: 'tag-removed' }[c.change_type];
-    const typeSymbol = { added: '+', modified: '~', removed: '−' }[c.change_type];
-    return `<li class="change-item">
-      <span class="change-tag ${typeClass}">${typeSymbol} ${c.change_type.toUpperCase()}</span>
-      <span class="change-ref">${escHtml(c.article_ref)}</span>
-      <span class="change-text">${escHtml(c.summary)}</span>
-    </li>`;
-  }).join('');
-}
-
-function setDiffView(mode) {
-  diffView = mode;
-  document.getElementById('btn-diff-unified').classList.toggle('active', mode === 'unified');
-  document.getElementById('btn-diff-sidebyside').classList.toggle('active', mode === 'sidebyside');
-  // Re-render with current data
-  loadChanges(currentVersionId);
-};
-
-function renderDiff(changes) {
-  const block = document.getElementById('diff-block');
-  // Unified diff representation (synthetic, showing change context)
-  const lines = [];
-  let lineNum = 1;
-
-  changes.forEach(c => {
-    // Context header
-    lines.push({ type: 'header', text: `@@ ${c.article_ref} @@` });
-
-    if (c.change_type === 'added') {
-      lines.push({ type: 'added',   num: lineNum++, text: `+ [NEW] ${c.article_ref}: ${c.summary}` });
-    } else if (c.change_type === 'removed') {
-      lines.push({ type: 'removed', num: lineNum++, text: `- [DEL] ${c.article_ref}: ${c.summary}` });
-    } else {
-      lines.push({ type: 'removed', num: lineNum, text: `- [OLD] ${c.article_ref}: (previous provision text)` });
-      lines.push({ type: 'added',   num: lineNum++, text: `+ [MOD] ${c.article_ref}: ${c.summary}` });
-    }
-    lineNum++;
-  });
-
-  block.innerHTML = lines.map(l => {
-    if (l.type === 'header') {
-      return `<div class="diff-line" style="background:#f0f0f0;color:#666;font-weight:600">${escHtml(l.text)}</div>`;
-    }
-    const cls = l.type === 'added' ? 'diff-added' : l.type === 'removed' ? 'diff-removed' : 'diff-context';
-    const sym = l.type === 'added' ? '+' : l.type === 'removed' ? '−' : ' ';
-    return `<div class="diff-line ${cls}">
-      <span class="diff-line-num">${l.num || ''}</span>
-      <span class="diff-line-sym">${sym}</span>
-      <span>${escHtml(l.text)}</span>
-    </div>`;
-  }).join('');
-}
-
-// ── LEGAL TEXT ────────────────────────────────────────────────
-function renderLegalText(v) {
-  const body = document.getElementById('legal-body');
-  const text = v.full_text || ETS_LEGAL_TEXT;
-  body.innerHTML = text;
-
-  buildTOC();
-}
-
-function buildTOC() {
-  const articles = document.querySelectorAll('.legal-article');
-  const tocLinks = document.getElementById('toc-links');
-  tocLinks.innerHTML = '';
-  articles.forEach(art => {
-    const heading = art.querySelector('.article-heading');
-    if (!heading) return;
-    const num   = heading.querySelector('.article-num')?.textContent || '';
-    const label = heading.childNodes[2]?.textContent?.trim() || '';
-    const a = document.createElement('a');
-    a.href = '#' + art.id;
-    a.className = 'toc-link';
-    a.textContent = `${num}${label ? ' – ' + label.substring(0, 20) : ''}`;
-    a.title = label;
-    tocLinks.appendChild(a);
-  });
-}
-
-// ── ACKNOWLEDGEMENT ──────────────────────────────────────────
-async function checkUserAck() {
-  if (!currentUser || !currentVersionId) return;
-
-  currentAckId = null;
-  document.getElementById('ack-strip').style.display = '';
-  document.getElementById('ack-confirmed').classList.remove('show');
-
-  if (currentVersionId.startsWith('demo-') || currentVersionId.startsWith('baseline-')) {
-    // Demo mode: just enable button
-    document.getElementById('btn-ack').disabled = false;
-    showNewVersionBanner(false);
-    return;
-  }
-
-  const { data, error } = await sb
-    .from('acknowledgements')
-    .select('id, acknowledged_at')
-    .eq('user_id', currentUser.id)
-    .eq('version_id', currentVersionId)
-    .maybeSingle();
-
-  if (!error && data) {
-    currentAckId = data.id;
-    showAckConfirmed(data.acknowledged_at);
-    showNewVersionBanner(false);
-  } else {
-    document.getElementById('btn-ack').disabled = false;
-    showNewVersionBanner(true);
-  }
-}
-
-async function acknowledgeVersion() {
-  if (!currentUser) { openSignInModal(); return; }
-
-  const btn = document.getElementById('btn-ack');
-  btn.disabled = true;
-  btn.textContent = 'Recording…';
-
-  if (currentVersionId.startsWith('demo-') || currentVersionId.startsWith('baseline-')) {
-    // Demo mode acknowledgement
-    const now = new Date().toISOString();
-    showAckConfirmed(now);
-    showNewVersionBanner(false);
-    return;
-  }
-
-  const { data, error } = await sb
-    .from('acknowledgements')
-    .insert({
-      user_id:        currentUser.id,
-      version_id:     currentVersionId,
-      acknowledged_at: new Date().toISOString(),
-      user_agent:     navigator.userAgent,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    btn.disabled = false;
-    btn.textContent = 'Acknowledge';
-    alert('Error recording acknowledgement: ' + error.message);
-  } else {
-    currentAckId = data.id;
-    showAckConfirmed(data.acknowledged_at);
-    showNewVersionBanner(false);
-    loadRoster(); // refresh roster if open
-  }
-};
-
-function showAckConfirmed(isoDate) {
-  document.getElementById('ack-strip').style.display = 'none';
-  const conf = document.getElementById('ack-confirmed');
-  conf.classList.add('show');
-  document.getElementById('ack-confirmed-text').textContent =
-    `Acknowledged on ${fmtDateFull(isoDate)}`;
-}
-
-function resetAckStrip() {
-  document.getElementById('ack-strip').style.display = '';
-  document.getElementById('ack-confirmed').classList.remove('show');
-  document.getElementById('btn-ack').disabled = true;
-  document.getElementById('btn-ack').textContent = 'Acknowledge';
-  showNewVersionBanner(false);
-}
-
-function showNewVersionBanner(show) {
-  const banner = document.getElementById('new-version-banner');
-  if (show && currentVersionLabel) {
-    banner.classList.remove('hidden');
-    document.getElementById('banner-text').textContent =
-      `A new version (${currentVersionLabel}) was published — you have not yet acknowledged it.`;
-  } else {
-    banner.classList.add('hidden');
-  }
-}
-
-function scrollToAck() {
-  document.getElementById('ack-footer').scrollIntoView({ behavior: 'smooth', block: 'end' });
-}
-
-// ── ROSTER ────────────────────────────────────────────────────
-async function checkRosterAccess() {
-  // Try to load profile; if role is compliance_officer or admin, allow roster
-  if (!currentUser) return;
-  // All authenticated users can see the roster per design
-  document.getElementById('tab-roster').disabled = false;
-  await loadRoster();
-}
-
-async function loadRoster() {
-  if (!currentUser) {
-    document.getElementById('roster-body').innerHTML =
-      '<tr><td colspan="4" style="color:var(--slate);padding:20px;text-align:center">Sign in to view the reader roster.</td></tr>';
-    return;
-  }
-
-  // Demo mode: generate mock data
-  if (!currentVersionId || currentVersionId.startsWith('demo-') || currentVersionId.startsWith('baseline-')) {
-    renderMockRoster();
-    return;
-  }
-
-  const { data: acks, error } = await sb
-    .from('acknowledgements')
-    .select('user_id, version_id, acknowledged_at, profiles(email, full_name)')
-    .order('acknowledged_at', { ascending: false });
-
-  if (error || !acks || acks.length === 0) {
-    renderMockRoster();
-    return;
-  }
-
-  // Group by user, keep latest ack
-  const byUser = {};
-  acks.forEach(a => {
-    if (!byUser[a.user_id]) {
-      byUser[a.user_id] = a;
-    }
-  });
-
-  rosterData = Object.values(byUser).map(a => ({
-    email:   a.profiles?.email || a.user_id,
-    version: a.version_id,
-    date:    a.acknowledged_at,
-    current: a.version_id === currentVersionId,
-    behind:  0, // simplified
-  }));
-
-  renderRoster(rosterData);
-}
-
-function renderMockRoster() {
-  const mockUsers = [
-    { email: 'anna.schmidt@etsverification.com',  version: 'v2026.05', date: '2026-05-02T09:14:00Z', current: true },
-    { email: 'jan.kowalski@etsverification.com',  version: 'v2026.05', date: '2026-05-03T14:32:00Z', current: true },
-    { email: 'marie.dupont@etsverification.com',  version: 'v2025.12', date: '2025-12-20T11:05:00Z', current: false },
-    { email: 'luca.rossi@etsverification.com',    version: 'v2025.12', date: '2025-12-18T16:45:00Z', current: false },
-    { email: 'ingrid.berg@etsverification.com',   version: 'v2026.05', date: '2026-05-04T08:22:00Z', current: true },
-    { email: 'tomasz.woz@etsverification.com',    version: 'v2025.12', date: '2026-01-10T10:00:00Z', current: false },
-  ];
-  rosterData = mockUsers;
-  renderRoster(mockUsers);
-}
-
-function renderRoster(data) {
-  const filter = document.getElementById('roster-filter').value;
-  let filtered = data;
-  if (filter === 'behind')  filtered = data.filter(r => !r.current);
-  if (filter === 'current') filtered = data.filter(r => r.current);
-
-  // Sort
-  filtered.sort((a, b) => {
-    let va = a[rosterSortKey] || '';
-    let vb = b[rosterSortKey] || '';
-    return va < vb ? -rosterSortDir : va > vb ? rosterSortDir : 0;
-  });
-
-  const tbody = document.getElementById('roster-body');
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="color:var(--slate);padding:20px;text-align:center">No records match the current filter.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(r => `
-    <tr>
-      <td>${escHtml(r.email)}</td>
-      <td>${escHtml(r.name || '—')}</td>
-      <td><span style="font-family:monospace;font-size:12px">${escHtml(r.version)}</span></td>
-      <td>
-        ${r.current
-          ? '<span style="color:var(--forest);font-weight:600">✓ Current</span>'
-          : '<span style="color:var(--coral)">Behind</span>'}
-        <span style="color:var(--slate);font-size:11px;margin-left:6px">${fmtDate(r.date)}</span>
-      </td>
-    </tr>`).join('');
-}
-
-function filterRoster() { renderRoster(rosterData); }
-
-function sortRoster(key) {
-  if (rosterSortKey === key) {
-    rosterSortDir = rosterSortDir === 'asc' ? 'desc' : 'asc';
-  } else {
-    rosterSortKey = key;
-    rosterSortDir = 'asc';
-  }
-  renderRoster(rosterData);
-}
-
-function exportCSV() {
-  const rows = [['Email','Name','Version','Date','Status']];
-  rosterData.forEach(r => rows.push([r.email, r.name||'', r.version, r.date, r.current ? 'Current' : 'Behind']));
-  const csv  = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = 'reader-roster.csv'; a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── TABS ──────────────────────────────────────────────────────
-function switchTab(tab) {
-  const readerPanel = document.getElementById('reader-legal-panel');
-  const rosterPanel = document.getElementById('roster-panel');
-  const tabReader   = document.getElementById('tab-reader');
-  const tabRoster   = document.getElementById('tab-roster');
-
-  if (tab === 'reader') {
-    readerPanel.classList.remove('hidden-panel');
-    rosterPanel.classList.remove('active');
-    tabReader.classList.add('active');
-    tabRoster.classList.remove('active');
-    tabReader.setAttribute('aria-selected', 'true');
-    tabRoster.setAttribute('aria-selected', 'false');
-  } else {
-    readerPanel.classList.add('hidden-panel');
-    rosterPanel.classList.add('active');
-    tabRoster.classList.add('active');
-    tabReader.classList.remove('active');
-    tabRoster.setAttribute('aria-selected', 'true');
-    tabReader.setAttribute('aria-selected', 'false');
-    loadRoster();
-  }
-}
+/* =========================
+   INIT
+========================= */
+loadActs();
 
 </script>
+
 </body>
 </html>
