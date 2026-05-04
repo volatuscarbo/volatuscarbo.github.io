@@ -57,16 +57,17 @@ def get_act():
 # -----------------------------
 def fetch_versions():
     url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:{CELEX}"
+    print("url :",url)
     html = requests.get(url).text
-
+    
     soup = BeautifulSoup(html, "html.parser")
-
+    
     versions = []
 
     for link in soup.select("[data-celex]"):
         celex_version = link.get("data-celex")
         date = link.get("data-date")
-        print("Versions :",versions)
+        print("celex_version :",celex_version)
         print("Date :",date)
         if not celex_version or not date:
             continue
