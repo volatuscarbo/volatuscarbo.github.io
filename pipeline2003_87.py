@@ -116,7 +116,7 @@ def insert_new_versions(acts_id, versions, existing):
             continue
 
         payload = {
-            "acts_id": acts_id,
+            "act_id": acts_id,
             "celex_version": v["celex_version"],
             "version_date": v["date"],
             "content": v["content"],
@@ -148,7 +148,7 @@ def update_latest(acts_id):
 
     # set newest
     requests.patch(
-        f"{SUPABASE_URL}/rest/v1/act_versions?acts_id=eq.{act_id}&order=version_date.desc&limit=1",
+        f"{SUPABASE_URL}/rest/v1/act_versions?act_id=eq.{act_id}&order=version_date.desc&limit=1",
         headers=HEADERS,
         json={"is_latest": True}
     )
