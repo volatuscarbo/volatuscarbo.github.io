@@ -57,14 +57,26 @@ def fetch_xml(celex):
 
     print("🌐 Fetching XML:", url, flush=True)
 
-    res = requests.get(url, headers={
-        "User-Agent": "Mozilla/5.0"
-    })
+     headers = {"User-Agent": "Mozilla/5.0"}
 
-    print("HTTP status:", res.status_code, flush=True)
+    for i in range(retries):
+        res = requests.get(url, headers=headers)
 
-    if res.status_code != 200:
-        raise Exception(f"EUR-Lex error {res.status_code}")
+        print(f"try {i+1} status:", res.status_code)
+
+        # ✅ success
+        if res.status_code == 200:
+            return res.text
+
+        # ⏳ still processing
+        if res.status_code == 202:
+            time.sleep(2 * (i + 1))  # exponential backoff
+            continue
+
+        # ❌ real error
+        raise Exception(f"EUR-Lex error {res.status_code}: {res.text[:200]}")
+
+    
 
     return res.text
 
