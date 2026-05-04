@@ -8,9 +8,8 @@ from supabase import create_client
 # =========================
 # CONFIG
 # =========================
-SUPABASE_URL = os.environ["LEGAL_SUPABASE_URL"]
-SUPABASE_KEY = os.environ["LEGAL_PUBLIC_KEY"]
-
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 BASE_CELEX = "32003L0087"  # Directive 2003/87/EC
 
 sb = create_client(SUPABASE_URL, SUPABASE_KEY)
