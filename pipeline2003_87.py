@@ -6,40 +6,50 @@ SUPABASE_KEY = "YOUR_KEY"
 sb = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
-def version_exists(version_id: str) -> bool:
-    res = sb.table("versions") \
-        .select("version_id") \
-        .eq("version_id", version_id) \
-        .limit(1) \
-        .execute()
+def fetch_versions_from_source(celex):
+    """
+    MUST return ALL versions.
+    Ensure pagination is implemented here.
+    """
+    raise NotImplementedError("Implement source fetch with pagination")
 
-    return len(res.data) > 0
+
+def normalize_version(v):
+    return {
+        "version_id": v.get("version_id"),
+        "version_date": v.get("version_date"),
+        "content": v.get("content") or "",
+        "source_url": v.get("source_url")
+    }
 
 
 def insert_version(celex, version):
-    """
-    version must contain:
-      - version_id (UUID or unique hash)
-      - version_date
-      - raw_text or metadata
-    """
+    v = normalize_version(version)
 
-    vid = version["version_id"]
-
-    # ✅ IMPORTANT: dedupe ONLY by version_id
-    if version_exists(vid):
-        print(f"⏭️ Version exists: {vid}")
+    if not v["version_id"]:
+        print("⚠️ Skipping version with missing version_id")
         return
 
-    sb.table("versions").insert({
-        "celex": celex,
-        "version_id": vid,
-        "version_date": version.get("version_date"),
-        "content": version.get("content"),
-        "source_url": version.get("source_url")
-    }).execute()
+    try:
+        # ✅ UPSERT = no duplicates + no race conditions
+        res = sb.table("versions").upsert(
+            {
+                "celex": celex,
+                "version_id": v["version_id"],
+                "version_date": v["version_date"],
+                "content": v["content"],
+                "source_url": v["source_url"]
+            },
+            on_conflict="version_id"
+        ).execute()
 
-    print(f"✅ Inserted version: {vid}")
+        if res.data:
+            print(f"✅ Upserted: {v['version_id']}")
+        else:
+            print(f"⚠️ No response data for {v['version_id']}")
+
+    except Exception as e:
+        print(f"❌ Insert failed for {v['version_id']}: {e}")
 
 
 def process_celex(celex):
@@ -48,7 +58,7 @@ def process_celex(celex):
     versions = fetch_versions_from_source(celex)
 
     if not versions:
-        print("⚠️ No versions found from source")
+        print("⚠️ No versions found")
         return
 
     print(f"📄 Found {len(versions)} versions")
