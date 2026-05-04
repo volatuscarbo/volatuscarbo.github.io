@@ -1,6 +1,7 @@
 import requests
 import hashlib
 import os
+import re
 from datetime import datetime
 from bs4 import BeautifulSoup
 from supabase import create_client
@@ -15,22 +16,21 @@ sb = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 TRACKED_ACTS = [
     "32003L0087",
-    "32018R2066",
-    "32018R2067"
+    "32010R0998",
+    "32021L2118"
 ]
 
 # =========================
-# HELPERS
+# HASH
 # =========================
 def hash_text(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 # =========================
-# STEP 1: FETCH EUR-LEX
+# FETCH DOCUMENT
 # =========================
 def get_latest_consolidated(celex):
     url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:0{celex}"
-
     r = requests.get(url)
     r.raise_for_status()
 
@@ -44,36 +44,110 @@ def get_latest_consolidated(celex):
     }
 
 # =========================
-# STEP 2: PARSE ARTICLES
+# UNIVERSAL PARSER (ROBUST)
 # =========================
-def parse_articles(html):
+def parse_eu_document(html):
     soup = BeautifulSoup(html, "html.parser")
 
+    articles = extract_structured(soup)
+
+    if len(articles) < 3:
+        articles = extract_regex(soup)
+
+    if len(articles) < 3:
+        articles = extract_fallback(soup)
+
+    return articles
+
+
+def extract_structured(soup):
     articles = {}
 
-    for tag in soup.find_all(["h2", "h3"]):
-        text = tag.get_text().strip()
+    for tag in soup.find_all(["h2", "h3", "h4", "p", "div"]):
+        text = tag.get_text(" ", strip=True)
 
-        if text.startswith("Article"):
-            number = text.replace("Article", "").strip()
-            content = []
+        match = re.match(r"^Article\s+(\d+[a-zA-Z0-9\-]*)", text, re.IGNORECASE)
+        if not match:
+            continue
 
-            for sib in tag.find_next_siblings():
-                if sib.name in ["h2", "h3"]:
-                    break
-                content.append(sib.get_text(" ", strip=True))
+        article_number = match.group(1)
 
-            full_text = " ".join(content)
+        content = []
+        for sib in tag.find_next_siblings():
+            sib_text = sib.get_text(" ", strip=True)
 
-            articles[number] = {
+            if re.match(r"^Article\s+\d", sib_text, re.IGNORECASE):
+                break
+
+            content.append(sib_text)
+
+        full_text = " ".join(content).strip()
+
+        if full_text:
+            articles[article_number] = {
                 "content": full_text,
                 "hash": hash_text(full_text)
             }
 
     return articles
 
+
+def extract_regex(soup):
+    text = soup.get_text("\n", strip=True)
+
+    pattern = re.compile(
+        r"(Article\s+\d+[a-zA-Z0-9\-]*)\s*(.*?)(?=Article\s+\d+|\Z)",
+        re.DOTALL | re.IGNORECASE
+    )
+
+    articles = {}
+
+    for m in pattern.finditer(text):
+        article_number = re.sub(r"[^\dA-Za-z\-]", "", m.group(1).replace("Article", ""))
+        body = m.group(2).strip()
+
+        if body:
+            articles[article_number] = {
+                "content": body,
+                "hash": hash_text(body)
+            }
+
+    return articles
+
+
+def extract_fallback(soup):
+    text = soup.get_text("\n", strip=True)
+
+    lines = text.split("\n")
+
+    articles = {}
+    current = None
+    buffer = []
+
+    for line in lines:
+        if re.match(r"^Article\s+\d", line, re.IGNORECASE):
+            if current and buffer:
+                articles[current] = {
+                    "content": " ".join(buffer),
+                    "hash": hash_text(" ".join(buffer))
+                }
+
+            current = line.replace("Article", "").strip()
+            buffer = []
+        else:
+            if current:
+                buffer.append(line)
+
+    if current and buffer:
+        articles[current] = {
+            "content": " ".join(buffer),
+            "hash": hash_text(" ".join(buffer))
+        }
+
+    return articles
+
 # =========================
-# STEP 3: ACT MANAGEMENT
+# ACT MANAGEMENT
 # =========================
 def get_act(celex):
     res = sb.table("legal_acts").select("*").eq("celex", celex).execute()
@@ -89,7 +163,7 @@ def get_act(celex):
     return res.data[0]["id"]
 
 # =========================
-# STEP 4: VERSION CHECK
+# VERSION CHECK
 # =========================
 def version_exists(act_id, date):
     res = sb.table("versions") \
@@ -101,7 +175,7 @@ def version_exists(act_id, date):
     return len(res.data) > 0
 
 # =========================
-# STEP 5: LOAD PREVIOUS STATE
+# LOAD PREVIOUS VERSION
 # =========================
 def load_last_articles(act_id):
     res = sb.table("versions") \
@@ -126,7 +200,7 @@ def load_last_articles(act_id):
     }
 
 # =========================
-# STEP 6: DIFF ENGINE
+# DIFF ENGINE
 # =========================
 def diff_articles(old, new):
     changes = []
@@ -138,8 +212,6 @@ def diff_articles(old, new):
             changes.append({
                 "article": k,
                 "type": "added",
-                "old_hash": None,
-                "new_hash": new[k]["hash"],
                 "old_text": None,
                 "new_text": new[k]["content"]
             })
@@ -148,8 +220,6 @@ def diff_articles(old, new):
             changes.append({
                 "article": k,
                 "type": "removed",
-                "old_hash": old[k]["hash"],
-                "new_hash": None,
                 "old_text": old[k]["content"],
                 "new_text": None
             })
@@ -158,8 +228,6 @@ def diff_articles(old, new):
             changes.append({
                 "article": k,
                 "type": "modified",
-                "old_hash": old[k]["hash"],
-                "new_hash": new[k]["hash"],
                 "old_text": old[k]["content"],
                 "new_text": new[k]["content"]
             })
@@ -167,10 +235,10 @@ def diff_articles(old, new):
     return changes
 
 # =========================
-# STEP 7: IMPACT CLASSIFICATION
+# IMPACT CLASSIFIER
 # =========================
 def classify_change(text):
-    t = text.lower()
+    t = (text or "").lower()
 
     if "monitoring" in t or "reporting" in t:
         return "MRR_IMPACT", 5
@@ -181,7 +249,7 @@ def classify_change(text):
     if "penalty" in t or "fine" in t:
         return "COMPLIANCE_PENALTY_IMPACT", 5
 
-    if "scope" in t or "installation" in t:
+    if "scope" in t:
         return "SCOPE_CHANGE_IMPACT", 5
 
     if "definition" in t:
@@ -190,7 +258,15 @@ def classify_change(text):
     return "GENERAL_CHANGE", 1
 
 # =========================
-# STEP 8: PROCESS ACT
+# OBLIGATION EXTRACTION
+# =========================
+def extract_obligations(text):
+    text = text or ""
+
+    return re.findall(r"\b(shall|must|required to|ensure)\b[^.]{0,200}", text, re.IGNORECASE)
+
+# =========================
+# PROCESS ACT
 # =========================
 def process_act(celex):
     print(f"\n📘 Processing {celex}")
@@ -203,7 +279,11 @@ def process_act(celex):
         return
 
     print("📄 Parsing")
-    new_articles = parse_articles(latest["html"])
+    new_articles = parse_eu_document(latest["html"])
+
+    if not new_articles:
+        print("⚠️ No articles found — skipping")
+        return
 
     print("📚 Loading previous")
     _, old_articles = load_last_articles(act_id)
@@ -236,28 +316,28 @@ def process_act(celex):
     ]).execute()
 
     # =========================
-    # SAVE RAW CHANGES
+    # SAVE CHANGES
     # =========================
     sb.table("article_changes").insert([
         {
             "version_id": version_id,
             "article_number": c["article"],
             "change_type": c["type"],
-            "previous_hash": c["old_hash"],
-            "new_hash": c["new_hash"],
             "summary": (c["new_text"] or "")[:300]
         }
         for c in changes
     ]).execute()
 
     # =========================
-    # IMPACT ANALYSIS (NEW CORE FEATURE)
+    # IMPACT + OBLIGATIONS
     # =========================
     impacts = []
+    obligations_rows = []
 
     for c in changes:
-        combined_text = (c["old_text"] or "") + " " + (c["new_text"] or "")
-        change_type, score = classify_change(combined_text)
+        combined = (c["old_text"] or "") + " " + (c["new_text"] or "")
+
+        change_type, score = classify_change(combined)
 
         impacts.append({
             "version_id": version_id,
@@ -265,16 +345,23 @@ def process_act(celex):
             "change_type": c["type"],
             "legal_change_type": change_type,
             "impact_score": score,
-            "summary": combined_text[:300]
+            "summary": combined[:300]
         })
 
-    sb.table("article_impacts").insert(impacts).execute()
+        obligations_rows.append({
+            "version_id": version_id,
+            "article_number": c["article"],
+            "obligations": extract_obligations(combined)
+        })
 
-    # =========================
-    # ALERT (OPTIONAL)
-    # =========================
+    if impacts:
+        sb.table("article_impacts").insert(impacts).execute()
+
+    if obligations_rows:
+        sb.table("article_obligations").insert(obligations_rows).execute()
+
     if any(i["impact_score"] >= 4 for i in impacts):
-        print("🚨 HIGH IMPACT REGULATORY CHANGE DETECTED")
+        print("🚨 HIGH IMPACT REGULATORY CHANGE")
 
     print("✅ Done:", celex)
 
