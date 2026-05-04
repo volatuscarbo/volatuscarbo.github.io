@@ -652,9 +652,9 @@
 <div id="layout">
 
   <!-- ── SIDEBAR ── -->
-  <aside id="sidebar" role="navigation" aria-label="Version timeline">
+  <aside id="sidebar" role="navigation" aria-label="Legislation">
     <div class="sidebar-header">
-      <h2>Version Timeline</h2>
+      <h2>EU ETS Legislation</h2>
     </div>
     <div id="version-list">
       <!-- Skeleton -->
@@ -819,29 +819,31 @@ let rosterSortDir     = 1;
 let diffView          = 'unified';
 
 // ── FALLBACK DEMO DATA ─────────────────────────────────────────
-// Shown when Supabase tables are empty (bootstrapping phase)
-const DEMO_VERSIONS = [
-  {
-    id: 'demo-v2026-05',
-    version_label: 'v2026.05',
-    published_at: '2026-05-01T08:00:00Z',
-    effective_from: '2026-05-01',
-    content_hash: 'sha256:a1b2c3d4e5f6',
-    source_url: 'https://eur-lex.europa.eu/eli/dir/2003/87',
-    previous_version_id: 'demo-v2025-12',
-    full_text: null,
-  },
-  {
-    id: 'demo-v2025-12',
-    version_label: 'v2025.12',
-    published_at: '2025-12-15T10:00:00Z',
-    effective_from: '2026-01-01',
-    content_hash: 'sha256:9z8y7x6w5v4u',
-    source_url: 'https://eur-lex.europa.eu/eli/dir/2003/87',
-    previous_version_id: null,
-    full_text: null,
-  }
+// Shown when Supabase tables are empty (before GitHub Action populates them).
+// Each entry represents one EU ETS act + its current baseline version.
+const DEMO_ACTS = [
+  { id: 'demo-act-1', official_number: '2003/87/EC',  short_title: 'EU ETS Directive',          sort_order: 10, adopted_date: '2003-10-13', in_force_from: '2003-10-25' },
+  { id: 'demo-act-2', official_number: '2004/101/EC', short_title: 'Linking Directive',          sort_order: 20, adopted_date: '2004-10-27', in_force_from: '2004-11-13' },
+  { id: 'demo-act-3', official_number: '2008/101/EC', short_title: 'Aviation Directive',         sort_order: 30, adopted_date: '2008-11-19', in_force_from: '2009-02-02' },
+  { id: 'demo-act-4', official_number: '2009/29/EC',  short_title: 'Phase 3 Directive',          sort_order: 40, adopted_date: '2009-04-23', in_force_from: '2009-06-25' },
+  { id: 'demo-act-5', official_number: '2023/958/EU', short_title: 'Aviation & Shipping Amend.', sort_order: 50, adopted_date: '2023-05-10', in_force_from: '2023-05-05' },
+  { id: 'demo-act-6', official_number: '2023/959/EU', short_title: 'ETS2 Directive',             sort_order: 60, adopted_date: '2023-05-10', in_force_from: '2023-05-05' },
 ];
+
+// One baseline version per demo act
+const DEMO_VERSIONS = DEMO_ACTS.map(act => ({
+  id:            'demo-ver-' + act.id,
+  act_id:        act.id,
+  version_label: act.official_number,
+  amendment_ref: null,
+  is_baseline:   true,
+  published_at:  act.in_force_from + 'T00:00:00Z',
+  effective_from: act.in_force_from,
+  source_url:    'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:3' + act.official_number.replace('/', 'L0').replace('/EC','').replace('/EU',''),
+  change_summary: 'Original act as published in the Official Journal. No amendments tracked yet.',
+  full_text:     null,
+  _act:          act,
+}));
 
 const DEMO_CHANGES = [
   { change_type: 'added',    article_ref: 'Art. 3ge',    summary: 'New article on carbon capture utilisation (CCU) — establishes eligibility criteria for CCU installations and their surrender obligations.' },
@@ -1171,43 +1173,82 @@ function renderUserUI() {
 
 // ── VERSIONS ──────────────────────────────────────────────────
 async function loadVersions() {
-  let versions = [];
-  const { data, error } = await sb
-    .from('legislation_versions')
-    .select('*')
-    .order('published_at', { ascending: false });
+  // Try to load acts + their current (latest) version from Supabase.
+  // For each act we want the most-recent version row (highest published_at).
+  let items = []; // will be array of { act, version } pairs
 
-  if (error || !data || data.length === 0) {
-    // Use demo data for initial/empty state
-    versions = DEMO_VERSIONS;
+  const { data: acts, error: actsErr } = await sb
+    .from('legislation_acts')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
+  if (!actsErr && acts && acts.length > 0) {
+    // Fetch all versions, then pick the latest per act client-side
+    const { data: vers, error: versErr } = await sb
+      .from('legislation_versions')
+      .select('*')
+      .order('published_at', { ascending: false });
+
+    if (!versErr && vers && vers.length > 0) {
+      // For each act, find the latest version
+      items = acts.map(act => {
+        const actVers = vers.filter(v => v.act_id === act.id);
+        const latest  = actVers[0] || null; // already sorted desc
+        // Attach act info onto version for easy access
+        if (latest) latest._act = act;
+        return latest
+          ? { act, version: latest }
+          : { act, version: { id: 'baseline-' + act.id, act_id: act.id,
+              version_label: act.official_number, is_baseline: true,
+              published_at: act.in_force_from + 'T00:00:00Z',
+              amendment_ref: null, change_summary: 'Baseline — no updates tracked yet.',
+              full_text: null, _act: act } };
+      });
+    } else {
+      // Acts exist but no versions — show baseline stub for each act
+      items = acts.map(act => ({
+        act,
+        version: { id: 'baseline-' + act.id, act_id: act.id,
+          version_label: act.official_number, is_baseline: true,
+          published_at: (act.in_force_from || act.adopted_date) + 'T00:00:00Z',
+          amendment_ref: null, change_summary: 'Baseline — no updates tracked yet.',
+          full_text: null, _act: act }
+      }));
+    }
   } else {
-    versions = data;
+    // Tables don't exist yet — use demo data
+    items = DEMO_VERSIONS.map(v => ({ act: v._act, version: v }));
   }
 
-  allVersions = versions;
-  renderTimeline(versions);
+  allVersions = items.map(i => i.version);
+  renderTimeline(items);
 
-  if (versions.length > 0) {
-    selectVersion(versions[0]);
+  if (items.length > 0) {
+    selectVersion(items[0].version);
   }
 }
 
-function renderTimeline(versions) {
+function renderTimeline(items) {
   const list = document.getElementById('version-list');
   list.innerHTML = '';
-  versions.forEach((v, i) => {
-    const dot = i === 0 ? 'dot-green' : (i === 1 ? 'dot-amber' : 'dot-grey');
-    const label = i === 0 ? 'Current' : (i === 1 ? 'Superseded' : 'Archived');
+  items.forEach((item, i) => {
+    const { act, version: v } = item;
+    const hasUpdate   = !v.is_baseline && v.amendment_ref;
+    const dot         = hasUpdate ? 'dot-amber' : 'dot-green';
+    const statusLabel = hasUpdate ? 'Updated' : 'Baseline';
     const card = document.createElement('div');
     card.className = 'version-card' + (i === 0 ? ' active' : '');
     card.dataset.id = v.id;
     card.innerHTML = `
       <div class="version-card-top">
-        <span class="version-dot ${dot}" title="${label}"></span>
-        <span class="version-label">${escHtml(v.version_label)}</span>
+        <span class="version-dot ${dot}" title="${statusLabel}"></span>
+        <span class="version-label">${escHtml(act.official_number)}</span>
       </div>
-      <div class="version-date">${fmtDate(v.published_at)}</div>
-      <div class="version-summary">${label === 'Current' ? 'Active version' : label}</div>
+      <div class="version-date" style="font-size:11px;color:var(--slate);margin-top:2px">${escHtml(act.short_title)}</div>
+      ${hasUpdate
+        ? `<div class="version-summary" style="margin-top:4px">amended by ${escHtml(v.amendment_ref)}</div>`
+        : `<div class="version-summary" style="margin-top:4px;color:var(--leaf)">baseline in force</div>`
+      }
     `;
     card.addEventListener('click', () => {
       document.querySelectorAll('.version-card').forEach(c => c.classList.remove('active'));
@@ -1222,12 +1263,18 @@ async function selectVersion(v) {
   currentVersionId    = v.id;
   currentVersionLabel = v.version_label;
 
-  document.getElementById('ack-version-label').textContent = v.version_label;
-  document.getElementById('lt-version-label').textContent  = v.version_label;
+  // Display the act's official number as primary identifier
+  const actNum = v._act ? v._act.official_number : v.version_label;
+  const displayLabel = v.amendment_ref
+    ? `${actNum} (as amended by ${v.amendment_ref})`
+    : actNum;
 
-  // Prev version label
-  const prev = allVersions.find(x => x.id === v.previous_version_id);
-  document.getElementById('cs-prev-version').textContent = prev ? prev.version_label : 'baseline';
+  document.getElementById('ack-version-label').textContent = displayLabel;
+  document.getElementById('lt-version-label').textContent  = displayLabel;
+
+  // Change summary context
+  const prevLabel = v.is_baseline ? 'original publication' : (v.amendment_ref || 'previous version');
+  document.getElementById('cs-prev-version').textContent = prevLabel;
   document.getElementById('cs-date').textContent = fmtDate(v.published_at);
 
   await loadChanges(v.id);
@@ -1241,7 +1288,7 @@ async function selectVersion(v) {
 // ── CHANGES ──────────────────────────────────────────────────
 async function loadChanges(versionId) {
   let changes = [];
-  if (!versionId.startsWith('demo-')) {
+  if (!versionId.startsWith('demo-') && !versionId.startsWith('baseline-')) {
     const { data, error } = await sb
       .from('legislation_changes')
       .select('*')
@@ -1364,7 +1411,7 @@ async function checkUserAck() {
   document.getElementById('ack-strip').style.display = '';
   document.getElementById('ack-confirmed').classList.remove('show');
 
-  if (currentVersionId.startsWith('demo-')) {
+  if (currentVersionId.startsWith('demo-') || currentVersionId.startsWith('baseline-')) {
     // Demo mode: just enable button
     document.getElementById('btn-ack').disabled = false;
     showNewVersionBanner(false);
@@ -1395,7 +1442,7 @@ async function acknowledgeVersion() {
   btn.disabled = true;
   btn.textContent = 'Recording…';
 
-  if (currentVersionId.startsWith('demo-')) {
+  if (currentVersionId.startsWith('demo-') || currentVersionId.startsWith('baseline-')) {
     // Demo mode acknowledgement
     const now = new Date().toISOString();
     showAckConfirmed(now);
@@ -1474,7 +1521,7 @@ async function loadRoster() {
   }
 
   // Demo mode: generate mock data
-  if (!currentVersionId || currentVersionId.startsWith('demo-')) {
+  if (!currentVersionId || currentVersionId.startsWith('demo-') || currentVersionId.startsWith('baseline-')) {
     renderMockRoster();
     return;
   }
@@ -1596,90 +1643,12 @@ function switchTab(tab) {
   } else {
     readerPanel.classList.add('hidden-panel');
     rosterPanel.classList.add('active');
-    tabReader.classList.remove('active');
     tabRoster.classList.add('active');
-    tabReader.setAttribute('aria-selected', 'false');
+    tabReader.classList.remove('active');
     tabRoster.setAttribute('aria-selected', 'true');
-    if (currentUser) loadRoster();
+    tabReader.setAttribute('aria-selected', 'false');
+    loadRoster();
   }
-};
-
-// ── SYNC PILL ────────────────────────────────────────────────
-function renderSyncPill() {
-  const el = document.getElementById('sync-time');
-  const latest = allVersions[0];
-  if (latest?.published_at) {
-    const diff = Math.round((Date.now() - new Date(latest.published_at)) / 3600000);
-    el.textContent = diff < 1
-      ? 'Synced · just now'
-      : diff < 24
-        ? `Synced · ${diff}h ago`
-        : `Synced · ${Math.round(diff/24)}d ago`;
-  } else {
-    el.textContent = 'Synced · demo mode';
-  }
-}
-
-// ── HELPERS ──────────────────────────────────────────────────
-function escHtml(s) {
-  if (typeof s !== 'string') return '';
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function fmtDate(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', { year:'numeric', month:'short', day:'numeric' });
-}
-
-function fmtDateFull(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleString('en-GB', {
-    day:'numeric', month:'long', year:'numeric',
-    hour:'2-digit', minute:'2-digit'
-  });
-}
-
-// ── EVENT BINDING (called after sb is ready) ──────────────────
-function bindEvents() {
-  // Top bar
-  document.getElementById('btn-signin').addEventListener('click', openSignInModal);
-  document.getElementById('btn-signout').addEventListener('click', signOut);
-
-  // Modal
-  document.getElementById('btn-modal-cancel').addEventListener('click', closeSignInModal);
-  document.getElementById('btn-send-link').addEventListener('click', signInWithMagicLink);
-  document.getElementById('signin-email').addEventListener('keydown', e => {
-    if (e.key === 'Enter') signInWithMagicLink();
-  });
-  document.getElementById('signin-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeSignInModal();
-  });
-
-  // Banner
-  document.getElementById('btn-scroll-ack').addEventListener('click', scrollToAck);
-
-  // Tabs
-  document.getElementById('tab-reader').addEventListener('click', () => switchTab('reader'));
-  document.getElementById('tab-roster').addEventListener('click', () => switchTab('roster'));
-
-  // Diff toggles
-  document.getElementById('btn-diff-unified').addEventListener('click', () => setDiffView('unified'));
-  document.getElementById('btn-diff-sidebyside').addEventListener('click', () => setDiffView('sidebyside'));
-
-  // Acknowledge footer
-  document.getElementById('btn-ack').addEventListener('click', acknowledgeVersion);
-
-  // Roster controls
-  document.getElementById('roster-filter').addEventListener('change', filterRoster);
-  document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
-  document.querySelectorAll('.roster-table th[data-sort]').forEach(th => {
-    th.addEventListener('click', () => sortRoster(th.dataset.sort));
-  });
-
-  // Keyboard
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeSignInModal();
-  });
 }
 
 </script>
