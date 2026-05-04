@@ -141,7 +141,7 @@ def insert_new_versions(acts_id, versions, existing):
 def update_latest(acts_id):
     # reset
     requests.patch(
-        f"{SUPABASE_URL}/rest/v1/act_versions?acts_id=eq.{acts_id}",
+        f"{SUPABASE_URL}/rest/v1/act_versions?act_id=eq.{acts_id}",
         headers=HEADERS,
         json={"is_latest": False}
     )
