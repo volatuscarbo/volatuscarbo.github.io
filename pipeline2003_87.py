@@ -1,14 +1,12 @@
-import os
+import time
 import hashlib
 import difflib
-from datetime import date
-from supabase import create_client
-import time
+import random
 
-SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_KEY"]
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+# -------------------------
+# MEMORY STORE (SIMULATES DB)
+# -------------------------
+store = {}
 
 CELEX_LIST = [
     "32003L0087",
@@ -18,178 +16,119 @@ CELEX_LIST = [
 
 
 # -------------------------
-# DEBUG HELPERS
+# SIMULATED "EU LAW VERSIONS"
 # -------------------------
+def fetch_legislation_text(celex):
+    """
+    Simulates EU consolidated law changes over time.
+    Each run randomly returns a different version.
+    """
 
-def hash_text(text: str) -> str:
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    base_versions = [
+        f"{celex} | Article 1 defines scope.",
+        f"{celex} | Article 1 defines scope. Article 5 added compliance rules.",
+        f"{celex} | Article 1 updated. Article 5 expanded. Annex added.",
+        f"{celex} | Full consolidation with penalty regime introduced."
+    ]
 
-
-def debug(title, data):
-    print("\n" + "="*60)
-    print(f"🔍 {title}")
-    print("="*60)
-    print(data)
-    print("="*60 + "\n")
-
-
-def safe_execute(query, label="query"):
-    res = query.execute()
-
-    if hasattr(res, "error") and res.error:
-        print(f"❌ ERROR in {label}: {res.error}")
-    else:
-        print(f"✅ {label} OK | rows: {len(res.data) if res.data else 0}")
-
-    return res
+    # FORCE variation (this is key for debugging)
+    return random.choice(base_versions) + f" | ts={int(time.time())}"
 
 
 # -------------------------
-# DB FUNCTIONS
+# HASH FUNCTION
 # -------------------------
-
-def get_or_create_act(celex: str):
-    res = supabase.table("acts").select("*").eq("celex", celex).execute()
-
-    if res.data:
-        print(f"📌 Act exists: {celex}")
-        return res.data[0]
-
-    print(f"➕ Creating act: {celex}")
-
-    inserted = supabase.table("acts").insert({
-        "celex": celex,
-        "title": f"Act {celex}",
-        "type": "unknown"
-    }).execute()
-
-    debug("ACT INSERT RESULT", inserted.data)
-
-    return inserted.data[0]
+def hash_text(text):
+    return hashlib.sha256(text.encode()).hexdigest()
 
 
-def get_latest_version(act_id: str):
-    res = supabase.table("act_versions") \
-        .select("*") \
-        .eq("act_id", act_id) \
-        .eq("is_latest", True) \
-        .limit(1) \
-        .execute()
-
-    if res.data:
-        print(f"📄 Found latest version: v{res.data[0]['version_number']}")
-    else:
-        print("📭 No previous version found")
-
-    return res.data[0] if res.data else None
-
-
-def compute_diff(old_text, new_text):
-    diff = difflib.unified_diff(
-        old_text.splitlines(),
-        new_text.splitlines(),
-        lineterm=""
+# -------------------------
+# DIFF FUNCTION
+# -------------------------
+def diff(old, new):
+    return "\n".join(
+        difflib.unified_diff(
+            old.splitlines(),
+            new.splitlines(),
+            lineterm=""
+        )
     )
-    return "\n".join(diff)
 
 
 # -------------------------
-# MOCK DATA FETCH (DEBUG IMPORTANT)
+# CORE LOGIC
 # -------------------------
+def process_celex(celex):
+    print("\n" + "="*80)
+    print(f"📘 PROCESSING CELEX: {celex}")
+    print("="*80)
 
-def fetch_legislation_text(celex: str):
-    text = f"Full consolidated text for {celex} - {time.time()}"
-    
-    debug("FETCHED TEXT", text[:200])
-    
-    return text
-
-
-# -------------------------
-# INSERT VERSION
-# -------------------------
-
-def insert_version(act, new_text: str, effective_date=None):
-    act_id = act["id"]
-
-    print(f"\n🚀 Processing act_id={act_id}, celex={act['celex']}")
-
-    latest = get_latest_version(act_id)
-
+    new_text = fetch_legislation_text(celex)
     new_hash = hash_text(new_text)
 
-    print(f"🔐 New hash: {new_hash}")
+    print("\n🧾 FETCHED TEXT:")
+    print(new_text)
 
-    if latest:
-        print(f"🔐 Old hash: {latest['content_hash']}")
+    print("\n🔐 NEW HASH:")
+    print(new_hash)
 
-        if latest["content_hash"] == new_hash:
-            print("⏭ NO CHANGE → skipping insert")
-            return
-    else:
-        print("🆕 First version for this act")
+    previous = store.get(celex)
 
-    version_number = 1 if not latest else latest["version_number"] + 1
+    # -------------------------
+    # FIRST VERSION CASE
+    # -------------------------
+    if not previous:
+        print("\n🆕 NO PREVIOUS VERSION FOUND → creating FIRST version")
+        store[celex] = {
+            "text": new_text,
+            "hash": new_hash,
+            "version": 1
+        }
+        return
 
-    print(f"📦 Creating version {version_number}")
+    print("\n📄 PREVIOUS VERSION EXISTS")
+    print("OLD HASH:", previous["hash"])
 
-    new_version = supabase.table("act_versions").insert({
-        "act_id": act_id,
-        "version_number": version_number,
-        "celex": act["celex"],
-        "full_text": new_text,
-        "effective_date": effective_date or date.today().isoformat(),
-        "is_latest": True,
-        "content_hash": new_hash,
-        "previous_version_id": latest["id"] if latest else None
-    }).execute()
+    # -------------------------
+    # SAME VERSION CHECK
+    # -------------------------
+    if previous["hash"] == new_hash:
+        print("\n⏭ NO CHANGE DETECTED → skipping version creation")
+        return
 
-    if new_version.data:
-        print(f"✅ INSERT SUCCESS: version {version_number}")
-    else:
-        print("❌ INSERT FAILED (no data returned)")
-        debug("INSERT RESPONSE", new_version)
+    # -------------------------
+    # NEW VERSION FOUND
+    # -------------------------
+    print("\n🔥 CHANGE DETECTED → NEW VERSION CREATED")
 
-    # update previous
-    if latest:
-        supabase.table("act_versions") \
-            .update({"is_latest": False}) \
-            .eq("id", latest["id"]) \
-            .execute()
+    print("\n📊 DIFF:")
+    print(diff(previous["text"], new_text))
 
-        diff = compute_diff(latest["full_text"], new_text)
+    store[celex] = {
+        "text": new_text,
+        "hash": new_hash,
+        "version": previous["version"] + 1
+    }
 
-        supabase.table("act_version_diffs").insert({
-            "act_id": act_id,
-            "from_version_id": latest["id"],
-            "to_version_id": new_version.data[0]["id"] if new_version.data else None,
-            "diff_text": diff
-        }).execute()
-
-        print("🧾 Diff stored")
+    print(f"\n✅ VERSION UPDATED → v{store[celex]['version']}")
 
 
 # -------------------------
-# MAIN
+# RUN LOOP (SIMULATES PIPELINE)
 # -------------------------
-
 def run():
-    print("\n==============================")
-    print("🚀 STARTING LEGAL PIPELINE DEBUG")
-    print("==============================\n")
+    print("\n🚀 STARTING CELEX DEBUG PIPELINE\n")
 
-    for celex in CELEX_LIST:
-        print(f"\n📘 CELEX: {celex}")
+    for i in range(5):  # multiple runs to simulate evolution
+        print(f"\n\n🔁 ITERATION {i+1}")
+        for celex in CELEX_LIST:
+            process_celex(celex)
 
-        act = get_or_create_act(celex)
+        time.sleep(1)
 
-        debug("ACT OBJECT", act)
-
-        text = fetch_legislation_text(celex)
-
-        insert_version(act, text)
-
-    print("\n🎯 DONE")
+    print("\n\n🎯 FINAL STATE:")
+    for k, v in store.items():
+        print(f"{k} → version {v['version']}")
 
 
 if __name__ == "__main__":
