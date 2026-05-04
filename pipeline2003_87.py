@@ -1,15 +1,17 @@
-print("FILE Started")
+import os
 import requests
 import hashlib
-import requests
-import os
-from bs4 import BeautifulSoup
 from datetime import datetime
 
-SUPABASE_URL = "https://eeuedfwjnaupakapmvwi.supabase.co"
-SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+# =========================
+# CONFIG
+# =========================
 
-CELEX = "32003L0087"
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise Exception("Missing SUPABASE_URL or SUPABASE_KEY")
 
 HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -17,172 +19,133 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-# -----------------------------
-# 1. GET OR CREATE ACT
-# -----------------------------
-def get_act():
-    print("Start get_act", flush=True)
-    
-    url = f"{SUPABASE_URL}/rest/v1/acts?celex=eq.{CELEX}"
+# CELEX input (GitHub Actions or local fallback)
+CELEX = os.environ.get("CELEX", "32003L0087")
+
+# =========================
+# ACT MANAGEMENT
+# =========================
+
+def get_or_create_act(celex):
+    print("🔍 Checking act:", celex, flush=True)
+
+    url = f"{SUPABASE_URL}/rest/v1/acts?celex=eq.{celex}&select=id"
 
     res = requests.get(url, headers=HEADERS).json()
-    print("DEBUG response:", res, flush=True)
 
-    # 🔒 validate response type
-    if not isinstance(res, list):
-        raise Exception(f"Unexpected response from Supabase: {res}")
-
-    # ✅ existing act found
-    if len(res) > 0:
-        act_id = res[0].get("id")
-        print("acts_id =", act_id, flush=True)
+    if isinstance(res, list) and len(res) > 0:
+        act_id = res[0]["id"]
+        print("✔ Found act:", act_id, flush=True)
         return act_id
 
-    # 🆕 insert new act
-    insert = requests.post(
+    print("➕ Creating act", flush=True)
+
+    res = requests.post(
         f"{SUPABASE_URL}/rest/v1/acts",
         headers=HEADERS,
-        json={"celex": CELEX, "title": "Directive 2003/87/EC"}
+        json={"celex": celex, "title": celex}
     ).json()
 
-    print("DEBUG insert response:", insert, flush=True)
+    return res[0]["id"]
 
-    if isinstance(insert, list) and len(insert) > 0:
-        return insert[0]["id"]
+# =========================
+# EUR-Lex XML FETCH
+# =========================
 
-    raise Exception(f"Insert failed: {insert}")
+def fetch_xml(celex):
+    url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/XML/?uri=CELEX:{celex}"
 
+    print("🌐 Fetching XML:", url, flush=True)
 
-# -----------------------------
-# 2. FETCH ALL VERSIONS
-# -----------------------------
-def fetch_versions():
-    url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:{CELEX}"
-    print("url :",url)
     res = requests.get(url, headers={
-    "User-Agent": "Mozilla/5.0"
+        "User-Agent": "Mozilla/5.0"
     })
 
-    print("status:", res.status_code)
-    print("final url:", res.url)
-    print("html length:", len(res.text))
-    print("preview:", res.text[:500])
-    html = requests.get(url).text
-    print("html :",html)
-    soup = BeautifulSoup(html, "html.parser")
-    
-    versions = []
+    print("HTTP status:", res.status_code, flush=True)
 
-    for link in soup.select("[data-celex]"):
-        celex_version = link.get("data-celex")
-        date = link.get("data-date")
-        print("celex_version :",celex_version)
-        print("Date :",date)
-        if not celex_version or not date:
-            continue
+    if res.status_code != 200:
+        raise Exception(f"EUR-Lex error {res.status_code}")
 
-        version_url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri={celex_version}"
-        v_html = requests.get(version_url).text
+    return res.text
 
-        content_hash = hashlib.sha256(v_html.encode()).hexdigest()
+# =========================
+# HASHING
+# =========================
 
-        versions.append({
-            "celex_version": celex_version,
-            "date": date,
-            "content": v_html,
-            "hash": content_hash
-        })
-        print("Versions :",versions)
-    return versions
+def hash_content(xml_text):
+    return hashlib.sha256(xml_text.encode("utf-8")).hexdigest()
 
+# =========================
+# EXISTING VERSIONS
+# =========================
 
-# -----------------------------
-# 3. GET EXISTING VERSIONS
-# -----------------------------
-def get_existing_versions(acts_id):
+def get_existing_hashes(act_id):
+    url = f"{SUPABASE_URL}/rest/v1/act_versions?act_id=eq.{act_id}&select=content_hash"
+
+    res = requests.get(url, headers=HEADERS).json()
+
+    if not isinstance(res, list):
+        return set()
+
+    return {r["content_hash"] for r in res if "content_hash" in r}
+
+# =========================
+# INSERT VERSION
+# =========================
+
+def insert_version(act_id, celex, xml_text, existing_hashes):
+    content_hash = hash_content(xml_text)
+
+    if content_hash in existing_hashes:
+        print("⏭ No change detected (duplicate)", flush=True)
+        return False
+
+    print("🆕 New version detected", flush=True)
+
     url = f"{SUPABASE_URL}/rest/v1/act_versions"
 
-    params = {
-        "act_id": f"eq.{acts_id}",
-        "select": "celex_version"
+    payload = {
+        "act_id": act_id,
+        "celex_version": celex,
+        "version_date": datetime.utcnow().isoformat(),
+        "content_xml": xml_text,
+        "content_hash": content_hash
     }
 
-    res = requests.get(url, headers=HEADERS, params=params)
-    data = res.json()
+    res = requests.post(url, headers=HEADERS, json=payload)
 
-    return {
-        row.get("celex_version")
-        for row in data
-        if isinstance(row, dict)
-    }
+    if res.status_code not in (200, 201):
+        raise Exception(f"Insert failed: {res.text}")
 
+    print("✔ Inserted version:", celex, flush=True)
+    return True
 
-# -----------------------------
-# 4. INSERT NEW ONLY
-# -----------------------------
-def insert_new_versions(acts_id, versions, existing):
-    inserted = 0
+# =========================
+# MAIN PIPELINE
+# =========================
 
-    for v in versions:
-        if v["celex_version"] in existing:
-            continue
-
-        payload = {
-            "act_id": acts_id,
-            "celex_version": v["celex_version"],
-            "version_date": v["date"],
-            "content": v["content"],
-            "hash": v["hash"],
-            "is_latest": False
-        }
-
-        requests.post(
-            f"{SUPABASE_URL}/rest/v1/act_versions",
-            headers=HEADERS,
-            json=payload
-        )
-
-        inserted += 1
-
-    return inserted
-
-
-# -----------------------------
-# 5. UPDATE LATEST FLAG
-# -----------------------------
-def update_latest(acts_id):
-    # reset
-    requests.patch(
-        f"{SUPABASE_URL}/rest/v1/act_versions?act_id=eq.{acts_id}",
-        headers=HEADERS,
-        json={"is_latest": False}
-    )
-
-    # set newest
-    requests.patch(
-        f"{SUPABASE_URL}/rest/v1/act_versions?act_id=eq.{acts_id}&order=version_date.desc&limit=1",
-        headers=HEADERS,
-        json={"is_latest": True}
-    )
-
-
-# -----------------------------
-# MAIN
-# -----------------------------
 def run():
-    
-    
-    acts_id = get_act()
-    print("acts_id:  ", acts_id, flush=True)    
-    versions = fetch_versions()
-    existing = get_existing_versions(acts_id)
+    print("🚀 Starting CELEX pipeline:", CELEX, flush=True)
 
-    inserted = insert_new_versions(acts_id, versions, existing)
+    # 1. Get or create act
+    act_id = get_or_create_act(CELEX)
 
-    update_latest(acts_id)
+    # 2. Fetch XML from EUR-Lex
+    xml_text = fetch_xml(CELEX)
 
-    print(f"✅ Inserted {inserted} new versions")
+    # 3. Get existing versions
+    existing = get_existing_hashes(act_id)
 
+    # 4. Insert if new
+    inserted = insert_version(act_id, CELEX, xml_text, existing)
+
+    # 5. Summary
+    print("✅ DONE", flush=True)
+    print("Inserted:", inserted, flush=True)
+
+# =========================
+# ENTRY POINT
+# =========================
 
 if __name__ == "__main__":
     run()
