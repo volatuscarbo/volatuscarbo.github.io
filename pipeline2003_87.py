@@ -69,7 +69,7 @@ def fetch_versions():
 # -----------------------------
 # 3. GET EXISTING VERSIONS
 # -----------------------------
-def get_existing_versions(act_id):
+def get_existing_versions(acts_id):
     url = f"{SUPABASE_URL}/rest/v1/act_versions?act_id=eq.{acts_id}&select=celex_version"
     res = requests.get(url, headers=HEADERS).json()
     return set(v["celex_version"] for v in res)
