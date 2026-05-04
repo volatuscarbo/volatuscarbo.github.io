@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<!-- saved from url=(0041)file:///C:/Users/frank/Downloads/ets.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ETS Verification Portal - Review and acknowledge aviation compliance documents">
+  <title>ETS Verification Portal</title>
+
+  <script src="./ETS Verification Portal_files/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --primary: #00d4ff;
+      --primary-dark: #00a8cc;
+      --primary-light: #4dd0e1;
+      --bg-dark: #0b1220;
+      --bg-darker: #050a12;
+      --surface: #1b2338;
+      --surface-light: #2a3a52;
+      --border: rgba(0, 212, 255, 0.2);
+      --border-hover: rgba(0, 212, 255, 0.4);
+      --text-primary: #e0e0e0;
+      --text-secondary: #aaa;
+      --text-muted: #666;
+      --success: #4caf50;
+      --warning: #ffc107;
+      --error: #ef5350;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
+      color: var(--text-primary);
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at 20% 50%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ==================== HEADER ==================== */
+    header {
+      padding: 20px;
+      background: rgba(17, 26, 46, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-left {
+      flex: 1;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(120deg, var(--primary), var(--primary-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .brand {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--primary);
+    }
+
+    .user-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--bg-dark);
+    }
+
+    /* ==================== MAIN CONTAINER ==================== */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ==================== LOGIN SECTION ==================== */
+    #login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 120px);
+      padding: 20px;
+    }
+
+    .login-card {
+      background: rgba(27, 35, 56, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow);
+    }
+
+    .login-card h2 {
+      margin-bottom: 8px;
+      font-size: 22px;
+      color: var(--primary);
+    }
+
+    .login-card p {
+      margin-bottom: 28px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(15, 23, 42, 0.95);
+      box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* ==================== BUTTONS ==================== */
+    button {
+      padding: 12px 20px;
+      background: linear-gradient(120deg, var(--primary), var(--primary-dark));
+      border: none;
+      color: var(--bg-dark);
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 212, 255, 0.4);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    button.secondary {
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover:not(:disabled) {
+      background: rgba(0, 212, 255, 0.2);
+      border-color: var(--border-hover);
+    }
+
+    button.danger {
+      background: linear-gradient(120deg, var(--error), #d32f2f);
+    }
+
+    button.success {
+      background: linear-gradient(120deg, var(--success), #45a049);
+    }
+
+    /* ==================== ALERTS ==================== */
+    .alert {
+      padding: 14px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      border: 1px solid transparent;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .alert-icon {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .alert.success {
+      background: rgba(76, 175, 80, 0.15);
+      border-color: rgba(76, 175, 80, 0.3);
+      color: #81c784;
+    }
+
+    .alert.info {
+      background: rgba(0, 212, 255, 0.15);
+      border-color: rgba(0, 212, 255, 0.3);
+      color: var(--primary-light);
+    }
+
+    .alert.warning {
+      background: rgba(255, 193, 7, 0.15);
+      border-color: rgba(255, 193, 7, 0.3);
+      color: #ffd54f;
+    }
+
+    .alert.error {
+      background: rgba(244, 67, 54, 0.15);
+      border-color: rgba(244, 67, 54, 0.3);
+      color: #ef9a9a;
+    }
+
+    /* ==================== DASHBOARD ==================== */
+    #dashboard {
+      display: none;
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .dashboard-header h2 {
+      margin: 0;
+      font-size: 20px;
+      color: var(--primary);
+    }
+
+    .dashboard-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ==================== STATS GRID ==================== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: rgba(27, 35, 56, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      background: rgba(27, 35, 56, 0.8);
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .stat-progress {
+      margin-top: 12px;
+      height: 4px;
+      background: rgba(0, 212, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .stat-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      border-radius: 2px;
+      transition: width 0.6s ease;
+    }
+
+    /* ==================== FILTERS & SEARCH ==================== */
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-box input {
+      padding-left: 36px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-btn {
+      padding: 10px 14px;
+      font-size: 12px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .filter-btn:hover {
+      background: rgba(0, 212, 255, 0.2);
+      border-color: var(--border-hover);
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(120deg, var(--primary), var(--primary-dark));
+      color: var(--bg-dark);
+      border-color: var(--primary);
+    }
+
+    /* ==================== DOCUMENTS GRID ==================== */
+    .docs-grid {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .doc-card {
+      background: rgba(27, 35, 56, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .doc-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+      transition: left 0.6s ease;
+    }
+
+    .doc-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      background: rgba(27, 35, 56, 0.8);
+      box-shadow: 0 8px 24px rgba(0, 212, 255, 0.15);
+    }
+
+    .doc-card:hover::before {
+      left: 100%;
+    }
+
+    .doc-card.unread {
+      border-color: rgba(255, 193, 7, 0.4);
+      background: rgba(27, 35, 56, 0.85);
+    }
+
+    .doc-card.unread::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 3px;
+      height: 100%;
+      background: var(--warning);
+    }
+
+    .doc-card.latest {
+      border: 2px solid var(--primary);
+      background: rgba(27, 35, 56, 0.95);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
+    }
+
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+
+    .doc-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .doc-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      background: rgba(0, 212, 255, 0.15);
+      color: var(--primary);
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      border: 1px solid var(--border);
+    }
+
+    .badge.latest {
+      background: linear-gradient(120deg, rgba(0, 212, 255, 0.2), rgba(0, 168, 204, 0.2));
+      border-color: var(--primary);
+    }
+
+    .badge.acknowledged {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success);
+      border-color: rgba(76, 175, 80, 0.4);
+    }
+
+    .badge.unread {
+      background: rgba(255, 193, 7, 0.15);
+      color: var(--warning);
+      border-color: rgba(255, 193, 7, 0.3);
+    }
+
+    .doc-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin: 12px 0;
+      padding: 12px 0;
+      border-top: 1px solid rgba(0, 212, 255, 0.1);
+      border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .doc-meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .doc-meta-label {
+      color: var(--text-muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .doc-meta-value {
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .doc-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .doc-actions button {
+      margin: 0;
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.unread {
+      background: var(--warning);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.acknowledged {
+      background: var(--success);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ==================== EMPTY STATE ==================== */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state p {
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    /* ==================== MODAL ==================== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: rgba(27, 35, 56, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 700px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 18px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    .modal-close:hover {
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--primary);
+    }
+
+    .modal-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    .modal-body pre {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Monaco', 'Courier New', monospace;
+    }
+
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-footer button {
+      margin: 0;
+      padding: 10px 16px;
+    }
+
+    /* ==================== LOADING STATES ==================== */
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(0, 212, 255, 0.3);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05), rgba(0, 212, 255, 0.1));
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .skeleton-card {
+      background: rgba(27, 35, 56, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .skeleton-line {
+      height: 12px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, rgba(0, 212, 255, 0.1), rgba(0, 212, 255, 0.05));
+    }
+
+    /* ==================== TOAST NOTIFICATIONS ==================== */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 400px;
+    }
+
+    .toast {
+      background: rgba(27, 35, 56, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideInRight 0.3s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    /* ==================== RESPONSIVE DESIGN ==================== */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .doc-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .modal-footer {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .login-card {
+        padding: 30px 20px;
+      }
+
+      .toast-container {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+      }
+
+      .toolbar {
+        flex-direction: column;
+      }
+
+      .search-box {
+        min-width: 100%;
+      }
+
+      .modal-content {
+        max-height: 95vh;
+      }
+
+      .doc-badges {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    /* ==================== SCROLLBAR STYLING ==================== */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 212, 255, 0.05);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 212, 255, 0.3);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 212, 255, 0.5);
+    }
+
+    /* ==================== UTILITY CLASSES ==================== */
+    .hidden {
+      display: none !important;
+    }
+
+    .mt-16 {
+      margin-top: 16px;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    a:hover {
+      color: var(--primary-light);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-content">
+    <div class="header-left">
+      <h1>✈️ ETS Verification</h1>
+      <div class="brand">VolatusCarbo Aviation Auditing</div>
+    </div>
+    <div class="header-right" id="header-right"></div>
+  </div>
+</header>
+
+<!-- MAIN CONTAINER -->
+<div class="container">
+
+  <!-- LOGIN SECTION -->
+  <div id="login" style="display: flex;">
+    <div class="login-card">
+      <h2>Verify Your Identity</h2>
+      <p>Enter your email address to receive a secure magic link. You'll be able to review and acknowledge all required documents.</p>
+
+      <div id="login-alerts"></div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input id="email" type="email" placeholder="your@company.com" autocomplete="email" required="">
+        <small style="color: var(--text-muted); margin-top: 6px; display: block; font-size: 11px;">
+          Your company email address used for aviation operations
+        </small>
+      </div>
+
+      <button class="primary" id="login-btn" onclick="handleLogin()">
+        <span>📧</span> Send Magic Link
+      </button>
+
+      <p style="margin-top: 16px; font-size: 11px; color: var(--text-muted); text-align: center; line-height: 1.6;">
+        ✓ A secure magic link will be sent to your email<br>
+        ✓ No password needed<br>
+        ✓ One-time use (expires in 1 hour)
+      </p>
+    </div>
+  </div>
+
+  <!-- DASHBOARD SECTION -->
+  <div id="dashboard" style="display: none;">
+    <div class="dashboard-header">
+      <h2>Your Documents</h2>
+      <div class="dashboard-actions">
+        <button class="secondary" id="refresh-btn" onclick="refreshDocuments()" title="Refresh document list">
+          <span>🔄</span> Refresh
+        </button>
+        <button class="secondary" onclick="logout()" title="Sign out">
+          <span>🚪</span> Sign Out
+        </button>
+      </div>
+    </div>
+
+    <div id="dashboard-alerts"></div>
+
+    <!-- STATS -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Total Documents</div>
+        <div class="stat-progress">
+          <div class="stat-progress-bar" style="width: 0%"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-acknowledged">0</div>
+        <div class="stat-label">Acknowledged</div>
+        <div class="stat-progress">
+          <div class="stat-progress-bar" id="ack-progress" style="width: 0%"></div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-pending">0</div>
+        <div class="stat-label">Pending Review</div>
+        <div class="stat-progress">
+          <div class="stat-progress-bar" style="width: 0%; background: linear-gradient(90deg, #ffc107, #ffb300);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search documents..." onkeyup="filterDocuments()">
+      </div>
+      <div class="filter-group">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter(&#39;all&#39;)">All</button>
+        <button class="filter-btn" data-filter="unread" onclick="setFilter(&#39;unread&#39;)">⚠️ Pending</button>
+        <button class="filter-btn" data-filter="acknowledged" onclick="setFilter(&#39;acknowledged&#39;)">✓ Acknowledged</button>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS GRID -->
+    <div class="docs-grid" id="docs-grid"></div>
+
+  </div>
+
+</div>
+
+<!-- DOCUMENT MODAL -->
+<div id="doc-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" onclick="closeModal()" title="Close">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="secondary" onclick="closeModal()">Close</button>
+      <button id="ack-modal-btn" class="success" onclick="acknowledgeDocument()">
+        ✓ Mark as Read
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+  // ==================== CONFIGURATION ====================
+  // ⚠️ IMPORTANT: Keep these as environment variables in production
+  // For GitHub Pages: Use a secure backend to handle auth
+  const CONFIG = {
+    SUPABASE_URL: 'https://wgsknwmczjjqucfueanx.supabase.co',
+    SUPABASE_KEY: 'sb_publishable_9gyHR3xwGCSjUpJs4T060w_sEGFs8FQ',
+    REDIRECT_URL: getRedirectUrl()
+  };
+
+  // SECURITY: Only expose non-sensitive data
+  function getRedirectUrl() {
+    const url = window.location.origin + window.location.pathname;
+    console.log('🔗 Redirect URL:', url);
+    return url;
+  }
+
+  // ==================== SUPABASE CLIENT ====================
+  let supabaseClient = null;
+
+  async function initSupabase() {
+    if (typeof window.supabase === 'undefined') {
+      showAlert('login-alerts', 'Error loading authentication service', 'error');
+      return false;
+    }
+
+    try {
+      const { createClient } = window.supabase;
+      supabaseClient = createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+      return true;
+    } catch (error) {
+      console.error('Supabase init error:', error);
+      showAlert('login-alerts', 'Failed to initialize authentication', 'error');
+      return false;
+    }
+  }
+
+  // ==================== STATE MANAGEMENT ====================
+  let appState = {
+    currentUser: null,
+    currentDocId: null,
+    documents: [],
+    readEvents: [],
+    filter: 'all',
+    searchTerm: '',
+    lastLoginAttempt: 0,
+    loginCooldownSeconds: 0
+  };
+
+  // ==================== UTILITY FUNCTIONS ====================
+  function showAlert(containerId, message, type = 'info') {
+    const container = document.getElementById(containerId);
+    const alertEl = document.createElement('div');
+    alertEl.className = `alert ${type}`;
+
+    const icons = { success: '✓', info: 'ℹ️', warning: '⚠️', error: '❌' };
+    alertEl.innerHTML = `
+      <div class="alert-icon">${icons[type]}</div>
+      <div>${message}</div>
+    `;
+
+    container.appendChild(alertEl);
+    setTimeout(() => alertEl.remove(), 5000);
+  }
+
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast alert ${type}`;
+
+    const icons = { success: '✓', info: 'ℹ️', warning: '⚠️', error: '❌' };
+    toast.innerHTML = `
+      <div class="alert-icon">${icons[type]}</div>
+      <div>${message}</div>
+    `;
+
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  }
+
+  function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  function truncate(text, length = 50) {
+    return text && text.length > length ? text.substring(0, length) + '...' : text;
+  }
+
+  function getEmailInitials(email) {
+    return email?.split('@')[0].substring(0, 2).toUpperCase() || 'U';
+  }
+
+  // ==================== AUTHENTICATION ====================
+  async function handleLogin() {
+    const emailInput = document.getElementById('email');
+    const email = emailInput.value.trim();
+    const loginBtn = document.getElementById('login-btn');
+
+    // Check rate limiting (Supabase enforces 60-second limit)
+    const now = Date.now();
+    const timeSinceLastAttempt = Math.floor((now - appState.lastLoginAttempt) / 1000);
+    
+    if (timeSinceLastAttempt < 60) {
+      const secondsLeft = 60 - timeSinceLastAttempt;
+      showAlert('login-alerts', `Please wait ${secondsLeft} seconds before requesting another magic link`, 'warning');
+      return;
+    }
+
+    // Validation - Email required
+    if (!email) {
+      showAlert('login-alerts', '📧 Please enter your email address', 'warning');
+      emailInput.focus();
+      return;
+    }
+
+    // Validation - Valid email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showAlert('login-alerts', '❌ Please enter a valid email address (e.g., pilot@company.com)', 'warning');
+      emailInput.select();
+      return;
+    }
+
+    // Show loading state
+    loginBtn.disabled = true;
+    loginBtn.innerHTML = '<span class="loading-spinner"></span> Sending magic link...';
+
+    try {
+      console.log('📨 Attempting to send magic link to:', email);
+
+      const { error } = await supabaseClient.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: CONFIG.REDIRECT_URL
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Track the attempt time for rate limiting
+      appState.lastLoginAttempt = Date.now();
+      
+      showAlert('login-alerts', `✓ Magic link sent to ${email}! Check your inbox and spam folder.`, 'success');
+      console.log('✓ Magic link sent successfully');
+      
+      // Clear input and focus
+      emailInput.value = '';
+      
+      // Show rate limit warning
+      setTimeout(() => {
+        showAlert('login-alerts', '⏱️ You can request another magic link in 60 seconds', 'info');
+      }, 1000);
+
+    } catch (error) {
+      console.error('❌ Login error:', error);
+      
+      // Handle specific error types
+      let errorMessage = 'Failed to send magic link';
+      
+      if (error.message?.includes('rate limit')) {
+        errorMessage = 'Too many requests. Please wait before trying again (Supabase rate limit: max 2 emails per hour)';
+      } else if (error.message?.includes('invalid email')) {
+        errorMessage = 'Invalid email address. Please check and try again.';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showAlert('login-alerts', `❌ ${errorMessage}`, 'error');
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.innerHTML = '<span>📧</span> Send Magic Link';
+    }
+  }
+
+  async function logout() {
+    if (confirm('Are you sure you want to sign out?')) {
+      try {
+        await supabaseClient.auth.signOut();
+        location.reload();
+      } catch (error) {
+        showAlert('dashboard-alerts', 'Error signing out', 'error');
+      }
+    }
+  }
+
+  // ==================== SESSION MANAGEMENT ====================
+  async function checkSession() {
+    try {
+      console.log('🔐 ===== SESSION CHECK START =====');
+      console.log('📍 Current URL:', window.location.href);
+      console.log('🌐 Origin:', window.location.origin);
+      console.log('📄 Pathname:', window.location.pathname);
+      
+      // Handle OAuth callback - Exchange code for session
+      console.log('🔐 Checking for OAuth callback...');
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const error = urlParams.get('error');
+      
+      if (error) {
+        console.error('❌ OAuth Error:', error, urlParams.get('error_description'));
+        return false;
+      }
+      
+      if (code) {
+        console.log('✅ Found OAuth code:', code.substring(0, 20) + '...');
+        console.log('📬 Exchanging code for session...');
+        
+        try {
+          // Wait for exchange to complete
+          const result = await supabaseClient.auth.exchangeCodeForSession(window.location.href);
+          console.log('💾 Exchange result:', result);
+          
+          if (result.error) {
+            console.error('❌ Exchange code error:', result.error);
+            return false;
+          }
+          
+          if (result.data && result.data.session) {
+            console.log('✅ Got session from exchange:', result.data.session.user.email);
+            appState.currentUser = result.data.session.user;
+            showDashboard();
+            updateHeader();
+            await loadDocuments();
+            return true;
+          }
+          
+          console.log('✅ Successfully exchanged code');
+        } catch (e) {
+          console.error('❌ Exchange code exception:', e);
+          return false;
+        }
+      } else {
+        console.log('⏳ No OAuth code in URL');
+      }
+      
+      // Clean URL (remove code parameter)
+      console.log('🧹 Cleaning URL...');
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Get current session
+      console.log('🔍 Getting session from Supabase...');
+      let session = null;
+      try {
+        const { data: { session: currentSession }, error: getError } = await supabaseClient.auth.getSession();
+        
+        if (getError) {
+          console.error('❌ Get session error:', getError);
+          throw getError;
+        }
+        
+        session = currentSession;
+        console.log('📊 Session found:', !!session);
+        
+        if (session) {
+          console.log('📊 Session user:', session.user.email);
+        }
+      } catch (e) {
+        console.error('❌ Get session exception:', e);
+        return false;
+      }
+
+      // Check if user is logged in
+      if (session && session.user) {
+        console.log('✅ SESSION FOUND!');
+        console.log('👤 User Email:', session.user.email);
+        console.log('🔑 User ID:', session.user.id);
+        
+        appState.currentUser = session.user;
+        console.log('📝 Updated appState.currentUser');
+        
+        console.log('🎨 Showing dashboard...');
+        showDashboard();
+        
+        console.log('📋 Updating header...');
+        updateHeader();
+        
+        console.log('📚 Loading documents...');
+        await loadDocuments();
+        
+        console.log('✅ ===== SESSION CHECK SUCCESS =====');
+        return true;
+      } else {
+        console.log('⏳ No active session - user needs to login');
+      }
+
+      console.log('✅ ===== SESSION CHECK COMPLETE =====');
+      return false;
+
+    } catch (error) {
+      console.error('❌ SESSION CHECK ERROR:', error);
+      console.error('Error message:', error.message);
+      return false;
+    }
+  }
+
+  function updateHeader() {
+    if (!appState.currentUser) return;
+
+    const headerRight = document.getElementById('header-right');
+    const initials = getEmailInitials(appState.currentUser.email);
+    const email = appState.currentUser.email;
+
+    headerRight.innerHTML = `
+      <div class="user-badge">
+        <div class="user-avatar">${initials}</div>
+        <span title="${email}">${truncate(email, 20)}</span>
+      </div>
+    `;
+  }
+
+  // ==================== UI MANAGEMENT ====================
+  function showDashboard() {
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+  }
+
+  function showLogin() {
+    document.getElementById('login').style.display = 'flex';
+    document.getElementById('dashboard').style.display = 'none';
+  }
+
+  // ==================== DOCUMENT LOADING ====================
+  async function loadDocuments() {
+    showLoadingState();
+
+    try {
+      // Fetch documents
+      const { data: docs, error: docsError } = await supabaseClient
+        .from('documents')
+        .select('*')
+        .order('version_date', { ascending: false });
+
+      if (docsError) throw docsError;
+
+      // Fetch read events for current user
+      const { data: reads, error: readsError } = await supabaseClient
+        .from('read_events')
+        .select('*')
+        .eq('user_id', appState.currentUser.id);
+
+      if (readsError) throw readsError;
+
+      appState.documents = docs || [];
+      appState.readEvents = reads || [];
+
+      renderDocuments();
+      updateStats();
+
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      showAlert('dashboard-alerts', `Error loading documents: ${error.message}`, 'error');
+      showEmptyState('Failed to load documents');
+    }
+  }
+
+  function showLoadingState() {
+    const grid = document.getElementById('docs-grid');
+    grid.innerHTML = `
+      <div class="skeleton-card">
+        <div class="skeleton-line" style="width: 60%; height: 16px;"></div>
+        <div class="skeleton-line" style="width: 40%; height: 12px; margin-top: 12px;"></div>
+        <div class="skeleton-line" style="width: 80%; height: 12px; margin-top: 8px;"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-line" style="width: 55%; height: 16px;"></div>
+        <div class="skeleton-line" style="width: 45%; height: 12px; margin-top: 12px;"></div>
+        <div class="skeleton-line" style="width: 75%; height: 12px; margin-top: 8px;"></div>
+      </div>
+      <div class="skeleton-card">
+        <div class="skeleton-line" style="width: 65%; height: 16px;"></div>
+        <div class="skeleton-line" style="width: 35%; height: 12px; margin-top: 12px;"></div>
+        <div class="skeleton-line" style="width: 85%; height: 12px; margin-top: 8px;"></div>
+      </div>
+    `;
+  }
+
+  function updateStats() {
+    const total = appState.documents.length;
+    const acknowledged = appState.readEvents.filter(r => r.acknowledged_at).length;
+    const pending = total - acknowledged;
+    const ackPercentage = total > 0 ? (acknowledged / total) * 100 : 0;
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-acknowledged').textContent = acknowledged;
+    document.getElementById('stat-pending').textContent = pending;
+    document.getElementById('ack-progress').style.width = ackPercentage + '%';
+  }
+
+  function renderDocuments() {
+    const filtered = getFilteredDocuments();
+
+    if (filtered.length === 0) {
+      showEmptyState();
+      return;
+    }
+
+    const grid = document.getElementById('docs-grid');
+    grid.innerHTML = filtered.map(doc => createDocumentCard(doc)).join('');
+  }
+
+  function createDocumentCard(doc) {
+    const readEvent = appState.readEvents.find(r => r.document_id === doc.id);
+    const isAcknowledged = readEvent && readEvent.acknowledged_at;
+    const isUnread = !readEvent || !isAcknowledged;
+
+    const lastAccess = readEvent?.last_access_at ? formatDate(readEvent.last_access_at) : 'Never';
+    const acknowledgedAt = readEvent?.acknowledged_at ? formatDate(readEvent.acknowledged_at) : 'N/A';
+
+    return `
+      <div class="doc-card ${doc.is_latest ? 'latest' : ''} ${isUnread ? 'unread' : ''}">
+        <div class="doc-header">
+          <h4 class="doc-title">${escapeHtml(doc.title)}</h4>
+          <div class="status-indicator">
+            <div class="status-dot ${isAcknowledged ? 'acknowledged' : 'unread'}"></div>
+            <span>${isAcknowledged ? 'Acknowledged' : 'Pending'}</span>
+          </div>
+        </div>
+
+        <div class="doc-badges">
+          ${doc.is_latest ? '<div class="badge latest">🔵 Latest Version</div>' : ''}
+          ${isAcknowledged ? '<div class="badge acknowledged">✓ Acknowledged</div>' : '<div class="badge unread">⚠️ Pending</div>'}
+        </div>
+
+        <div class="doc-meta">
+          <div class="doc-meta-item">
+            <div class="doc-meta-label">Directive</div>
+            <div class="doc-meta-value">${escapeHtml(doc.directive || 'N/A')}</div>
+          </div>
+          <div class="doc-meta-item">
+            <div class="doc-meta-label">Version Date</div>
+            <div class="doc-meta-value">${formatDate(doc.version_date)}</div>
+          </div>
+          <div class="doc-meta-item">
+            <div class="doc-meta-label">Last Viewed</div>
+            <div class="doc-meta-value">${lastAccess}</div>
+          </div>
+          <div class="doc-meta-item">
+            <div class="doc-meta-label">Acknowledged</div>
+            <div class="doc-meta-value">${acknowledgedAt}</div>
+          </div>
+        </div>
+
+        <div class="doc-actions">
+          ${doc.web_url ? `<a href="${escapeHtml(doc.web_url)}" target="_blank" style="display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid var(--border); border-radius: 6px; text-decoration: none;">📖 Official Source</a>` : '<div></div>'}
+          <button onclick="openDocument('${escapeHtml(doc.id)}', '${escapeHtml(doc.title)}', '${escapeHtml(doc.file_path)}')">
+            ${isUnread ? '📋 Read & Acknowledge' : '👁️ View Document'}
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function showEmptyState(message = 'No documents found') {
+    const grid = document.getElementById('docs-grid');
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <h3>${message}</h3>
+        <p>Check back later for updates</p>
+      </div>
+    `;
+  }
+
+  // ==================== FILTERING & SEARCH ====================
+  function getFilteredDocuments() {
+    let filtered = appState.documents;
+
+    // Apply filter
+    if (appState.filter === 'unread') {
+      filtered = filtered.filter(doc => {
+        const read = appState.readEvents.find(r => r.document_id === doc.id);
+        return !read || !read.acknowledged_at;
+      });
+    } else if (appState.filter === 'acknowledged') {
+      filtered = filtered.filter(doc => {
+        const read = appState.readEvents.find(r => r.document_id === doc.id);
+        return read && read.acknowledged_at;
+      });
+    }
+
+    // Apply search
+    if (appState.searchTerm) {
+      const term = appState.searchTerm.toLowerCase();
+      filtered = filtered.filter(doc =>
+        doc.title.toLowerCase().includes(term) ||
+        (doc.directive && doc.directive.toLowerCase().includes(term))
+      );
+    }
+
+    return filtered;
+  }
+
+  function setFilter(filter) {
+    appState.filter = filter;
+
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+
+    renderDocuments();
+  }
+
+  function filterDocuments() {
+    appState.searchTerm = document.getElementById('search-input').value;
+    renderDocuments();
+  }
+
+  async function refreshDocuments() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading-spinner"></span> Refreshing...';
+
+    try {
+      await loadDocuments();
+      showToast('Documents refreshed successfully', 'success');
+    } catch (error) {
+      showToast('Failed to refresh documents', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>🔄</span> Refresh';
+    }
+  }
+
+  // ==================== DOCUMENT MODAL ====================
+  async function openDocument(docId, title, filePath) {
+    appState.currentDocId = docId;
+    document.getElementById('modal-title').textContent = escapeHtml(title);
+
+    const modalBody = document.getElementById('modal-body');
+    modalBody.innerHTML = '<div class="text-center"><span class="loading-spinner"></span> Loading document...</div>';
+    document.getElementById('doc-modal').classList.add('active');
+
+    try {
+      // Fetch document content
+      const response = await fetch(filePath);
+      if (!response.ok) throw new Error('Failed to fetch document');
+
+      const text = await response.text();
+      modalBody.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+
+      // Track access
+      const { error } = await supabaseClient.from('read_events').upsert({
+        user_id: appState.currentUser.id,
+        document_id: docId,
+        last_access_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,document_id'
+      });
+
+      if (error) console.error('Error tracking access:', error);
+
+      // Update button state
+      const readEvent = appState.readEvents.find(r => r.document_id === docId);
+      const ackBtn = document.getElementById('ack-modal-btn');
+      if (readEvent && readEvent.acknowledged_at) {
+        ackBtn.innerHTML = '✓ Already Acknowledged';
+        ackBtn.disabled = true;
+      } else {
+        ackBtn.innerHTML = '✓ Mark as Read';
+        ackBtn.disabled = false;
+      }
+
+    } catch (error) {
+      console.error('Error loading document:', error);
+      modalBody.innerHTML = `<p style="color: var(--error);">❌ Error loading document: ${error.message}</p>`;
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('doc-modal').classList.remove('active');
+    appState.currentDocId = null;
+  }
+
+  async function acknowledgeDocument() {
+    if (!appState.currentDocId) return;
+
+    const ackBtn = document.getElementById('ack-modal-btn');
+    ackBtn.disabled = true;
+    ackBtn.innerHTML = '<span class="loading-spinner"></span> Saving...';
+
+    try {
+      const { error } = await supabaseClient.from('read_events').upsert({
+        user_id: appState.currentUser.id,
+        document_id: appState.currentDocId,
+        last_access_at: new Date().toISOString(),
+        acknowledged_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,document_id'
+      });
+
+      if (error) throw error;
+
+      showToast('✓ Document acknowledged successfully!', 'success');
+      closeModal();
+      await loadDocuments();
+
+    } catch (error) {
+      console.error('Error acknowledging document:', error);
+      showToast(`Error: ${error.message}`, 'error');
+      ackBtn.disabled = false;
+      ackBtn.innerHTML = '✓ Mark as Read';
+    }
+  }
+
+  // ==================== MODAL CONTROLS ====================
+  document.addEventListener('click', (e) => {
+    const modal = document.getElementById('doc-modal');
+    if (e.target === modal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+    }
+  });
+
+  // ==================== LOGIN KEYBOARD SUPPORT ====================
+  document.getElementById('email')?.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      handleLogin();
+    }
+  });
+
+  // ==================== INITIALIZATION ====================
+  window.addEventListener('load', async () => {
+    // Initialize Supabase
+    if (!await initSupabase()) {
+      return;
+    }
+
+    // Listen for auth state changes
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      console.log('🔔 Auth state changed:', event, 'Session:', session ? 'YES' : 'NO');
+      
+      if (session && session.user) {
+        console.log('✅ User authenticated:', session.user.email);
+        appState.currentUser = session.user;
+        showDashboard();
+        updateHeader();
+      }
+    });
+
+    // Check session
+    const hasSession = await checkSession();
+
+    if (!hasSession) {
+      showLogin();
+      document.getElementById('email').focus();
+    }
+  });
+
+  // ==================== EXPORT FOR CONSOLE DEBUGGING ====================
+  window.appState = appState;
+
+</script>
+
+
+
+</body></html>
