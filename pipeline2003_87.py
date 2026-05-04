@@ -1,6 +1,7 @@
 print("FILE Started")
 import requests
 import hashlib
+import requests
 import os
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -58,6 +59,14 @@ def get_act():
 def fetch_versions():
     url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:{CELEX}"
     print("url :",url)
+    res = requests.get(url, headers={
+    "User-Agent": "Mozilla/5.0"
+    })
+
+    print("status:", res.status_code)
+    print("final url:", res.url)
+    print("html length:", len(res.text))
+    print("preview:", res.text[:500])
     html = requests.get(url).text
     print("html :",html)
     soup = BeautifulSoup(html, "html.parser")
