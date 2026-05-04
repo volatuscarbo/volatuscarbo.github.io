@@ -144,7 +144,7 @@ def run():
     print(f"🚀 Updating {CELEX}")
 
     acts_id = get_act()
-    print("acts_id =", acts_id, flush=True)
+    print("acts_id = test", flush=True)
     versions = fetch_versions()
     existing = get_existing_versions(acts_id)
 
