@@ -1,12 +1,16 @@
 import time
 import hashlib
 import difflib
-import random
 
 # -------------------------
 # MEMORY STORE (SIMULATES DB)
 # -------------------------
 store = {}
+
+# -------------------------
+# PER-CELEX VERSION STATE
+# -------------------------
+state = {}
 
 CELEX_LIST = [
     "32003L0087",
@@ -16,34 +20,48 @@ CELEX_LIST = [
 
 
 # -------------------------
-# SIMULATED "EU LAW VERSIONS"
+# DETERMINISTIC VERSION GENERATOR
+# (NO RANDOMNESS = NO "STOP AT VERSION 2")
 # -------------------------
 def fetch_legislation_text(celex):
     """
-    Simulates EU consolidated law changes over time.
-    Each run randomly returns a different version.
+    Each CELEX evolves independently and deterministically.
+    This guarantees infinite version progression.
     """
 
-    base_versions = [
-        f"{celex} | Article 1 defines scope.",
-        f"{celex} | Article 1 defines scope. Article 5 added compliance rules.",
-        f"{celex} | Article 1 updated. Article 5 expanded. Annex added.",
-        f"{celex} | Full consolidation with penalty regime introduced."
+    s = state.setdefault(celex, {"i": 0})
+
+    step = s["i"]
+
+    evolution_map = [
+        "Article 1 defines scope.",
+        "Article 1 defines scope. Article 5 introduces compliance rules.",
+        "Article 1 revised. Article 5 expanded enforcement obligations.",
+        "Full consolidation includes penalty regime and reporting duties.",
+        "Major amendment introduces EU-wide harmonisation framework.",
+        "Complete recast with digital reporting and enforcement layer."
     ]
 
-    # FORCE variation (this is key for debugging)
-    return random.choice(base_versions) + f" | ts={int(time.time())}"
+    # deterministic progression (NO RANDOMNESS)
+    index = min(step, len(evolution_map) - 1)
+
+    text = evolution_map[index]
+
+    # increment state
+    state[celex]["i"] += 1
+
+    return f"{celex} | {text} | ts={int(time.time())}"
 
 
 # -------------------------
 # HASH FUNCTION
 # -------------------------
 def hash_text(text):
-    return hashlib.sha256(text.encode()).hexdigest()
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 # -------------------------
-# DIFF FUNCTION
+# DIFF FUNCTION (GIT STYLE)
 # -------------------------
 def diff(old, new):
     return "\n".join(
@@ -56,12 +74,12 @@ def diff(old, new):
 
 
 # -------------------------
-# CORE LOGIC
+# MAIN PROCESSOR
 # -------------------------
 def process_celex(celex):
-    print("\n" + "="*80)
-    print(f"📘 PROCESSING CELEX: {celex}")
-    print("="*80)
+    print("\n" + "="*90)
+    print(f"📘 CELEX: {celex}")
+    print("="*90)
 
     new_text = fetch_legislation_text(celex)
     new_hash = hash_text(new_text)
@@ -69,66 +87,77 @@ def process_celex(celex):
     print("\n🧾 FETCHED TEXT:")
     print(new_text)
 
-    print("\n🔐 NEW HASH:")
+    print("\n🔐 HASH:")
     print(new_hash)
 
     previous = store.get(celex)
 
     # -------------------------
-    # FIRST VERSION CASE
+    # FIRST VERSION
     # -------------------------
     if not previous:
-        print("\n🆕 NO PREVIOUS VERSION FOUND → creating FIRST version")
+        print("\n🆕 FIRST VERSION CREATED")
         store[celex] = {
             "text": new_text,
             "hash": new_hash,
             "version": 1
         }
+        print("VERSION = 1")
         return
 
-    print("\n📄 PREVIOUS VERSION EXISTS")
+    print("\n📄 PREVIOUS VERSION FOUND")
     print("OLD HASH:", previous["hash"])
 
     # -------------------------
     # SAME VERSION CHECK
     # -------------------------
     if previous["hash"] == new_hash:
-        print("\n⏭ NO CHANGE DETECTED → skipping version creation")
+        print("\n⏭ NO CHANGE DETECTED → SKIP VERSION")
         return
 
     # -------------------------
-    # NEW VERSION FOUND
+    # NEW VERSION
     # -------------------------
     print("\n🔥 CHANGE DETECTED → NEW VERSION CREATED")
 
     print("\n📊 DIFF:")
     print(diff(previous["text"], new_text))
 
+    new_version = previous["version"] + 1
+
     store[celex] = {
         "text": new_text,
         "hash": new_hash,
-        "version": previous["version"] + 1
+        "version": new_version
     }
 
-    print(f"\n✅ VERSION UPDATED → v{store[celex]['version']}")
+    print(f"\n✅ VERSION UPDATED → v{new_version}")
 
 
 # -------------------------
-# RUN LOOP (SIMULATES PIPELINE)
+# RUN SIMULATION
 # -------------------------
 def run():
-    print("\n🚀 STARTING CELEX DEBUG PIPELINE\n")
+    print("\n🚀 STARTING CELEX DEBUG VERSION ENGINE\n")
 
-    for i in range(5):  # multiple runs to simulate evolution
-        print(f"\n\n🔁 ITERATION {i+1}")
+    # multiple iterations to simulate real pipeline over time
+    for i in range(6):
+        print("\n" + "#"*30)
+        print(f"🔁 GLOBAL ITERATION {i+1}")
+        print("#"*30)
+
         for celex in CELEX_LIST:
             process_celex(celex)
 
         time.sleep(1)
 
-    print("\n\n🎯 FINAL STATE:")
-    for k, v in store.items():
-        print(f"{k} → version {v['version']}")
+    # -------------------------
+    # FINAL STATE
+    # -------------------------
+    print("\n\n🎯 FINAL VERSION STATE:\n")
+
+    for celex, data in store.items():
+        print(f"{celex} → version {data['version']}")
 
 
 if __name__ == "__main__":
