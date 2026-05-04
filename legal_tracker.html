@@ -719,8 +719,15 @@
           <h3>Articles</h3>
           <div id="toc-links"></div>
         </div>
-        <h2 id="lt-heading">
-          <span id="lt-version-label" class="text-mono"></span> · Full Consolidated Text
+        <h2 id="lt-heading" style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+          <span id="lt-version-label" class="text-mono"></span>
+          <span style="font-size:13px;font-weight:400;color:var(--slate)">· Full Consolidated Text</span>
+          <a id="eurlex-link" href="#" target="_blank" rel="noopener"
+             style="display:none;font-size:12px;font-weight:500;color:var(--forest);
+                    text-decoration:none;border:1px solid var(--mint);border-radius:6px;
+                    padding:2px 8px;white-space:nowrap">
+            View on EUR-Lex ↗
+          </a>
         </h2>
         <div class="legal-body" id="legal-body"></div>
       </section>
@@ -821,28 +828,149 @@ let diffView          = 'unified';
 // ── FALLBACK DEMO DATA ─────────────────────────────────────────
 // Shown when Supabase tables are empty (before GitHub Action populates them).
 // Each entry represents one EU ETS act + its current baseline version.
+// ── LEGISLATION CATALOGUE ─────────────────────────────────────
+// Each entry: official_number shown in sidebar, celex for EUR-Lex links,
+// consolidated_date = date of the latest consolidated version on EUR-Lex,
+// consolidated_label = the amendment that produced that version.
+// Sources: EUR-Lex consolidated versions list (verified May 2026).
 const DEMO_ACTS = [
-  { id: 'demo-act-1', official_number: '2003/87/EC',  short_title: 'EU ETS Directive',          sort_order: 10, adopted_date: '2003-10-13', in_force_from: '2003-10-25' },
-  { id: 'demo-act-2', official_number: '2004/101/EC', short_title: 'Linking Directive',          sort_order: 20, adopted_date: '2004-10-27', in_force_from: '2004-11-13' },
-  { id: 'demo-act-3', official_number: '2008/101/EC', short_title: 'Aviation Directive',         sort_order: 30, adopted_date: '2008-11-19', in_force_from: '2009-02-02' },
-  { id: 'demo-act-4', official_number: '2009/29/EC',  short_title: 'Phase 3 Directive',          sort_order: 40, adopted_date: '2009-04-23', in_force_from: '2009-06-25' },
-  { id: 'demo-act-5', official_number: '2023/958/EU', short_title: 'Aviation & Shipping Amend.', sort_order: 50, adopted_date: '2023-05-10', in_force_from: '2023-05-05' },
-  { id: 'demo-act-6', official_number: '2023/959/EU', short_title: 'ETS2 Directive',             sort_order: 60, adopted_date: '2023-05-10', in_force_from: '2023-05-05' },
+  {
+    id: 'demo-act-1',
+    official_number: '2003/87/EC',
+    celex: '32003L0087',
+    short_title: 'EU ETS Directive',
+    full_title: 'Directive 2003/87/EC establishing a system for GHG emission allowance trading',
+    sort_order: 10,
+    adopted_date: '2003-10-13',
+    in_force_from: '2003-10-25',
+    // Latest consolidated version: amended by Dir. 2023/959/EU, in force 5 Jun 2023
+    consolidated_date: '2024-05-11',
+    consolidated_label: 'as amended by Dir. (EU) 2024/1275',
+  },
+  {
+    id: 'demo-act-2',
+    official_number: '2004/101/EC',
+    celex: '32004L0101',
+    short_title: 'Linking Directive',
+    full_title: 'Directive 2004/101/EC amending Dir. 2003/87/EC re Kyoto project mechanisms',
+    sort_order: 20,
+    adopted_date: '2004-10-27',
+    in_force_from: '2004-11-13',
+    // No further amendments — original version remains in force
+    consolidated_date: '2004-11-13',
+    consolidated_label: 'original version',
+  },
+  {
+    id: 'demo-act-3',
+    official_number: '2008/101/EC',
+    celex: '32008L0101',
+    short_title: 'Aviation Directive',
+    full_title: 'Directive 2008/101/EC including aviation in the EU ETS',
+    sort_order: 30,
+    adopted_date: '2008-11-19',
+    in_force_from: '2009-02-02',
+    // Amended by Dir. 2023/958/EU
+    consolidated_date: '2023-06-05',
+    consolidated_label: 'as amended by Dir. (EU) 2023/958',
+  },
+  {
+    id: 'demo-act-4',
+    official_number: '2009/29/EC',
+    celex: '32009L0029',
+    short_title: 'Phase 3 Directive',
+    full_title: 'Directive 2009/29/EC improving and extending the GHG allowance trading scheme',
+    sort_order: 40,
+    adopted_date: '2009-04-23',
+    in_force_from: '2009-06-25',
+    // Amended by Dir. 2018/410/EU
+    consolidated_date: '2018-03-19',
+    consolidated_label: 'as amended by Dir. (EU) 2018/410',
+  },
+  {
+    id: 'demo-act-5',
+    official_number: '2018/410/EU',
+    celex: '32018L0410',
+    short_title: 'Phase 4 Directive',
+    full_title: 'Directive (EU) 2018/410 enhancing cost-effective emission reductions and low-carbon investments',
+    sort_order: 50,
+    adopted_date: '2018-03-14',
+    in_force_from: '2018-04-08',
+    // Amended by Dir. 2023/959/EU
+    consolidated_date: '2023-06-05',
+    consolidated_label: 'as amended by Dir. (EU) 2023/959',
+  },
+  {
+    id: 'demo-act-6',
+    official_number: '2023/958/EU',
+    celex: '32023L0958',
+    short_title: 'Revised Aviation Directive',
+    full_title: 'Directive (EU) 2023/958 — aviation contribution and global market-based measure',
+    sort_order: 60,
+    adopted_date: '2023-05-10',
+    in_force_from: '2023-06-05',
+    // No further amendments yet
+    consolidated_date: '2023-06-05',
+    consolidated_label: 'original version',
+  },
+  {
+    id: 'demo-act-7',
+    official_number: '2023/959/EU',
+    celex: '32023L0959',
+    short_title: 'ETS2 Directive',
+    full_title: 'Directive (EU) 2023/959 — buildings, road transport and maritime in EU ETS',
+    sort_order: 70,
+    adopted_date: '2023-05-10',
+    in_force_from: '2023-06-05',
+    // No further amendments yet
+    consolidated_date: '2023-06-05',
+    consolidated_label: 'original version',
+  },
+  {
+    id: 'demo-act-8',
+    official_number: '2018/2066/EU',
+    celex: '32018R2066',
+    short_title: 'MRR — Monitoring & Reporting',
+    full_title: 'Commission Implementing Regulation (EU) 2018/2066 on monitoring and reporting of GHG emissions',
+    sort_order: 80,
+    adopted_date: '2018-12-19',
+    in_force_from: '2019-01-01',
+    // Last amended by Reg. 2023/2122
+    consolidated_date: '2024-01-01',
+    consolidated_label: 'as amended by Reg. (EU) 2023/2122',
+  },
+  {
+    id: 'demo-act-9',
+    official_number: '2018/2067/EU',
+    celex: '32018R2067',
+    short_title: 'AVR — Accreditation & Verification',
+    full_title: 'Commission Implementing Regulation (EU) 2018/2067 on verification and accreditation of verifiers',
+    sort_order: 90,
+    adopted_date: '2018-12-19',
+    in_force_from: '2019-01-01',
+    // Last amended by Reg. 2023/2126
+    consolidated_date: '2024-01-01',
+    consolidated_label: 'as amended by Reg. (EU) 2023/2126',
+  },
 ];
 
-// One baseline version per demo act
+// One version entry per act — shows the current consolidated version
 const DEMO_VERSIONS = DEMO_ACTS.map(act => ({
-  id:            'demo-ver-' + act.id,
-  act_id:        act.id,
-  version_label: act.official_number,
-  amendment_ref: null,
-  is_baseline:   true,
-  published_at:  act.in_force_from + 'T00:00:00Z',
-  effective_from: act.in_force_from,
-  source_url:    'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:3' + act.official_number.replace('/', 'L0').replace('/EC','').replace('/EU',''),
-  change_summary: 'Original act as published in the Official Journal. No amendments tracked yet.',
-  full_text:     null,
-  _act:          act,
+  id:               'demo-ver-' + act.id,
+  act_id:           act.id,
+  version_label:    act.official_number,
+  amendment_ref:    act.consolidated_label !== 'original version' ? act.consolidated_label : null,
+  is_baseline:      act.consolidated_label === 'original version',
+  published_at:     act.consolidated_date + 'T00:00:00Z',
+  effective_from:   act.consolidated_date,
+  // Link to latest consolidated version on EUR-Lex
+  source_url: act.consolidated_label === 'original version'
+    ? `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:${act.celex}`
+    : `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:0${act.celex}-${act.consolidated_date.replace(/-/g,'')}`,
+  change_summary:   act.consolidated_label === 'original version'
+    ? 'Original version — no further amendments have been adopted.'
+    : `Current consolidated version: ${act.consolidated_label}. Click "View on EUR-Lex" to read the full consolidated text.`,
+  full_text:        null,
+  _act:             act,
 }));
 
 const DEMO_CHANGES = [
@@ -1265,22 +1393,28 @@ function renderTimeline(items) {
   list.innerHTML = '';
   items.forEach((item, i) => {
     const { act, version: v } = item;
-    const hasUpdate   = !v.is_baseline && v.amendment_ref;
-    const dot         = hasUpdate ? 'dot-amber' : 'dot-green';
-    const statusLabel = hasUpdate ? 'Updated' : 'Baseline';
+    const hasAmendment = !!v.amendment_ref;
+    const dot          = hasAmendment ? 'dot-amber' : 'dot-green';
+    const consolidatedDate = v.published_at
+      ? new Date(v.published_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+      : '—';
+
     const card = document.createElement('div');
     card.className = 'version-card' + (i === 0 ? ' active' : '');
     card.dataset.id = v.id;
     card.innerHTML = `
       <div class="version-card-top">
-        <span class="version-dot ${dot}" title="${statusLabel}"></span>
+        <span class="version-dot ${dot}"></span>
         <span class="version-label">${escHtml(act.official_number)}</span>
       </div>
-      <div class="version-date" style="font-size:11px;color:var(--slate);margin-top:2px">${escHtml(act.short_title)}</div>
-      ${hasUpdate
-        ? `<div class="version-summary" style="margin-top:4px">amended by ${escHtml(v.amendment_ref)}</div>`
-        : `<div class="version-summary" style="margin-top:4px;color:var(--leaf)">baseline in force</div>`
-      }
+      <div style="font-size:11px;color:rgba(255,255,255,0.65);margin-top:3px;line-height:1.35">${escHtml(act.short_title)}</div>
+      <div style="font-size:10px;color:var(--slate);margin-top:5px">
+        ${hasAmendment
+          ? `<span style="color:var(--amber)">●</span> ${escHtml(v.amendment_ref)}`
+          : `<span style="color:var(--leaf)">●</span> original version`
+        }
+      </div>
+      <div style="font-size:10px;color:var(--slate);margin-top:2px">Consolidated: ${consolidatedDate}</div>
     `;
     card.addEventListener('click', () => {
       document.querySelectorAll('.version-card').forEach(c => c.classList.remove('active'));
@@ -1295,16 +1429,25 @@ async function selectVersion(v) {
   currentVersionId    = v.id;
   currentVersionLabel = v.version_label;
 
-  // Display the act's official number as primary identifier
-  const actNum = v._act ? v._act.official_number : v.version_label;
+  const act    = v._act || {};
+  const actNum = act.official_number || v.version_label;
   const displayLabel = v.amendment_ref
-    ? `${actNum} (as amended by ${v.amendment_ref})`
+    ? `${actNum} — ${v.amendment_ref}`
     : actNum;
 
   document.getElementById('ack-version-label').textContent = displayLabel;
   document.getElementById('lt-version-label').textContent  = displayLabel;
 
-  // Change summary context
+  // Update EUR-Lex link if present
+  const eurLexLink = document.getElementById('eurlex-link');
+  if (eurLexLink && v.source_url) {
+    eurLexLink.href = v.source_url;
+    eurLexLink.style.display = 'inline';
+  } else if (eurLexLink) {
+    eurLexLink.style.display = 'none';
+  }
+
+  // Change summary header
   const prevLabel = v.is_baseline ? 'original publication' : (v.amendment_ref || 'previous version');
   document.getElementById('cs-prev-version').textContent = prevLabel;
   document.getElementById('cs-date').textContent = fmtDate(v.published_at);
