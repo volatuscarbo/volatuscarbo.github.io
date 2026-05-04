@@ -27,4 +27,4 @@ jobs:
           SUPABASE_URL: ${{ secrets.LEGAL_SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.LEGAL_PUBLIC_KEY }}
         run: |
-          python pipeline.py
+          python pipeline2003_87.py
