@@ -59,7 +59,7 @@ def fetch_versions():
     url = f"https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:{CELEX}"
     print("url :",url)
     html = requests.get(url).text
-    
+    print("html :",html)
     soup = BeautifulSoup(html, "html.parser")
     
     versions = []
