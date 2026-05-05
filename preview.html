@@ -2,109 +2,120 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EU ETS Intelligence Dashboard</title>
+<title>EU ETS Compliance Engine</title>
 <style>
-body { font-family: Arial; background:#0b1220; color:#e5e7eb; margin:20px; }
+body { font-family: Arial; background:#0a0f1c; color:#e5e7eb; margin:20px; }
 input, button { padding:10px; margin:5px; }
 button { cursor:pointer; }
 .card { background:#111827; padding:12px; margin:10px 0; border-radius:10px; }
 .tag { display:inline-block; padding:3px 8px; margin:2px;
        border-radius:6px; font-size:12px; }
+.high { background:#991b1b; }
+.medium { background:#b45309; }
+.low { background:#065f46; }
 .aviation { background:#1d4ed8; }
-.phase1 { background:#065f46; }
-.phase2 { background:#047857; }
-.phase3 { background:#b45309; }
-.phase4 { background:#7c2d12; }
+.directive { background:#374151; }
+.regulation { background:#6b7280; }
 .small { font-size:12px; color:#9ca3af; }
-pre { white-space:pre-wrap; }
+pre { white-space:pre-wrap; font-size:12px; }
 </style>
 </head>
 <body>
 
-<h2>✈️ EU ETS Intelligence Dashboard</h2>
+<h2>✈️ EU ETS Compliance Engine</h2>
 
-<input id="celex" value="32003L0087" style="width:220px;" />
-<button onclick="run()">Analyze ETS</button>
+<input id="celex" value="32003L0087" style="width:220px;">
+<button onclick="run()">Run Compliance Analysis</button>
 
 <div id="out"></div>
 
 <script>
 const proxy = "https://api.allorigins.win/raw?url=";
 
+/* ---------------- FETCH ---------------- */
 async function fetchHTML(url){
   const r = await fetch(proxy + encodeURIComponent(url));
   return await r.text();
 }
 
-function detectPhase(text){
-  const t = text.toLowerCase();
-
-  if (t.includes("phase 1") || t.includes("2005") || t.includes("2007"))
-    return "phase1";
-
-  if (t.includes("phase 2") || t.includes("2008") || t.includes("2012"))
-    return "phase2";
-
-  if (t.includes("phase 3") || t.includes("2013") || t.includes("2020"))
-    return "phase3";
-
-  if (t.includes("phase 4") || t.includes("2021") || t.includes("2030"))
-    return "phase4";
-
+/* ---------------- CLASSIFICATION ---------------- */
+function classifyType(text){
+  text = text.toLowerCase();
+  if(text.includes("directive")) return "directive";
+  if(text.includes("regulation")) return "regulation";
   return null;
 }
 
-function isAviation(text){
-  return text.toLowerCase().includes("aviation");
+function detectAviation(text){
+  return text.toLowerCase().includes("aviation") ||
+         text.toLowerCase().includes("aircraft") ||
+         text.toLowerCase().includes("flights");
 }
 
+/* ---------------- ETS IMPACT ---------------- */
+function impactScore(text){
+  let score = 0;
+  const t = text.toLowerCase();
+
+  if(t.includes("aviation")) score += 3;
+  if(t.includes("emissions")) score += 2;
+  if(t.includes("cap")) score += 2;
+  if(t.includes("allowance")) score += 2;
+  if(t.includes("phase")) score += 1;
+  if(t.includes("2030")) score += 2;
+
+  if(score >= 6) return "high";
+  if(score >= 3) return "medium";
+  return "low";
+}
+
+/* ---------------- LINK EXTRACTION ---------------- */
 function extractCELEX(html){
   const m = [...html.matchAll(/CELEX:\d{9}[A-Z]\d{4}/g)];
   return [...new Set(m.map(x => x[0].replace("CELEX:","")))];
 }
 
-function shortDiff(a,b){
-  if(!a || !b) return "N/A";
-  const aWords = a.split(" ").slice(0,40).join(" ");
-  const bWords = b.split(" ").slice(0,40).join(" ");
-  return `OLD:\n${aWords}\n\nNEW:\n${bWords}`;
-}
-
-async function load(celex){
+/* ---------------- LOAD ACT ---------------- */
+async function loadAct(celex){
   const url = `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:${celex}`;
   const html = await fetchHTML(url);
 
-  const links = extractCELEX(html);
-
-  const phase = detectPhase(html);
-  const aviation = isAviation(html);
-
-  return { celex, links, html, phase, aviation };
+  return {
+    celex,
+    html,
+    links: extractCELEX(html),
+    aviation: detectAviation(html),
+    type: classifyType(html),
+    impact: impactScore(html)
+  };
 }
 
-function render(items){
+/* ---------------- RENDER ---------------- */
+function render(data){
   const out = document.getElementById("out");
   out.innerHTML = "";
 
-  items.forEach(i => {
+  data.forEach(d => {
 
     const div = document.createElement("div");
     div.className = "card";
 
     let tags = "";
 
-    if(i.aviation)
+    if(d.aviation)
       tags += `<span class="tag aviation">AVIATION</span>`;
 
-    if(i.phase)
-      tags += `<span class="tag ${i.phase}">${i.phase.toUpperCase()}</span>`;
+    if(d.type)
+      tags += `<span class="tag ${d.type}">${d.type.toUpperCase()}</span>`;
+
+    tags += `<span class="tag ${d.impact}">IMPACT: ${d.impact.toUpperCase()}</span>`;
 
     div.innerHTML = `
-      <b>${i.celex}</b><br/><br/>
+      <b>${d.celex}</b><br/><br/>
       ${tags}<br/><br/>
 
-      <div class="small">Linked acts:</div>
-      ${i.links.slice(0,10).map(l =>
+      <div class="small">Linked CELEX acts:</div>
+      ${d.links.slice(0,8).map(l =>
         `<div>🔗 ${l}</div>`
       ).join("")}
     `;
@@ -113,20 +124,20 @@ function render(items){
   });
 }
 
+/* ---------------- MAIN ENGINE ---------------- */
 async function run(){
   const celex = document.getElementById("celex").value;
   const out = document.getElementById("out");
-  out.innerHTML = "Analyzing ETS structure...";
+  out.innerHTML = "Running ETS compliance analysis...";
 
-  const base = await load(celex);
+  const root = await loadAct(celex);
+  const results = [root];
 
-  const results = [base];
-
-  // follow linked acts (depth 1 for stability)
-  for(const l of base.links.slice(0,5)){
+  // limited graph expansion
+  for(const l of root.links.slice(0,5)){
     try{
-      const d = await load(l);
-      results.push(d);
+      const child = await loadAct(l);
+      results.push(child);
     }catch(e){}
   }
 
