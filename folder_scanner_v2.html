@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verification Folder Scanner v2</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3345;
+    --text: #e2e4ed;
+    --text-dim: #8b8fa3;
+    --accent: #4af;
+    --accent-dim: rgba(68, 170, 255, 0.12);
+    --green: #3ddc84;
+    --orange: #f5a623;
+    --red: #ff5c5c;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+  }
+
+  .header h1 {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .header p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 0.4rem;
+  }
+
+  #selectBtn {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 1rem;
+    padding: 1.2rem 2.5rem;
+    border-radius: 10px;
+    border: 2px dashed var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 1rem 0;
+  }
+
+  #selectBtn:hover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  #log {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--green);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    max-height: 150px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .stat .label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: var(--mono);
+  }
+
+  .stat .value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--accent);
+    margin-top: 0.3rem;
+  }
+
+  .controls {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  button {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 600;
+  }
+
+  button:hover { border-color: var(--accent); color: var(--accent); }
+
+  button.primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+
+  button.primary:hover { background: #5cb8ff; }
+  button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    outline: none;
+  }
+
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--text-dim); }
+
+  .results {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    max-height: 55vh;
+    overflow: auto;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+  }
+
+  .results table { width: 100%; border-collapse: collapse; }
+
+  .results th {
+    position: sticky;
+    top: 0;
+    background: var(--surface2);
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .results th:hover { color: var(--accent); }
+
+  .results td {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    max-width: 500px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .results tr:hover td { background: var(--accent-dim); }
+  .results td.path { color: var(--text-dim); max-width: 400px; }
+  .results td.size { text-align: right; }
+
+  .ext-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 600;
+  }
+
+  .ext-pdf { background: rgba(255, 92, 92, 0.15); color: var(--red); }
+  .ext-xlsx, .ext-xls, .ext-csv { background: rgba(61, 220, 132, 0.15); color: var(--green); }
+  .ext-docx, .ext-doc { background: rgba(68, 170, 255, 0.15); color: var(--accent); }
+  .ext-other { background: rgba(139, 143, 163, 0.1); color: var(--text-dim); }
+
+  .ext-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+
+  .ext-chip {
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+
+  .ext-chip .count {
+    color: var(--accent);
+    font-weight: 700;
+    margin-left: 4px;
+  }
+
+  .view-toggle {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .view-toggle button { border: none; border-radius: 0; padding: 0.5rem 1rem; }
+  .view-toggle button.active { background: var(--accent); color: var(--bg); }
+
+  .tree-view {
+    padding: 1rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    max-height: 55vh;
+    overflow: auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .tree-view .tn { padding-left: 1.2em; }
+  .tree-view .folder-label { color: var(--orange); cursor: pointer; }
+  .tree-view .folder-label:hover { text-decoration: underline; }
+  .tree-view .file-label { color: var(--text-dim); }
+  .tree-view .collapsed > .tn { display: none; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>// FOLDER SCANNER v2 — EU ETS Verification DMS</h1>
+  <p>Klik de knop, selecteer je folder. Read-only — er wordt niks aangepast.</p>
+</div>
+
+<button id="selectBtn" onclick="document.getElementById('folderInput').click()">
+  📁 Selecteer Folder
+</button>
+<input type="file" id="folderInput" webkitdirectory directory multiple style="display:none" />
+
+<div id="log"></div>
+
+<div id="dashboard" class="hidden">
+  <div class="stats-bar">
+    <div class="stat"><div class="label">Total Files</div><div class="value" id="statFiles">0</div></div>
+    <div class="stat"><div class="label">Folders</div><div class="value" id="statFolders">0</div></div>
+    <div class="stat"><div class="label">Total Size</div><div class="value" id="statSize">0</div></div>
+    <div class="stat"><div class="label">Deepest Level</div><div class="value" id="statDepth">0</div></div>
+    <div class="stat"><div class="label">File Types</div><div class="value" id="statTypes">0</div></div>
+  </div>
+
+  <div class="ext-summary" id="extSummary"></div>
+
+  <div class="controls">
+    <div class="view-toggle">
+      <button class="active" id="btnTable" onclick="setView('table')">Table</button>
+      <button id="btnTree" onclick="setView('tree')">Tree</button>
+    </div>
+    <input type="text" class="search-box" id="searchBox" placeholder="Filter files (bv. .pdf, client name)..." oninput="filterResults()" />
+    <button class="primary" id="btnExportJSON" onclick="exportJSON()">Export JSON</button>
+    <button id="btnExportCSV" onclick="exportCSV()">Export CSV</button>
+  </div>
+
+  <div id="tableView">
+    <div class="results">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('name')">Name</th>
+            <th onclick="sortBy('path')">Path</th>
+            <th onclick="sortBy('ext')">Type</th>
+            <th onclick="sortBy('size')">Size</th>
+            <th onclick="sortBy('modified')">Modified</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="treeView" class="hidden">
+    <div class="tree-view" id="treeContent"></div>
+  </div>
+</div>
+
+<script>
+  let allFiles = [];
+  let filteredFiles = [];
+  let sortCol = 'path';
+  let sortAsc = true;
+
+  const folderInput = document.getElementById('folderInput');
+  const logEl = document.getElementById('log');
+  const dashboard = document.getElementById('dashboard');
+
+  function log(msg) {
+    logEl.textContent += msg + '\n';
+    logEl.scrollTop = logEl.scrollHeight;
+    console.log(msg);
+  }
+
+  log('>> Scanner ready. Wacht op folder selectie...');
+
+  // Multiple event listeners for robustness
+  folderInput.addEventListener('change', handleFiles);
+  folderInput.addEventListener('input', handleFiles);
+
+  function handleFiles(e) {
+    log('>> Event fired: ' + e.type);
+
+    const files = folderInput.files;
+    if (!files || files.length === 0) {
+      log('>> FOUT: Geen bestanden ontvangen van de browser.');
+      log('>> Probeer Chrome of Edge. Firefox ondersteunt webkitdirectory minder goed.');
+      return;
+    }
+
+    log('>> ' + files.length + ' bestanden gevonden. Verwerken...');
+    document.getElementById('selectBtn').innerHTML = '<span class="spinner"></span> Scanning ' + files.length + ' bestanden...';
+
+    // Process in chunks to prevent UI freeze
+    setTimeout(function() { processFiles(Array.from(files)); }, 100);
+  }
+
+  function processFiles(files) {
+    allFiles = [];
+    const folders = new Set();
+    const batchSize = 5000;
+    let processed = 0;
+
+    function processBatch() {
+      const end = Math.min(processed + batchSize, files.length);
+
+      for (let i = processed; i < end; i++) {
+        const file = files[i];
+        const rp = file.webkitRelativePath || file.name;
+        const pathParts = rp.split('/');
+        const name = pathParts[pathParts.length - 1];
+
+        // Skip hidden files / system files
+        if (name.startsWith('.') || name === 'Thumbs.db' || name === 'desktop.ini') continue;
+
+        const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+        const folderPath = pathParts.slice(0, -1).join('/');
+
+        // Track all folder levels
+        let current = '';
+        for (let j = 0; j < pathParts.length - 1; j++) {
+          current += (j > 0 ? '/' : '') + pathParts[j];
+          folders.add(current);
+        }
+
+        allFiles.push({
+          name: name,
+          path: rp,
+          folderPath: folderPath,
+          ext: ext,
+          size: file.size,
+          modified: file.lastModified ? new Date(file.lastModified) : null,
+          depth: pathParts.length - 1
+        });
+      }
+
+      processed = end;
+      log('>> Verwerkt: ' + processed + ' / ' + files.length);
+
+      if (processed < files.length) {
+        setTimeout(processBatch, 10);
+      } else {
+        finalize(folders);
+      }
+    }
+
+    processBatch();
+
+    function finalize(folders) {
+      filteredFiles = allFiles.slice();
+
+      log('>> Klaar! ' + allFiles.length + ' bestanden in ' + folders.size + ' folders.');
+      log('>> Export als JSON of CSV en upload naar Claude.');
+
+      // Stats
+      const totalSize = allFiles.reduce(function(s, f) { return s + f.size; }, 0);
+      const maxDepth = allFiles.length > 0 ? Math.max.apply(null, allFiles.map(function(f) { return f.depth; })) : 0;
+      const extCounts = {};
+      allFiles.forEach(function(f) {
+        var e = f.ext || '(geen ext)';
+        extCounts[e] = (extCounts[e] || 0) + 1;
+      });
+
+      document.getElementById('statFiles').textContent = allFiles.length.toLocaleString();
+      document.getElementById('statFolders').textContent = folders.size.toLocaleString();
+      document.getElementById('statSize').textContent = formatSize(totalSize);
+      document.getElementById('statDepth').textContent = maxDepth;
+      document.getElementById('statTypes').textContent = Object.keys(extCounts).length;
+
+      // Extension chips
+      var extSummary = document.getElementById('extSummary');
+      extSummary.innerHTML = '';
+      Object.entries(extCounts)
+        .sort(function(a, b) { return b[1] - a[1]; })
+        .slice(0, 25)
+        .forEach(function(pair) {
+          var chip = document.createElement('div');
+          chip.className = 'ext-chip';
+          chip.innerHTML = '.' + pair[0] + ' <span class="count">' + pair[1] + '</span>';
+          extSummary.appendChild(chip);
+        });
+
+      document.getElementById('selectBtn').textContent = '✅ Scan compleet — ' + allFiles.length + ' bestanden';
+      dashboard.classList.remove('hidden');
+
+      sortBy('path');
+    }
+  }
+
+  function renderTable() {
+    var tbody = document.getElementById('tableBody');
+    var display = filteredFiles.slice(0, 3000);
+
+    var html = '';
+    for (var i = 0; i < display.length; i++) {
+      var f = display[i];
+      html += '<tr>' +
+        '<td>' + esc(f.name) + '</td>' +
+        '<td class="path" title="' + esc(f.path) + '">' + esc(f.folderPath) + '</td>' +
+        '<td><span class="ext-badge ' + extClass(f.ext) + '">' + (f.ext || '—') + '</span></td>' +
+        '<td class="size">' + formatSize(f.size) + '</td>' +
+        '<td>' + (f.modified ? f.modified.toISOString().split('T')[0] : '—') + '</td>' +
+        '</tr>';
+    }
+
+    if (filteredFiles.length > 3000) {
+      html += '<tr><td colspan="5" style="text-align:center;color:var(--orange);padding:1rem">Toont 3000 van ' + filteredFiles.length + '. Gebruik filter om te verfijnen.</td></tr>';
+    }
+
+    tbody.innerHTML = html;
+  }
+
+  function sortBy(col) {
+    if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+
+    filteredFiles.sort(function(a, b) {
+      var va, vb;
+      if (col === 'size') { va = a.size; vb = b.size; }
+      else if (col === 'modified') { va = a.modified ? a.modified.getTime() : 0; vb = b.modified ? b.modified.getTime() : 0; }
+      else { va = String(a[col] || '').toLowerCase(); vb = String(b[col] || '').toLowerCase(); return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va); }
+      return sortAsc ? va - vb : vb - va;
+    });
+
+    renderTable();
+  }
+
+  function filterResults() {
+    var q = document.getElementById('searchBox').value.toLowerCase().trim();
+    if (!q) { filteredFiles = allFiles.slice(); }
+    else {
+      var terms = q.split(/\s+/);
+      filteredFiles = allFiles.filter(function(f) {
+        var h = (f.path + ' ' + f.ext).toLowerCase();
+        return terms.every(function(t) { return h.indexOf(t) >= 0; });
+      });
+    }
+    renderTable();
+  }
+
+  function setView(view) {
+    document.getElementById('tableView').classList.toggle('hidden', view !== 'table');
+    document.getElementById('treeView').classList.toggle('hidden', view !== 'tree');
+    document.getElementById('btnTable').classList.toggle('active', view === 'table');
+    document.getElementById('btnTree').classList.toggle('active', view === 'tree');
+
+    if (view === 'tree' && document.getElementById('treeContent').innerHTML === '') {
+      log('>> Boomstructuur opbouwen...');
+      setTimeout(function() {
+        renderTree();
+        log('>> Boomstructuur klaar.');
+      }, 50);
+    }
+  }
+
+  function renderTree() {
+    // Build tree object
+    var tree = { __files: [] };
+    allFiles.forEach(function(f) {
+      var parts = f.path.split('/');
+      var node = tree;
+      for (var i = 0; i < parts.length - 1; i++) {
+        if (!node[parts[i]]) node[parts[i]] = { __files: [] };
+        node = node[parts[i]];
+      }
+      node.__files.push(f);
+    });
+
+    var container = document.getElementById('treeContent');
+    container.innerHTML = buildTree(tree, 0, 4); // limit depth for performance
+  }
+
+  function buildTree(node, depth, maxRenderDepth) {
+    if (depth > maxRenderDepth) return '<div style="padding-left:1.2em;color:var(--text-dim)">... (dieper niveau, gebruik tabel view)</div>';
+
+    var html = '';
+    var dirs = Object.keys(node).filter(function(k) { return k !== '__files'; }).sort();
+    var files = node.__files || [];
+
+    dirs.forEach(function(dir) {
+      var count = countFiles(node[dir]);
+      html += '<div>' +
+        '<span class="folder-label" onclick="this.parentElement.classList.toggle(\'collapsed\')">📁 ' + esc(dir) + ' <span style="color:var(--text-dim)">(' + count + ')</span></span>' +
+        '<div class="tn">' + buildTree(node[dir], depth + 1, maxRenderDepth) + '</div>' +
+        '</div>';
+    });
+
+    files.forEach(function(f) {
+      html += '<div class="file-label" style="padding-left:0.5em">📄 ' + esc(f.name) + ' <span style="color:var(--text-dim)">' + formatSize(f.size) + '</span></div>';
+    });
+
+    return html;
+  }
+
+  function countFiles(node) {
+    var c = (node.__files || []).length;
+    Object.keys(node).filter(function(k) { return k !== '__files'; }).forEach(function(k) { c += countFiles(node[k]); });
+    return c;
+  }
+
+  function exportJSON() {
+    var data = {
+      scanDate: new Date().toISOString(),
+      totalFiles: allFiles.length,
+      rootFolder: allFiles.length > 0 ? allFiles[0].path.split('/')[0] : '',
+      files: allFiles.map(function(f) {
+        return {
+          name: f.name,
+          path: f.path,
+          folder: f.folderPath,
+          extension: f.ext,
+          sizeBytes: f.size,
+          modified: f.modified ? f.modified.toISOString() : null,
+          depth: f.depth
+        };
+      })
+    };
+    download(JSON.stringify(data, null, 2), 'folder_scan.json', 'application/json');
+    log('>> JSON geëxporteerd. Upload dit bestand naar Claude.');
+  }
+
+  function exportCSV() {
+    var rows = ['name,path,folder,extension,size_bytes,modified,depth'];
+    allFiles.forEach(function(f) {
+      rows.push([f.name, f.path, f.folderPath, f.ext, f.size,
+        f.modified ? f.modified.toISOString() : '', f.depth]
+        .map(function(v) { return '"' + String(v).replace(/"/g, '""') + '"'; })
+        .join(','));
+    });
+    download(rows.join('\n'), 'folder_scan.csv', 'text/csv');
+    log('>> CSV geëxporteerd. Upload dit bestand naar Claude.');
+  }
+
+  function download(content, name, type) {
+    var blob = new Blob([content], { type: type });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function formatSize(b) {
+    if (b === 0) return '0 B';
+    var u = ['B', 'KB', 'MB', 'GB', 'TB'];
+    var i = Math.floor(Math.log(b) / Math.log(1024));
+    return (b / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + u[i];
+  }
+
+  function extClass(ext) {
+    if (ext === 'pdf') return 'ext-pdf';
+    if (['xlsx', 'xls', 'csv'].indexOf(ext) >= 0) return 'ext-xlsx';
+    if (['docx', 'doc'].indexOf(ext) >= 0) return 'ext-docx';
+    return 'ext-other';
+  }
+
+  function esc(s) {
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+</script>
+
+</body>
+</html>
