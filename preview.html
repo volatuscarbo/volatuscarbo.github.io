@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EU ETS Aviation Compliance Radar</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 20px;
+}
+
+h1 {
+  margin-bottom: 20px;
+}
+
+button {
+  padding: 10px 14px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2563eb;
+}
+
+.output {
+  margin-top: 20px;
+  background: #1e293b;
+  padding: 16px;
+  border-radius: 10px;
+  white-space: pre-wrap;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>✈️ EU ETS Aviation Compliance Radar</h1>
+
+<button onclick="compareAll()">Run Live Analysis</button>
+
+<div id="output" class="output"></div>
+
+<script>
+
+// ==========================
+// CONFIG
+// ==========================
+const ACTS = [
+  { name: "EU ETS Directive", celex: "32003L0087" },
+  { name: "MRR", celex: "32018R2066" },
+  { name: "AVR", celex: "32018R2067" }
+];
+
+// ==========================
+// FETCH XML
+// ==========================
+async function fetchXML(id) {
+  const url = `https://eur-lex.europa.eu/legal-content/EN/TXT/XML/?uri=CELEX:${id}`;
+  const res = await fetch(url);
+  const text = await res.text();
+  return new DOMParser().parseFromString(text, "text/xml");
+}
+
+// ==========================
+// GET VERSIONS
+// ==========================
+async function getVersions(celex) {
+  const xml = await fetchXML(celex);
+  const expressions = xml.getElementsByTagName("EXPRESSION");
+
+  return [...expressions].map(e => ({
+    id: e.getElementsByTagName("EXPRESSION_ID")[0]?.textContent,
+    date: e.getElementsByTagName("EXPRESSION_DATE")[0]?.textContent
+  }));
+}
+
+// ==========================
+// EXTRACT ARTICLES
+// ==========================
+function extractArticlesFromXML(xmlDoc) {
+  const articles = {};
+  const nodes = xmlDoc.getElementsByTagName("ARTICLE");
+
+  for (let node of nodes) {
+    const title = node.getElementsByTagName("TITLE")[0]?.textContent || "Unknown";
+    const body = node.textContent;
+    articles[title] = body.replace(/\s+/g, " ").trim();
+  }
+
+  return articles;
+}
+
+// ==========================
+// DIFF
+// ==========================
+function diffStructured(a, b) {
+  const results = [];
+
+  for (const article in b) {
+    if (!a[article]) {
+      results.push({ article, type: "NEW", text: b[article] });
+      continue;
+    }
+
+    if (a[article] !== b[article]) {
+      results.push({
+        article,
+        type: "MODIFIED",
+        old: a[article],
+        new: b[article]
+      });
+    }
+  }
+
+  return results;
+}
+
+// ==========================
+// AVIATION FILTER
+// ==========================
+function isAviationRelevant(text) {
+  const t = text.toLowerCase();
+  return (
+    t.includes("aircraft") ||
+    t.includes("aviation") ||
+    t.includes("flight") ||
+    t.includes("fuel") ||
+    t.includes("aerodrome") ||
+    t.includes("tonne")
+  );
+}
+
+function filterAviationChanges(changes) {
+  return changes.filter(c => {
+    const text = c.new || c.text;
+    return isAviationRelevant(text);
+  });
+}
+
+// ==========================
+// CLASSIFICATION
+// ==========================
+function classifyAviationArea(text) {
+  const t = text.toLowerCase();
+
+  if (t.includes("fuel")) return "Fuel Monitoring";
+  if (t.includes("tonne")) return "Tonne-km / Activity";
+  if (t.includes("flight")) return "Flight Scope";
+  if (t.includes("calculation")) return "Emissions Calculation";
+  if (t.includes("verification")) return "Verification";
+
+  return "General Aviation";
+}
+
+// ==========================
+// IMPACT ENGINE
+// ==========================
+function aviationImpact(text) {
+  const t = text.toLowerCase();
+
+  if (t.includes("scope") || (t.includes("flight") && t.includes("included"))) {
+    return {
+      risk: "CRITICAL",
+      issue: "Flight scope changed",
+      action: "Re-evaluate routes and obligations"
+    };
+  }
+
+  if (t.includes("fuel") && t.includes("monitor")) {
+    return {
+      risk: "HIGH",
+      issue: "Fuel monitoring changed",
+      action: "Update monitoring plan"
+    };
+  }
+
+  if (t.includes("calculation") || t.includes("emission factor")) {
+    return {
+      risk: "CRITICAL",
+      issue: "Emission calculation changed",
+      action: "Recalculate emissions"
+    };
+  }
+
+  if (t.includes("verification")) {
+    return {
+      risk: "HIGH",
+      issue: "Verification rules updated",
+      action: "Adjust verification procedures"
+    };
+  }
+
+  if (t.includes("report")) {
+    return {
+      risk: "MEDIUM",
+      issue: "Reporting updated",
+      action: "Adjust reporting"
+    };
+  }
+
+  return {
+    risk: "LOW",
+    issue: "Minor change",
+    action: "Review"
+  };
+}
+
+// ==========================
+// SUMMARY
+// ==========================
+function aviationSummary(changes) {
+  const critical = changes.filter(c => aviationImpact(c.new || c.text).risk === "CRITICAL").length;
+  const high = changes.filter(c => aviationImpact(c.new || c.text).risk === "HIGH").length;
+
+  return `
+Aviation Changes: ${changes.length}
+Critical: ${critical}
+High: ${high}
+
+Conclusion:
+${critical > 0
+  ? "Significant impact on aircraft operator compliance"
+  : "No major aviation impact"}
+`;
+}
+
+// ==========================
+// REPORT
+// ==========================
+function aviationReportMulti(changes) {
+  return changes.map(c => {
+    const text = c.new || c.text;
+
+    const area = classifyAviationArea(text);
+    const impact = aviationImpact(text);
+
+    return `
+[${c.regulation}]
+${c.article}
+
+Area: ${area}
+Risk: ${impact.risk}
+Issue: ${impact.issue}
+Action: ${impact.action}
+`;
+  }).join("\n---------------------------\n");
+}
+
+// ==========================
+// MAIN
+// ==========================
+async function compareAll() {
+  const output = document.getElementById("output");
+  output.textContent = "Running live aviation compliance analysis...";
+
+  let allChanges = [];
+
+  for (const act of ACTS) {
+    const versions = await getVersions(act.celex);
+
+    if (versions.length < 2) continue;
+
+    const latest = versions[0].id;
+    const previous = versions[1].id;
+
+    const [xml1, xml2] = await Promise.all([
+      fetchXML(previous),
+      fetchXML(latest)
+    ]);
+
+    const a1 = extractArticlesFromXML(xml1);
+    const a2 = extractArticlesFromXML(xml2);
+
+    let changes = diffStructured(a1, a2);
+
+    changes = filterAviationChanges(changes);
+
+    changes = changes.map(c => ({
+      ...c,
+      regulation: act.name
+    }));
+
+    allChanges.push(...changes);
+  }
+
+  const summary = aviationSummary(allChanges);
+  const report = aviationReportMulti(allChanges);
+
+  output.textContent =
+`=== AVIATION SUMMARY ===
+${summary}
+
+=== VERIFIER IMPACT REPORT ===
+${report}`;
+}
+
+</script>
+
+</body>
+</html>
