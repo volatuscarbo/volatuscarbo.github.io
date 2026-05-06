@@ -1,147 +1,180 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>EU ETS Compliance Engine</title>
+<title>Fuel Analysis Report</title>
 <style>
-body { font-family: Arial; background:#0a0f1c; color:#e5e7eb; margin:20px; }
-input, button { padding:10px; margin:5px; }
-button { cursor:pointer; }
-.card { background:#111827; padding:12px; margin:10px 0; border-radius:10px; }
-.tag { display:inline-block; padding:3px 8px; margin:2px;
-       border-radius:6px; font-size:12px; }
-.high { background:#991b1b; }
-.medium { background:#b45309; }
-.low { background:#065f46; }
-.aviation { background:#1d4ed8; }
-.directive { background:#374151; }
-.regulation { background:#6b7280; }
-.small { font-size:12px; color:#9ca3af; }
-pre { white-space:pre-wrap; font-size:12px; }
+body { font-family: Arial; margin: 20px; }
+h1, h2 { color: #333; }
+button { padding: 10px; margin: 10px 0; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+th, td { border: 1px solid #ccc; padding: 6px; font-size: 12px; }
+th { background: #eee; }
+.print-btn { background: #28a745; color: white; }
+.warning { color: red; font-weight: bold; }
 </style>
 </head>
+
 <body>
 
-<h2>✈️ EU ETS Compliance Engine</h2>
+<h1>Fuel Analysis Report</h1>
 
-<input id="celex" value="32003L0087" style="width:220px;">
-<button onclick="run()">Run Compliance Analysis</button>
+<input type="file" id="fileInput" accept=".csv">
+<br>
+<button onclick="processFile()">Generate Report</button>
+<button class="print-btn" onclick="window.print()">Print</button>
 
-<div id="out"></div>
+<div id="report"></div>
 
 <script>
-const proxy = "https://api.allorigins.win/raw?url=";
-
-/* ---------------- FETCH ---------------- */
-async function fetchHTML(url){
-  const r = await fetch(proxy + encodeURIComponent(url));
-  return await r.text();
+function parseCSV(text) {
+    const rows = text.split("\n").map(r => r.split(","));
+    const headers = rows[0].map(h => h.trim());
+    return rows.slice(1).map(row => {
+        let obj = {};
+        headers.forEach((h, i) => obj[h] = row[i]);
+        return obj;
+    });
 }
 
-/* ---------------- CLASSIFICATION ---------------- */
-function classifyType(text){
-  text = text.toLowerCase();
-  if(text.includes("directive")) return "directive";
-  if(text.includes("regulation")) return "regulation";
-  return null;
+function num(v) {
+    let n = parseFloat(v);
+    return isNaN(n) ? 0 : n;
 }
 
-function detectAviation(text){
-  return text.toLowerCase().includes("aviation") ||
-         text.toLowerCase().includes("aircraft") ||
-         text.toLowerCase().includes("flights");
+function processFile() {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) return alert("Select a file");
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+        let data = parseCSV(e.target.result);
+
+        // Normalize column names (adjust if needed)
+        data.forEach(d => {
+            d.registration = d.registration || d.Registration;
+            d.dep = d.departure || d.dep;
+            d.arr = d.arrival || d.arr;
+            d.date = d.date || d.Date;
+            d.tot = d["takeoff"] || d["TakeOff"] || d["time"];
+            d.sd_p = num(d["SD(p)"]);
+            d.uplift = num(d["Uplift"]);
+            d.sd_fuel = num(d["SD Fuel"]);
+            d.ets = num(d["ETS consumption"]);
+            d.status = d["status ETS"];
+        });
+
+        // SORT
+        data.sort((a, b) => {
+            if (a.registration !== b.registration)
+                return a.registration.localeCompare(b.registration);
+            return new Date(a.date + " " + a.tot) - new Date(b.date + " " + b.tot);
+        });
+
+        let totals = { sd_p:0, uplift:0, sd_fuel:0, ets:0 };
+        let mxFlights = [];
+        let missingLegs = [];
+        let gaps = [];
+
+        let prev = {};
+
+        data.forEach(d => {
+            totals.sd_p += d.sd_p;
+            totals.uplift += d.uplift;
+            totals.sd_fuel += d.sd_fuel;
+            totals.ets += d.ets;
+
+            if (d.status === "MX") {
+                mxFlights.push(d);
+            }
+
+            // continuity check
+            if (prev[d.registration]) {
+                if (prev[d.registration].arr !== d.dep) {
+                    missingLegs.push({
+                        reg: d.registration,
+                        prevArr: prev[d.registration].arr,
+                        nextDep: d.dep,
+                        date: d.date
+                    });
+                }
+
+                // fuel gap
+                let gap = d.sd_p - prev[d.registration].sd_fuel;
+                if (Math.abs(gap) > 50) {
+                    gaps.push({
+                        reg: d.registration,
+                        gap: gap.toFixed(2),
+                        date: d.date
+                    });
+                }
+            }
+
+            prev[d.registration] = d;
+        });
+
+        // OUTLIERS (simple)
+        let avg = totals.ets / data.length;
+        let outliers = data.filter(d => Math.abs(d.ets - avg) > avg * 2);
+
+        renderReport(totals, mxFlights, missingLegs, gaps, outliers, data.length);
+    };
+
+    reader.readAsText(file);
 }
 
-/* ---------------- ETS IMPACT ---------------- */
-function impactScore(text){
-  let score = 0;
-  const t = text.toLowerCase();
+function renderReport(totals, mxFlights, missingLegs, gaps, outliers, totalFlights) {
 
-  if(t.includes("aviation")) score += 3;
-  if(t.includes("emissions")) score += 2;
-  if(t.includes("cap")) score += 2;
-  if(t.includes("allowance")) score += 2;
-  if(t.includes("phase")) score += 1;
-  if(t.includes("2030")) score += 2;
+    let html = "";
 
-  if(score >= 6) return "high";
-  if(score >= 3) return "medium";
-  return "low";
-}
-
-/* ---------------- LINK EXTRACTION ---------------- */
-function extractCELEX(html){
-  const m = [...html.matchAll(/CELEX:\d{9}[A-Z]\d{4}/g)];
-  return [...new Set(m.map(x => x[0].replace("CELEX:","")))];
-}
-
-/* ---------------- LOAD ACT ---------------- */
-async function loadAct(celex){
-  const url = `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:${celex}`;
-  const html = await fetchHTML(url);
-
-  return {
-    celex,
-    html,
-    links: extractCELEX(html),
-    aviation: detectAviation(html),
-    type: classifyType(html),
-    impact: impactScore(html)
-  };
-}
-
-/* ---------------- RENDER ---------------- */
-function render(data){
-  const out = document.getElementById("out");
-  out.innerHTML = "";
-
-  data.forEach(d => {
-
-    const div = document.createElement("div");
-    div.className = "card";
-
-    let tags = "";
-
-    if(d.aviation)
-      tags += `<span class="tag aviation">AVIATION</span>`;
-
-    if(d.type)
-      tags += `<span class="tag ${d.type}">${d.type.toUpperCase()}</span>`;
-
-    tags += `<span class="tag ${d.impact}">IMPACT: ${d.impact.toUpperCase()}</span>`;
-
-    div.innerHTML = `
-      <b>${d.celex}</b><br/><br/>
-      ${tags}<br/><br/>
-
-      <div class="small">Linked CELEX acts:</div>
-      ${d.links.slice(0,8).map(l =>
-        `<div>🔗 ${l}</div>`
-      ).join("")}
+    html += "<h2>Totals</h2>";
+    html += `
+    <table>
+        <tr><th>SD(p)</th><th>Uplift</th><th>SD Fuel</th><th>ETS</th></tr>
+        <tr>
+            <td>${totals.sd_p.toFixed(2)}</td>
+            <td>${totals.uplift.toFixed(2)}</td>
+            <td>${totals.sd_fuel.toFixed(2)}</td>
+            <td>${totals.ets.toFixed(2)}</td>
+        </tr>
+    </table>
     `;
 
-    out.appendChild(div);
-  });
+    html += "<h2>MX Flights</h2>";
+    html += `<p class="warning">${mxFlights.length} / ${totalFlights}</p>`;
+    html += table(mxFlights);
+
+    html += "<h2>Missing Legs</h2>";
+    html += `<p class="warning">${missingLegs.length}</p>`;
+    html += table(missingLegs);
+
+    html += "<h2>Fuel Gaps</h2>";
+    html += `<p class="warning">${gaps.length}</p>`;
+    html += table(gaps);
+
+    html += "<h2>Outliers</h2>";
+    html += `<p>${outliers.length}</p>`;
+    html += table(outliers);
+
+    document.getElementById("report").innerHTML = html;
 }
 
-/* ---------------- MAIN ENGINE ---------------- */
-async function run(){
-  const celex = document.getElementById("celex").value;
-  const out = document.getElementById("out");
-  out.innerHTML = "Running ETS compliance analysis...";
+function table(arr) {
+    if (!arr.length) return "<p>None</p>";
+    let keys = Object.keys(arr[0]);
+    let html = "<table><tr>";
+    keys.forEach(k => html += "<th>" + k + "</th>");
+    html += "</tr>";
 
-  const root = await loadAct(celex);
-  const results = [root];
+    arr.forEach(r => {
+        html += "<tr>";
+        keys.forEach(k => html += "<td>" + (r[k] || "") + "</td>");
+        html += "</tr>";
+    });
 
-  // limited graph expansion
-  for(const l of root.links.slice(0,5)){
-    try{
-      const child = await loadAct(l);
-      results.push(child);
-    }catch(e){}
-  }
-
-  render(results);
+    html += "</table>";
+    return html;
 }
 </script>
 
