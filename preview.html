@@ -3,18 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <title>Fuel Analysis Report</title>
+
 <style>
 body { font-family: Arial; margin: 20px; }
-h1, h2 { color: #333; }
-button { padding: 10px; margin: 10px 0; }
+h1 { margin-bottom: 5px; }
+h2 { margin-top: 30px; }
+button { padding: 10px; margin-top: 10px; }
 table { border-collapse: collapse; width: 100%; margin-top: 10px; }
 th, td { border: 1px solid #ccc; padding: 6px; font-size: 12px; }
 th { background: #eee; }
-.print-btn { background: #28a745; color: white; }
 .warning { color: red; font-weight: bold; }
+.print-btn { background: green; color: white; }
 </style>
-</head>
 
+</head>
 <body>
 
 <h1>Fuel Analysis Report</h1>
@@ -27,103 +29,168 @@ th { background: #eee; }
 <div id="report"></div>
 
 <script>
-function parseCSV(text) {
-    const rows = text.split("\n").map(r => r.split(","));
-    const headers = rows[0].map(h => h.trim());
-    return rows.slice(1).map(row => {
-        let obj = {};
-        headers.forEach((h, i) => obj[h] = row[i]);
-        return obj;
-    });
+
+// Detect delimiter
+function detectDelimiter(text) {
+    return text.includes(";") ? ";" : ",";
 }
 
+// Find header row dynamically
+function findHeaderIndex(lines) {
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes("SD") && lines[i].includes("Uplift")) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// Parse CSV robustly
+function parseCSV(text) {
+    const delimiter = detectDelimiter(text);
+    const lines = text.split("\n").filter(l => l.trim() !== "");
+
+    const headerIndex = findHeaderIndex(lines);
+
+    if (headerIndex === -1) {
+        alert("Header row not found (SD/Uplift missing)");
+        return [];
+    }
+
+    const headers = lines[headerIndex]
+        .split(delimiter)
+        .map(h => h.replace(/"/g, "").trim());
+
+    console.log("Headers:", headers);
+
+    let data = [];
+
+    for (let i = headerIndex + 1; i < lines.length; i++) {
+        const cols = lines[i].split(delimiter);
+
+        let obj = {};
+        headers.forEach((h, j) => {
+            let val = (cols[j] || "").replace(/"/g, "").trim();
+
+            // Fix EU decimals
+            if (val.match(/^\d+,\d+$/)) {
+                val = val.replace(",", ".");
+            }
+
+            obj[h] = val;
+        });
+
+        data.push(obj);
+    }
+
+    return data;
+}
+
+// Convert to number
 function num(v) {
     let n = parseFloat(v);
     return isNaN(n) ? 0 : n;
 }
 
+// MAIN PROCESS
 function processFile() {
+
     const file = document.getElementById("fileInput").files[0];
-    if (!file) return alert("Select a file");
+    if (!file) return alert("Select file");
 
     const reader = new FileReader();
 
     reader.onload = function(e) {
-        let data = parseCSV(e.target.result);
 
-        // Normalize column names (adjust if needed)
+        let raw = e.target.result;
+        let data = parseCSV(raw);
+
+        if (!data.length) return;
+
+        // Map columns (adapted to your file)
         data.forEach(d => {
-            d.registration = d.registration || d.Registration;
-            d.dep = d.departure || d.dep;
-            d.arr = d.arrival || d.arr;
-            d.date = d.date || d.Date;
-            d.tot = d["takeoff"] || d["TakeOff"] || d["time"];
-            d.sd_p = num(d["SD(p)"]);
+            d.registration = d["AC REG"] || d["REG"] || "";
+            d.dep = d["DEP"] || "";
+            d.arr = d["ARR"] || "";
+            d.date = d["DATE"] || "";
+            d.tot = d["ATD"] || "";
+
+            d.sd_p = num(d["SD(p)"] || d["SD (P)"]);
             d.uplift = num(d["Uplift"]);
             d.sd_fuel = num(d["SD Fuel"]);
             d.ets = num(d["ETS consumption"]);
-            d.status = d["status ETS"];
+
+            d.status = d["status ETS"] || "";
         });
 
-        // SORT
-        data.sort((a, b) => {
-            if (a.registration !== b.registration)
-                return a.registration.localeCompare(b.registration);
-            return new Date(a.date + " " + a.tot) - new Date(b.date + " " + b.tot);
-        });
-
-        let totals = { sd_p:0, uplift:0, sd_fuel:0, ets:0 };
-        let mxFlights = [];
-        let missingLegs = [];
-        let gaps = [];
-
-        let prev = {};
-
-        data.forEach(d => {
-            totals.sd_p += d.sd_p;
-            totals.uplift += d.uplift;
-            totals.sd_fuel += d.sd_fuel;
-            totals.ets += d.ets;
-
-            if (d.status === "MX") {
-                mxFlights.push(d);
-            }
-
-            // continuity check
-            if (prev[d.registration]) {
-                if (prev[d.registration].arr !== d.dep) {
-                    missingLegs.push({
-                        reg: d.registration,
-                        prevArr: prev[d.registration].arr,
-                        nextDep: d.dep,
-                        date: d.date
-                    });
-                }
-
-                // fuel gap
-                let gap = d.sd_p - prev[d.registration].sd_fuel;
-                if (Math.abs(gap) > 50) {
-                    gaps.push({
-                        reg: d.registration,
-                        gap: gap.toFixed(2),
-                        date: d.date
-                    });
-                }
-            }
-
-            prev[d.registration] = d;
-        });
-
-        // OUTLIERS (simple)
-        let avg = totals.ets / data.length;
-        let outliers = data.filter(d => Math.abs(d.ets - avg) > avg * 2);
-
-        renderReport(totals, mxFlights, missingLegs, gaps, outliers, data.length);
+        runAnalysis(data);
     };
 
     reader.readAsText(file);
 }
 
+// ANALYSIS
+function runAnalysis(data) {
+
+    // Sort correctly
+    data.sort((a, b) => {
+        if (a.registration !== b.registration)
+            return a.registration.localeCompare(b.registration);
+
+        return new Date(a.date + " " + a.tot) - new Date(b.date + " " + b.tot);
+    });
+
+    let totals = { sd_p:0, uplift:0, sd_fuel:0, ets:0 };
+    let mxFlights = [];
+    let missingLegs = [];
+    let gaps = [];
+    let prev = {};
+
+    data.forEach(d => {
+
+        totals.sd_p += d.sd_p;
+        totals.uplift += d.uplift;
+        totals.sd_fuel += d.sd_fuel;
+        totals.ets += d.ets;
+
+        if (d.status === "MX") {
+            mxFlights.push(d);
+        }
+
+        if (prev[d.registration]) {
+
+            // Missing leg
+            if (prev[d.registration].arr !== d.dep) {
+                missingLegs.push({
+                    reg: d.registration,
+                    prevArr: prev[d.registration].arr,
+                    nextDep: d.dep,
+                    date: d.date
+                });
+            }
+
+            // Fuel gap
+            let gap = d.sd_p - prev[d.registration].sd_fuel;
+            if (Math.abs(gap) > 50) {
+                gaps.push({
+                    reg: d.registration,
+                    gap: gap.toFixed(2),
+                    date: d.date
+                });
+            }
+        }
+
+        prev[d.registration] = d;
+    });
+
+    // Outliers (ETS simple)
+    let avg = totals.ets / data.length;
+    let outliers = data.filter(d => Math.abs(d.ets - avg) > avg * 2);
+
+    renderReport(totals, mxFlights, missingLegs, gaps, outliers, data.length);
+}
+
+// RENDER
 function renderReport(totals, mxFlights, missingLegs, gaps, outliers, totalFlights) {
 
     let html = "";
@@ -141,28 +208,27 @@ function renderReport(totals, mxFlights, missingLegs, gaps, outliers, totalFligh
     </table>
     `;
 
-    html += "<h2>MX Flights</h2>";
-    html += `<p class="warning">${mxFlights.length} / ${totalFlights}</p>`;
+    html += `<h2>MX Flights (${mxFlights.length}/${totalFlights})</h2>`;
     html += table(mxFlights);
 
-    html += "<h2>Missing Legs</h2>";
-    html += `<p class="warning">${missingLegs.length}</p>`;
+    html += `<h2>Missing Legs (${missingLegs.length})</h2>`;
     html += table(missingLegs);
 
-    html += "<h2>Fuel Gaps</h2>";
-    html += `<p class="warning">${gaps.length}</p>`;
+    html += `<h2>Fuel Gaps (${gaps.length})</h2>`;
     html += table(gaps);
 
-    html += "<h2>Outliers</h2>";
-    html += `<p>${outliers.length}</p>`;
+    html += `<h2>Outliers (${outliers.length})</h2>`;
     html += table(outliers);
 
     document.getElementById("report").innerHTML = html;
 }
 
+// Table builder
 function table(arr) {
     if (!arr.length) return "<p>None</p>";
+
     let keys = Object.keys(arr[0]);
+
     let html = "<table><tr>";
     keys.forEach(k => html += "<th>" + k + "</th>");
     html += "</tr>";
@@ -176,6 +242,7 @@ function table(arr) {
     html += "</table>";
     return html;
 }
+
 </script>
 
 </body>
