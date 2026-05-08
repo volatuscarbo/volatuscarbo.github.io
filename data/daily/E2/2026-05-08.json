@@ -1,0 +1,364 @@
+{
+  "date": "2026-05-08",
+  "airline": "E2",
+  "count": 7,
+  "flights": [
+    {
+      "flight_date": "2026-05-08",
+      "flight_status": "scheduled",
+      "departure": {
+        "airport": "Athens International Airport \"Eleftherios Venizelos\"",
+        "timezone": "Europe/Athens",
+        "iata": "ATH",
+        "icao": "LGAV",
+        "terminal": "M",
+        "gate": null,
+        "delay": null,
+        "scheduled": "2026-05-08T11:05:00+00:00",
+        "estimated": "2026-05-08T11:05:00+00:00",
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "arrival": {
+        "airport": "Haifa",
+        "timezone": "Asia/Jerusalem",
+        "iata": "HFA",
+        "icao": "LLHA",
+        "terminal": null,
+        "gate": null,
+        "baggage": null,
+        "scheduled": "2026-05-08T13:50:00+00:00",
+        "delay": null,
+        "estimated": null,
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "airline": {
+        "name": "airHaifa",
+        "iata": "E2",
+        "icao": "HFA"
+      },
+      "flight": {
+        "number": "702",
+        "iata": "E2702",
+        "icao": "HFA702",
+        "codeshared": null
+      },
+      "aircraft": {
+        "registration": null,
+        "iata": null,
+        "icao": null,
+        "icao24": "739600"
+      },
+      "live": null
+    },
+    {
+      "flight_date": "2026-05-08",
+      "flight_status": "cancelled",
+      "departure": {
+        "airport": "Paphos International Airport",
+        "timezone": "Asia/Nicosia",
+        "iata": "PFO",
+        "icao": "LCPH",
+        "terminal": null,
+        "gate": null,
+        "delay": null,
+        "scheduled": "2026-05-08T10:15:00+00:00",
+        "estimated": "2026-05-08T10:15:00+00:00",
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "arrival": {
+        "airport": "Haifa",
+        "timezone": "Asia/Jerusalem",
+        "iata": "HFA",
+        "icao": "LLHA",
+        "terminal": null,
+        "gate": null,
+        "baggage": null,
+        "scheduled": "2026-05-08T11:20:00+00:00",
+        "delay": null,
+        "estimated": null,
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "airline": {
+        "name": "airHaifa",
+        "iata": "E2",
+        "icao": "HFA"
+      },
+      "flight": {
+        "number": "850",
+        "iata": "E2850",
+        "icao": "HFA850",
+        "codeshared": null
+      },
+      "aircraft": {
+        "registration": null,
+        "iata": null,
+        "icao": null,
+        "icao24": "739603"
+      },
+      "live": null
+    },
+    {
+      "flight_date": "2026-05-08",
+      "flight_status": "scheduled",
+      "departure": {
+        "airport": "Haifa",
+        "timezone": "Asia/Jerusalem",
+        "iata": "HFA",
+        "icao": "LLHA",
+        "terminal": null,
+        "gate": null,
+        "delay": null,
+        "scheduled": "2026-05-08T09:45:00+00:00",
+        "estimated": "2026-05-08T09:45:00+00:00",
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "arrival": {
+        "airport": "Larnaca",
+        "timezone": "Asia/Nicosia",
+        "iata": "LCA",
+        "icao": "LCLK",
+        "terminal": null,
+        "gate": null,
+        "baggage": null,
+        "scheduled": "2026-05-08T10:45:00+00:00",
+        "delay": null,
+        "estimated": null,
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "airline": {
+        "name": "airHaifa",
+        "iata": "E2",
+        "icao": "HFA"
+      },
+      "flight": {
+        "number": "803",
+        "iata": "E2803",
+        "icao": "HFA803",
+        "codeshared": null
+      },
+      "aircraft": {
+        "registration": null,
+        "iata": null,
+        "icao": null,
+        "icao24": "739604"
+      },
+      "live": null
+    },
+    {
+      "flight_date": "2026-05-08",
+      "flight_status": "scheduled",
+      "departure": {
+        "airport": "Haifa",
+        "timezone": "Asia/Jerusalem",
+        "iata": "HFA",
+        "icao": "LLHA",
+        "terminal": null,
+        "gate": null,
+        "delay": null,
+        "scheduled": "2026-05-08T07:30:00+00:00",
+        "estimated": "2026-05-08T07:30:00+00:00",
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "arrival": {
+        "airport": "Athens International Airport \"Eleftherios Venizelos\"",
+        "timezone": "Europe/Athens",
+        "iata": "ATH",
+        "icao": "LGAV",
+        "terminal": null,
+        "gate": null,
+        "baggage": "01",
+        "scheduled": "2026-05-08T10:25:00+00:00",
+        "delay": null,
+        "estimated": null,
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "airline": {
+        "name": "airHaifa",
+        "iata": "E2",
+        "icao": "HFA"
+      },
+      "flight": {
+        "number": "701",
+        "iata": "E2701",
+        "icao": "HFA701",
+        "codeshared": null
+      },
+      "aircraft": {
+        "registration": null,
+        "iata": null,
+        "icao": null,
+        "icao24": "739600"
+      },
+      "live": null
+    },
+    {
+      "flight_date": "2026-05-08",
+      "flight_status": "cancelled",
+      "departure": {
+        "airport": "Haifa",
+        "timezone": "Asia/Jerusalem",
+        "iata": "HFA",
+        "icao": "LLHA",
+        "terminal": null,
+        "gate": null,
+        "delay": null,
+        "scheduled": "2026-05-08T08:30:00+00:00",
+        "estimated": "2026-05-08T08:30:00+00:00",
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "arrival": {
+        "airport": "Paphos International Airport",
+        "timezone": "Asia/Nicosia",
+        "iata": "PFO",
+        "icao": "LCPH",
+        "terminal": null,
+        "gate": null,
+        "baggage": null,
+        "scheduled": "2026-05-08T09:35:00+00:00",
+        "delay": null,
+        "estimated": null,
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "airline": {
+        "name": "airHaifa",
+        "iata": "E2",
+        "icao": "HFA"
+      },
+      "flight": {
+        "number": "849",
+        "iata": "E2849",
+        "icao": "HFA849",
+        "codeshared": null
+      },
+      "aircraft": {
+        "registration": null,
+        "iata": null,
+        "icao": null,
+        "icao24": "739603"
+      },
+      "live": null
+    },
+    {
+      "flight_date": "2026-05-08",
+      "flight_status": "cancelled",
+      "departure": {
+        "airport": "Larnaca",
+        "timezone": "Asia/Nicosia",
+        "iata": "LCA",
+        "icao": "LCLK",
+        "terminal": null,
+        "gate": null,
+        "delay": null,
+        "scheduled": "2026-05-08T09:45:00+00:00",
+        "estimated": "2026-05-08T09:45:00+00:00",
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "arrival": {
+        "airport": "Haifa",
+        "timezone": "Asia/Jerusalem",
+        "iata": "HFA",
+        "icao": "LLHA",
+        "terminal": null,
+        "gate": null,
+        "baggage": null,
+        "scheduled": "2026-05-08T10:45:00+00:00",
+        "delay": null,
+        "estimated": null,
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "airline": {
+        "name": "airHaifa",
+        "iata": "E2",
+        "icao": "HFA"
+      },
+      "flight": {
+        "number": "802",
+        "iata": "E2802",
+        "icao": "HFA802",
+        "codeshared": null
+      },
+      "aircraft": {
+        "registration": null,
+        "iata": null,
+        "icao": null,
+        "icao24": "739602"
+      },
+      "live": null
+    },
+    {
+      "flight_date": "2026-05-08",
+      "flight_status": "cancelled",
+      "departure": {
+        "airport": "Haifa",
+        "timezone": "Asia/Jerusalem",
+        "iata": "HFA",
+        "icao": "LLHA",
+        "terminal": null,
+        "gate": null,
+        "delay": null,
+        "scheduled": "2026-05-08T08:00:00+00:00",
+        "estimated": "2026-05-08T08:00:00+00:00",
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "arrival": {
+        "airport": "Larnaca",
+        "timezone": "Asia/Nicosia",
+        "iata": "LCA",
+        "icao": "LCLK",
+        "terminal": null,
+        "gate": null,
+        "baggage": null,
+        "scheduled": "2026-05-08T09:00:00+00:00",
+        "delay": null,
+        "estimated": null,
+        "actual": null,
+        "estimated_runway": null,
+        "actual_runway": null
+      },
+      "airline": {
+        "name": "airHaifa",
+        "iata": "E2",
+        "icao": "HFA"
+      },
+      "flight": {
+        "number": "801",
+        "iata": "E2801",
+        "icao": "HFA801",
+        "codeshared": null
+      },
+      "aircraft": {
+        "registration": null,
+        "iata": null,
+        "icao": null,
+        "icao24": "739602"
+      },
+      "live": null
+    }
+  ]
+}
