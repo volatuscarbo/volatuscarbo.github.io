@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EU Legal Viewer — ETS Compliance Documents</title>
+<style>
+  :root {
+    --eu-blue: #003399;
+    --eu-gold: #FFCC00;
+    --eu-dark: #1a1a2e;
+    --eu-mid: #16213e;
+    --eu-card: #0f3460;
+    --text-light: #e8eaf6;
+    --text-muted: #9fa8da;
+    --text-dim: #7986cb;
+    --accent-green: #00e676;
+    --accent-amber: #ffab40;
+    --accent-blue: #40c4ff;
+    --border: rgba(255,255,255,0.1);
+    --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--eu-dark);
+    color: var(--text-light);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #001f6e 0%, #003399 60%, #0044bb 100%);
+    border-bottom: 3px solid var(--eu-gold);
+  }
+  .header-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .eu-stars { font-size: 28px; letter-spacing: 2px; color: var(--eu-gold); flex-shrink: 0; }
+  .header-text h1 { font-size: 1.5rem; font-weight: 700; color: #fff; }
+  .header-text p { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 3px; }
+  .audit-badge {
+    margin-left: auto;
+    background: rgba(0,230,118,0.15);
+    border: 1px solid var(--accent-green);
+    color: var(--accent-green);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 32px 64px; }
+  .info-bar {
+    background: rgba(0,51,153,0.3);
+    border: 1px solid rgba(0,51,153,0.6);
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin-bottom: 28px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    padding-left: 2px;
+  }
+  .doc-section { margin-bottom: 40px; }
+  .doc-card {
+    background: var(--eu-mid);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    transition: border-color 0.2s;
+  }
+  .doc-card:hover { border-color: rgba(255,204,0,0.3); }
+  .doc-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .doc-id {
+    background: var(--eu-blue);
+    color: var(--eu-gold);
+    font-weight: 700;
+    font-size: 0.78rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+  .doc-title { flex: 1; }
+  .doc-title h2 { font-size: 1.05rem; font-weight: 600; color: #fff; line-height: 1.4; }
+  .doc-title .doc-type {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    background: rgba(121,134,203,0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .status-pill {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    letter-spacing: 0.3px;
+  }
+  .status-in-force {
+    background: rgba(0,230,118,0.15);
+    color: var(--accent-green);
+    border: 1px solid rgba(0,230,118,0.3);
+  }
+  .last-updated { font-size: 0.7rem; color: var(--text-dim); margin-top: 4px; }
+  .doc-links {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .link-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    text-decoration: none;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .link-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+  }
+  .link-card.consolidated::before { background: var(--accent-green); }
+  .link-card.original::before     { background: var(--accent-blue); }
+  .link-card.amendment::before    { background: var(--accent-amber); }
+  .link-card.official::before     { background: var(--text-dim); }
+  .link-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  }
+  .link-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .link-card.consolidated .link-label { color: var(--accent-green); }
+  .link-card.original .link-label     { color: var(--accent-blue); }
+  .link-card.amendment .link-label    { color: var(--accent-amber); }
+  .link-card.official .link-label     { color: var(--text-dim); }
+  .link-title { font-size: 0.85rem; color: var(--text-light); font-weight: 500; line-height: 1.35; }
+  .link-date  { font-size: 0.72rem; color: var(--text-muted); }
+  .link-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,0.2);
+    font-size: 1rem;
+    transition: color 0.2s, right 0.2s;
+  }
+  .link-card:hover .link-arrow { color: rgba(255,255,255,0.5); right: 10px; }
+  .amendments-toggle {
+    width: 100%;
+    background: rgba(255,171,64,0.08);
+    border: none;
+    border-top: 1px solid var(--border);
+    padding: 12px 24px;
+    text-align: left;
+    color: var(--accent-amber);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+  }
+  .amendments-toggle:hover { background: rgba(255,171,64,0.14); }
+  .amendments-toggle .chevron { margin-left: auto; transition: transform 0.2s; font-size: 0.7rem; }
+  .amendments-toggle.open .chevron { transform: rotate(180deg); }
+  .amendments-list {
+    display: none;
+    padding: 0 24px 16px;
+    border-top: 1px solid rgba(255,171,64,0.1);
+  }
+  .amendments-list.open { display: block; }
+  .amendment-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .amendment-item:last-child { border-bottom: none; }
+  .amendment-ref { font-size: 0.78rem; font-weight: 600; color: var(--accent-amber); min-width: 140px; }
+  .amendment-desc { font-size: 0.8rem; color: var(--text-muted); flex: 1; }
+  .amendment-link {
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+    text-decoration: none;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border: 1px solid rgba(64,196,255,0.3);
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+  .amendment-link:hover { background: rgba(64,196,255,0.1); border-color: var(--accent-blue); }
+  footer {
+    background: rgba(0,0,0,0.3);
+    border-top: 1px solid var(--border);
+    padding: 20px 32px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--eu-gold); }
+  @media (max-width: 640px) {
+    .doc-links { grid-template-columns: 1fr; }
+    .header-inner { flex-wrap: wrap; }
+    .audit-badge { margin-left: 0; }
+    main { padding: 20px 16px 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="eu-stars" title="European Union">&#9733; &#9733; &#9733;</div>
+    <div class="header-text">
+      <h1>EU ETS Legal Document Viewer</h1>
+      <p>EU Emissions Trading System &mdash; Official EUR-Lex References</p>
+    </div>
+    <div class="audit-badge">&#10003; Audit Ready</div>
+  </div>
+</header>
+
+<main>
+
+  <div class="info-bar">
+    <span>&#8505;&#65039;</span>
+    All links open the official EUR-Lex portal. This viewer contains no personal data and requires no server or internet connection to run. Consolidated texts incorporate all amendments up to the date shown.
+  </div>
+
+  <!-- DOCUMENT 1: Directive 2003/87/EC -->
+  <div class="doc-section">
+    <div class="section-label">Directive</div>
+    <div class="doc-card">
+      <div class="doc-header">
+        <div class="doc-id">2003/87/EC</div>
+        <div class="doc-title">
+          <h2>Directive 2003/87/EC &mdash; EU Emissions Trading System (EU ETS)</h2>
+          <span class="doc-type">Directive of the European Parliament and of the Council &middot; 13 October 2003</span>
+          <div class="last-updated">Latest consolidated: <strong style="color:#00e676">01 March 2024</strong></div>
+        </div>
+        <span class="status-pill status-in-force">In Force</span>
+      </div>
+
+      <div class="doc-links">
+        <a class="link-card consolidated"
+           href="https://eur-lex.europa.eu/eli/dir/2003/87"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Consolidated Version</span>
+          <span class="link-title">Latest Consolidated Text (all amendments incorporated)</span>
+          <span class="link-date">As of 01 March 2024</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card original"
+           href="https://eur-lex.europa.eu/eli/dir/2003/87/oj/eng"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Original Text</span>
+          <span class="link-title">Official Journal &mdash; Original 2003 Directive</span>
+          <span class="link-date">OJ L 275, 25.10.2003, p. 32&ndash;46</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card consolidated"
+           href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02003L0087-20240301"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Consolidated &mdash; CELEX Direct Link</span>
+          <span class="link-title">02003L0087-20240301</span>
+          <span class="link-date">01 March 2024 &mdash; most recent available</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card official"
+           href="https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32003L0087"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Document Overview</span>
+          <span class="link-title">All versions, amendments &amp; related acts</span>
+          <span class="link-date">EUR-Lex full document history</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+      </div>
+
+      <button class="amendments-toggle" onclick="toggleAmendments(this)">
+        &#128203; Key Amendments to Directive 2003/87/EC
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="amendments-list">
+        <div class="amendment-item">
+          <span class="amendment-ref">Dir. 2023/959/EU</span>
+          <span class="amendment-desc">&ldquo;Fit for 55&rdquo; &mdash; major reform, extends ETS to shipping &amp; buildings, creates ETS II. Entry into force 16 May 2023.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/eli/dir/2023/959/oj/eng" target="_blank" rel="noopener noreferrer">View &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">Dir. 2023/958/EU</span>
+          <span class="amendment-desc">Aviation amendment &mdash; integrates CORSIA, aligns with international carbon markets.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/eli/dir/2023/958/oj/eng" target="_blank" rel="noopener noreferrer">View &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">Dir. 2018/410/EU</span>
+          <span class="amendment-desc">Phase 4 reform (2021&ndash;2030) &mdash; Innovation Fund, Modernisation Fund, carbon leakage provisions.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/eli/dir/2018/410/oj/eng" target="_blank" rel="noopener noreferrer">View &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">Dir. 2009/29/EC</span>
+          <span class="amendment-desc">Phase 3 reform &mdash; auctioning as default, EU-wide cap, third country agreements.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/eli/dir/2009/29/oj/eng" target="_blank" rel="noopener noreferrer">View &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">Del. Reg. 2025/723</span>
+          <span class="amendment-desc">Supplements Dir. 2003/87 &mdash; yearly calculation of price differences for aviation fuels. Adopted 6 Feb 2025.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/search.html?query=2025%2F723&DB_TYPE_OF_ACT=regulation" target="_blank" rel="noopener noreferrer">Search &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">All amendments</span>
+          <span class="amendment-desc">Complete list of all amendments via EUR-Lex document history.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32003L0087" target="_blank" rel="noopener noreferrer">View all &#8594;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT 2: Regulation 2018/2066 (MRR) -->
+  <div class="doc-section">
+    <div class="section-label">Commission Implementing Regulation</div>
+    <div class="doc-card">
+      <div class="doc-header">
+        <div class="doc-id">2018/2066</div>
+        <div class="doc-title">
+          <h2>Regulation (EU) 2018/2066 &mdash; Monitoring and Reporting of GHG Emissions (MRR)</h2>
+          <span class="doc-type">Commission Implementing Regulation &middot; 19 December 2018</span>
+          <div class="last-updated">Latest consolidated: <strong style="color:#00e676">27 May 2025</strong></div>
+        </div>
+        <span class="status-pill status-in-force">In Force</span>
+      </div>
+
+      <div class="doc-links">
+        <a class="link-card consolidated"
+           href="https://eur-lex.europa.eu/eli/reg/2018/2066"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Consolidated Version</span>
+          <span class="link-title">Latest Consolidated Text (all amendments incorporated)</span>
+          <span class="link-date">As of 27 May 2025</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card original"
+           href="https://eur-lex.europa.eu/eli/reg_impl/2018/2066/oj/eng"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Original Text</span>
+          <span class="link-title">Official Journal &mdash; Original 2018 Regulation</span>
+          <span class="link-date">OJ L 334, 31.12.2018</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card consolidated"
+           href="https://eur-lex.europa.eu/eli/reg_impl/2018/2066/2024-07-01"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Consolidated &mdash; 2024 Version</span>
+          <span class="link-title">02018R2066-20240701</span>
+          <span class="link-date">01 July 2024</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card official"
+           href="https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32018R2066"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Document Overview</span>
+          <span class="link-title">All versions, amendments &amp; related acts</span>
+          <span class="link-date">EUR-Lex full document history</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+      </div>
+
+      <button class="amendments-toggle" onclick="toggleAmendments(this)">
+        &#128203; Key Amendments to Regulation 2018/2066
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="amendments-list">
+        <div class="amendment-item">
+          <span class="amendment-ref">Reg. 2023/2122</span>
+          <span class="amendment-desc">Phase 4 update &mdash; MRV rules for new sectors (shipping), alignment with &ldquo;Fit for 55&rdquo; package.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/search.html?query=2023%2F2122+monitoring+reporting&DB_TYPE_OF_ACT=regulation" target="_blank" rel="noopener noreferrer">Search &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">Reg. 2020/2085</span>
+          <span class="amendment-desc">Phase 4 transition &mdash; updated monitoring plan rules, biomass provisions.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/search.html?query=2020%2F2085+monitoring+reporting&DB_TYPE_OF_ACT=regulation" target="_blank" rel="noopener noreferrer">Search &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">All amendments</span>
+          <span class="amendment-desc">Complete amendment history via EUR-Lex document page.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32018R2066" target="_blank" rel="noopener noreferrer">View all &#8594;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCUMENT 3: Regulation 2018/2067 (AVR) -->
+  <div class="doc-section">
+    <div class="section-label">Commission Implementing Regulation</div>
+    <div class="doc-card">
+      <div class="doc-header">
+        <div class="doc-id">2018/2067</div>
+        <div class="doc-title">
+          <h2>Regulation (EU) 2018/2067 &mdash; Verification of GHG Reports &amp; Accreditation of Verifiers (AVR)</h2>
+          <span class="doc-type">Commission Implementing Regulation &middot; 19 December 2018</span>
+          <div class="last-updated">Latest consolidated: <strong style="color:#00e676">22 June 2025</strong></div>
+        </div>
+        <span class="status-pill status-in-force">In Force</span>
+      </div>
+
+      <div class="doc-links">
+        <a class="link-card consolidated"
+           href="https://eur-lex.europa.eu/eli/reg_impl/2018/2067/2025-06-22/eng"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Consolidated Version</span>
+          <span class="link-title">Latest Consolidated Text (all amendments incorporated)</span>
+          <span class="link-date">As of 22 June 2025</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card original"
+           href="https://eur-lex.europa.eu/eli/reg_impl/2018/2067/oj/eng"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Original Text</span>
+          <span class="link-title">Official Journal &mdash; Original 2018 Regulation</span>
+          <span class="link-date">OJ L 334, 31.12.2018</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card consolidated"
+           href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02018R2067-20250101"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Consolidated &mdash; Jan 2025</span>
+          <span class="link-title">02018R2067-20250101</span>
+          <span class="link-date">01 January 2025</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+        <a class="link-card official"
+           href="https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32018R2067"
+           target="_blank" rel="noopener noreferrer">
+          <span class="link-label">Document Overview</span>
+          <span class="link-title">All versions, amendments &amp; related acts</span>
+          <span class="link-date">EUR-Lex full document history</span>
+          <span class="link-arrow">&#8599;</span>
+        </a>
+      </div>
+
+      <button class="amendments-toggle" onclick="toggleAmendments(this)">
+        &#128203; Key Amendments to Regulation 2018/2067
+        <span class="chevron">&#9660;</span>
+      </button>
+      <div class="amendments-list">
+        <div class="amendment-item">
+          <span class="amendment-ref">Reg. (phase 4)</span>
+          <span class="amendment-desc">Amendments extending accreditation rules to new sectors under ETS expansion (shipping, buildings).</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/search.html?query=2067+verification+accreditation+amendment&DB_TYPE_OF_ACT=regulation" target="_blank" rel="noopener noreferrer">Search &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">Consolidated 2021</span>
+          <span class="amendment-desc">Phase 4 transition &mdash; updated competency requirements for verifiers, accreditation body obligations.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/eli/reg_impl/2018/2067/2021-01-01" target="_blank" rel="noopener noreferrer">View &#8594;</a>
+        </div>
+        <div class="amendment-item">
+          <span class="amendment-ref">All amendments</span>
+          <span class="amendment-desc">Complete amendment history via EUR-Lex document page.</span>
+          <a class="amendment-link" href="https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=CELEX:32018R2067" target="_blank" rel="noopener noreferrer">View all &#8594;</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Reference -->
+  <div style="margin-top:8px">
+    <div class="section-label">Quick Reference &mdash; EUR-Lex</div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+      <a href="https://eur-lex.europa.eu/collection/eu-law/consleg.html"
+         target="_blank" rel="noopener noreferrer"
+         class="link-card official" style="padding:12px 14px;">
+        <span class="link-label">EUR-Lex</span>
+        <span class="link-title">Consolidated Acts Collection</span>
+        <span class="link-arrow">&#8599;</span>
+      </a>
+      <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=LEGISSUM:l28012"
+         target="_blank" rel="noopener noreferrer"
+         class="link-card official" style="padding:12px 14px;">
+        <span class="link-label">EUR-Lex</span>
+        <span class="link-title">EU ETS Legislative Summary</span>
+        <span class="link-arrow">&#8599;</span>
+      </a>
+      <a href="https://climate.ec.europa.eu/eu-action/eu-emissions-trading-system-eu-ets_en"
+         target="_blank" rel="noopener noreferrer"
+         class="link-card official" style="padding:12px 14px;">
+        <span class="link-label">European Commission</span>
+        <span class="link-title">EU ETS &mdash; Official Commission Page</span>
+        <span class="link-arrow">&#8599;</span>
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <p>
+    EU ETS Legal Viewer &middot; Data sourced from <a href="https://eur-lex.europa.eu" target="_blank" rel="noopener noreferrer">EUR-Lex</a> &middot;
+    No personal data collected &middot; Self-contained &mdash; no server required &middot;
+    <span id="build-date"></span>
+  </p>
+</footer>
+
+<script>
+  document.getElementById('build-date').textContent =
+    'Viewer built: ' + new Date().toLocaleDateString('en-GB', {year:'numeric',month:'long',day:'numeric'});
+
+  function toggleAmendments(btn) {
+    btn.classList.toggle('open');
+    btn.nextElementSibling.classList.toggle('open');
+  }
+</script>
+</body>
+</html>
