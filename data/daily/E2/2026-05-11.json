@@ -5,7 +5,7 @@
   "flights": [
     {
       "flight_date": "2026-05-11",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Larnaca",
         "timezone": "Asia/Nicosia",
@@ -16,9 +16,9 @@
         "delay": null,
         "scheduled": "2026-05-11T20:10:00+00:00",
         "estimated": "2026-05-11T20:10:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "actual": "2026-05-11T20:17:00+00:00",
+        "estimated_runway": "2026-05-11T20:17:00+00:00",
+        "actual_runway": "2026-05-11T20:17:00+00:00"
       },
       "arrival": {
         "airport": "Haifa",
@@ -29,8 +29,8 @@
         "gate": null,
         "baggage": null,
         "scheduled": "2026-05-11T21:10:00+00:00",
-        "delay": null,
-        "estimated": null,
+        "delay": 8,
+        "estimated": "2026-05-11T20:56:00+00:00",
         "actual": null,
         "estimated_runway": null,
         "actual_runway": null
@@ -56,7 +56,7 @@
     },
     {
       "flight_date": "2026-05-11",
-      "flight_status": "scheduled",
+      "flight_status": null,
       "departure": {
         "airport": "Haifa",
         "timezone": "Asia/Jerusalem",
@@ -107,7 +107,7 @@
     },
     {
       "flight_date": "2026-05-11",
-      "flight_status": "scheduled",
+      "flight_status": null,
       "departure": {
         "airport": "Haifa",
         "timezone": "Asia/Jerusalem",
@@ -149,25 +149,16 @@
         "codeshared": null
       },
       "aircraft": {
-        "registration": "4X-IHE",
-        "iata": "AT76",
-        "icao": "AT76",
+        "registration": null,
+        "iata": null,
+        "icao": null,
         "icao24": "739604"
       },
-      "live": {
-        "updated": "2026-05-11T14:19:37+00:00",
-        "latitude": 37.6228,
-        "longitude": 25.1849,
-        "altitude": 5486.4,
-        "direction": 304,
-        "speed_horizontal": 437.072,
-        "speed_vertical": 0,
-        "is_ground": false
-      }
+      "live": null
     },
     {
       "flight_date": "2026-05-11",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Athens International Airport \"Eleftherios Venizelos\"",
         "timezone": "Europe/Athens",
@@ -191,7 +182,7 @@
         "gate": null,
         "baggage": null,
         "scheduled": "2026-05-11T20:50:00+00:00",
-        "delay": null,
+        "delay": 43,
         "estimated": null,
         "actual": null,
         "estimated_runway": null,
@@ -294,7 +285,7 @@
         "baggage": null,
         "scheduled": "2026-05-11T17:45:00+00:00",
         "delay": 13,
-        "estimated": "2026-05-11T17:43:00+00:00",
+        "estimated": "2026-05-11T17:38:00+00:00",
         "actual": null,
         "estimated_runway": null,
         "actual_runway": null
@@ -311,21 +302,12 @@
         "codeshared": null
       },
       "aircraft": {
-        "registration": "4X-IHC",
-        "iata": "AT76",
-        "icao": "AT76",
+        "registration": null,
+        "iata": null,
+        "icao": null,
         "icao24": "739602"
       },
-      "live": {
-        "updated": "2026-05-11T14:19:37+00:00",
-        "latitude": 33.4758,
-        "longitude": 34.0675,
-        "altitude": 3962.4,
-        "direction": 156,
-        "speed_horizontal": 577.824,
-        "speed_vertical": 0,
-        "is_ground": false
-      }
+      "live": null
     },
     {
       "flight_date": "2026-05-11",
