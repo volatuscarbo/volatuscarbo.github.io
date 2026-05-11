@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<!-- saved from url=(0264)file:///C:/Users/frank/AppData/Local/Packages/Claude_pzs8sxrjxfjjc/LocalCache/Roaming/Claude/local-agent-mode-sessions/55b50d96-d0b0-4490-b603-e36e2f844090/cc97cc4b-5b8e-4107-897f-0d26d57c3d01/local_b6a700c8-192e-4d10-9199-2085ed9d3975/outputs/eu-legal-viewer.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EU/UK Legal Viewer — ETS &amp; CORSIA</title>
+<style>
+  :root {
+    --blue: #003399;
+    --gold: #FFCC00;
+    --light: #f4f6fb;
+    --border: #d0d7e8;
+    --text: #1a1a2e;
+    --muted: #5a6380;
+    --green: #1a7a4a;
+    --red: #c0392b;
+    --orange: #d35400;
+    --tag-bg: #e8edf8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--light); color: var(--text); font-size: 14px; }
+
+  /* HEADER */
+  header {
+    background: var(--blue);
+    color: white;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 60px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .eu-stars { font-size: 22px; letter-spacing: 2px; color: var(--gold); }
+  header h1 { font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
+  header .subtitle { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+  .header-right { margin-left: auto; font-size: 11px; opacity: 0.65; }
+
+  /* NAV TABS */
+  nav { background: white; border-bottom: 2px solid var(--border); display: flex; gap: 0; padding: 0 24px; overflow-x: auto; }
+  nav button {
+    padding: 12px 20px; border: none; background: none; cursor: pointer;
+    font-size: 13px; font-weight: 500; color: var(--muted); border-bottom: 3px solid transparent;
+    margin-bottom: -2px; white-space: nowrap; transition: all 0.15s;
+  }
+  nav button:hover { color: var(--blue); }
+  nav button.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+  /* MAIN LAYOUT */
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* CARDS */
+  .card {
+    background: white; border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 20px; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .card-header {
+    background: var(--blue); color: white; padding: 12px 18px;
+    display: flex; align-items: center; gap: 10px; cursor: pointer;
+    user-select: none;
+  }
+  .card-header h2 { font-size: 14px; font-weight: 600; flex: 1; }
+  .card-header .badge {
+    background: var(--gold); color: var(--blue); border-radius: 12px;
+    padding: 2px 10px; font-size: 11px; font-weight: 700;
+  }
+  .card-header .toggle { font-size: 18px; transition: transform 0.2s; }
+  .card-header.collapsed .toggle { transform: rotate(-90deg); }
+  .card-body { padding: 18px; display: block; }
+  .card-body.hidden { display: none; }
+
+  /* REGULATION TABLE */
+  .reg-table { width: 100%; border-collapse: collapse; }
+  .reg-table th {
+    background: var(--tag-bg); color: var(--blue); font-size: 11px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border);
+  }
+  .reg-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 13px; }
+  .reg-table tr:last-child td { border-bottom: none; }
+  .reg-table tr:hover td { background: #f8f9ff; }
+
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 10px; font-weight: 700; margin: 1px 2px;
+  }
+  .tag-euets { background: #003399; color: white; }
+  .tag-corsia { background: #1a7a4a; color: white; }
+  .tag-ukets { background: #c0392b; color: white; }
+  .tag-mrv { background: #7c4dff; color: white; }
+  .tag-avr { background: #0097a7; color: white; }
+  .tag-amendment { background: #ff6f00; color: white; }
+  .tag-base { background: #455a64; color: white; }
+
+  .link-pill {
+    display: inline-block; background: var(--tag-bg); color: var(--blue);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; text-decoration: none; margin: 2px;
+    transition: background 0.15s;
+  }
+  .link-pill:hover { background: #d0d7f0; }
+  .link-pill.consolidated { border-color: var(--green); color: var(--green); }
+  .link-pill.amendment { border-color: var(--orange); color: var(--orange); }
+
+  /* STATUS PILLS */
+  .status { display: inline-block; border-radius: 10px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+  .status-force { background: #e8f5e9; color: #2e7d32; }
+  .status-pilot { background: #fff3e0; color: #e65100; }
+  .status-active { background: #e3f2fd; color: #1565c0; }
+
+  /* IMPACT MATRIX */
+  .impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .impact-card {
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  }
+  .impact-card-header {
+    padding: 10px 14px; font-weight: 700; font-size: 13px; color: white;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .impact-card-header.euets { background: var(--blue); }
+  .impact-card-header.corsia { background: var(--green); }
+  .impact-card-header.ukets { background: var(--red); }
+  .impact-card-body { padding: 14px; }
+
+  .impact-item {
+    border-left: 3px solid var(--border); padding: 8px 12px; margin-bottom: 10px;
+    background: #fafafa; border-radius: 0 6px 6px 0;
+  }
+  .impact-item.high { border-left-color: #c0392b; }
+  .impact-item.medium { border-left-color: #d35400; }
+  .impact-item.low { border-left-color: #1a7a4a; }
+  .impact-item h4 { font-size: 12px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+  .impact-item p { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .impact-level {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    padding: 1px 7px; border-radius: 8px; margin-bottom: 4px;
+  }
+  .level-high { background: #fde8e8; color: #c0392b; }
+  .level-medium { background: #fef3e2; color: #d35400; }
+  .level-low { background: #e8f5e9; color: #1a7a4a; }
+
+  /* TIMELINE */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .tl-item { position: relative; margin-bottom: 18px; }
+  .tl-dot {
+    position: absolute; left: -20px; top: 4px; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--blue); border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--blue);
+  }
+  .tl-dot.deadline { background: #c0392b; box-shadow: 0 0 0 2px #c0392b; }
+  .tl-dot.amendment { background: var(--orange); box-shadow: 0 0 0 2px var(--orange); }
+  .tl-date { font-size: 11px; font-weight: 700; color: var(--muted); }
+  .tl-title { font-size: 13px; font-weight: 600; margin: 2px 0; }
+  .tl-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* VERIFIER CHECKLIST */
+  .checklist { list-style: none; }
+  .checklist li {
+    padding: 8px 12px 8px 32px; border-bottom: 1px solid var(--border);
+    position: relative; font-size: 13px;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before { content: '☐'; position: absolute; left: 10px; color: var(--blue); font-size: 14px; }
+  .checklist li strong { color: var(--blue); }
+
+  /* ACCORDION */
+  .accordion { margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .accordion-btn {
+    width: 100%; text-align: left; background: var(--tag-bg); border: none;
+    padding: 10px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--text);
+  }
+  .accordion-btn:hover { background: #dce3f5; }
+  .accordion-content { padding: 14px; background: white; display: none; }
+  .accordion-content.open { display: block; }
+
+  /* MRV TABLE */
+  .mrv-table { width: 100%; border-collapse: collapse; }
+  .mrv-table th { background: var(--tag-bg); padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--blue); border: 1px solid var(--border); }
+  .mrv-table td { padding: 8px 10px; border: 1px solid var(--border); font-size: 12px; vertical-align: top; }
+  .mrv-table tr:nth-child(even) td { background: #fafbff; }
+
+  .section-title { font-size: 16px; font-weight: 700; color: var(--blue); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--gold); }
+  .intro-text { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 18px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  footer { text-align: center; color: var(--muted); font-size: 11px; padding: 20px; border-top: 1px solid var(--border); margin-top: 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eu-stars">★★★★★</div>
+  <div>
+    <h1>EU / UK Legal Viewer — ETS &amp; CORSIA</h1>
+    <div class="subtitle">Regulations 2003/87/EC · 2018/2066 · 2018/2067 · CORSIA · UK ETS</div>
+  </div>
+  <div class="header-right">Audit-ready reference · No personal data · v2.0</div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab(&#39;overview&#39;)">📋 Overview</button>
+  <button onclick="showTab(&#39;regulations&#39;)">📜 Regulations &amp; Amendments</button>
+  <button onclick="showTab(&#39;verifier&#39;)">🔍 Verifier Impact</button>
+  <button onclick="showTab(&#39;mrv&#39;)">📊 MRV Obligations</button>
+  <button onclick="showTab(&#39;deadlines&#39;)">📅 Key Deadlines</button>
+</nav>
+
+<main>
+
+  <!-- ===== OVERVIEW ===== -->
+  <div id="tab-overview" class="tab-panel active">
+    <p class="intro-text">
+      This tool provides a consolidated view of the three core EU/UK legal instruments governing aviation emissions trading and MRV,
+      with verifier-specific impact analysis for EU ETS, CORSIA, and UK ETS. All links go directly to EUR-Lex or official government sources.
+    </p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h2>🇪🇺 EU ETS — Directive 2003/87/EC</h2>
+          <span class="badge">Base Directive</span>
+          <span class="toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">
+            The foundation of the EU Emissions Trading System. Establishes the framework for cap-and-trade of greenhouse gas emissions, including aviation since 2012.
+          </p>
+          <div>
+            <span class="tag tag-euets">EU ETS</span>
+            <span class="tag tag-amendment">Multiple Amendments</span>
+          </div>
+          <br>
+          <a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02003L0087-20240101" target="_blank">📄 Latest Consolidated</a>
+          <a class="link-pill amendment" href="https://eur-lex.europa.eu/search.html?query=2003%2F87&amp;qid=&amp;scope=EURLEX&amp;type=quick&amp;lang=en&amp;andText0=amending+Directive+2003%2F87" target="_blank">📝 Amendments List</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h2>📊 MRR — Regulation 2018/2066</h2>
+          <span class="badge">Monitoring</span>
+          <span class="toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">
+            Commission Implementing Regulation on the monitoring and reporting of greenhouse gas emissions. Covers methodology, monitoring plans, and data quality.
+          </p>
+          <div>
+            <span class="tag tag-mrv">MRR</span>
+            <span class="tag tag-euets">EU ETS</span>
+          </div>
+          <br>
+          <a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02018R2066-20240101" target="_blank">📄 Latest Consolidated</a>
+          <a class="link-pill amendment" href="https://eur-lex.europa.eu/search.html?query=2018%2F2066&amp;scope=EURLEX&amp;type=quick&amp;lang=en" target="_blank">📝 Amendments List</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h2>✅ AVR — Regulation 2018/2067</h2>
+          <span class="badge">Verification</span>
+          <span class="toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">
+            Commission Implementing Regulation on the verification of data and accreditation of verifiers under Directive 2003/87/EC. Core document for verifier obligations.
+          </p>
+          <div>
+            <span class="tag tag-avr">AVR</span>
+            <span class="tag tag-euets">EU ETS</span>
+          </div>
+          <br>
+          <a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02018R2067-20240101" target="_blank">📄 Latest Consolidated</a>
+          <a class="link-pill amendment" href="https://eur-lex.europa.eu/search.html?query=2018%2F2067&amp;scope=EURLEX&amp;type=quick&amp;lang=en" target="_blank">📝 Amendments List</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h2>🌍 CORSIA — ICAO Annex 16 Vol. IV</h2>
+          <span class="badge">International</span>
+          <span class="toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">
+            ICAO's Carbon Offsetting and Reduction Scheme for International Aviation. Phase 1 (2024–2026) is now mandatory for 126 Member States. EU implementation via Delegated Reg. 2025/927.
+          </p>
+          <div>
+            <span class="tag tag-corsia">CORSIA</span>
+            <span class="tag tag-amendment">Phase 1 Active</span>
+          </div>
+          <br>
+          <a class="link-pill consolidated" href="https://www.icao.int/environmental-protection/CORSIA/Pages/default.aspx" target="_blank">📄 ICAO CORSIA Portal</a>
+          <a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32025R0927" target="_blank">📝 EU Delegated Reg. 2025/927</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h2>🇬🇧 UK ETS — SI 2020/1265</h2>
+          <span class="badge">Post-Brexit</span>
+          <span class="toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:10px;">
+            The UK's own ETS established after Brexit. Mirrors EU ETS structure but uses UKAS-accredited verifiers only. No cross-recognition of EU verifier accreditations.
+          </p>
+          <div>
+            <span class="tag tag-ukets">UK ETS</span>
+            <span class="tag tag-avr">UKAS</span>
+          </div>
+          <br>
+          <a class="link-pill consolidated" href="https://www.gov.uk/government/publications/participating-in-the-uk-ets/participating-in-the-uk-ets" target="_blank">📄 UK ETS Guidance</a>
+          <a class="link-pill amendment" href="https://www.gov.uk/guidance/uk-emissions-trading-scheme-for-aviation-how-to-comply" target="_blank">📝 Aviation Compliance</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REGULATIONS ===== -->
+  <div id="tab-regulations" class="tab-panel">
+    <p class="section-title">Regulations, Amendments &amp; Consolidated Acts</p>
+    <p class="intro-text">All three core instruments with their key amendments and direct links to EUR-Lex consolidated versions.</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>Directive 2003/87/EC — EU ETS Base Directive</h2>
+        <span class="badge">Latest: 2023/959</span>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+        <table class="reg-table">
+          <thead><tr><th>Instrument</th><th>Type</th><th>Key Changes</th><th>Links</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>2003/87/EC</strong></td>
+              <td><span class="tag tag-base">Base</span></td>
+              <td>Original ETS Directive — cap &amp; trade framework for EU</td>
+              <td><a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32003L0087" target="_blank">Original</a></td>
+            </tr>
+            <tr>
+              <td><strong>2008/101/EC</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Included aviation in EU ETS from 2012</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32008L0101" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>2018/410/EU</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Phase 4 (2021–2030) framework, innovation fund, MSR reform</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018L0410" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>2023/958/EU</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Aviation: full EEA scope restored, free allocation phase-out, SAF incentives, CORSIA interface</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023L0958" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>2023/959/EU</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Fit for 55: ETS2 (buildings/road), linear reduction factor to 4.3%, maritime inclusion</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023L0959" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>Consolidated (2024)</strong></td>
+              <td><span class="tag tag-base">Consolidated</span></td>
+              <td>Latest consolidated version incorporating all amendments</td>
+              <td><a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02003L0087-20240101" target="_blank">📄 Consolidated</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>Regulation 2018/2066 — Monitoring &amp; Reporting (MRR)</h2>
+        <span class="badge">Latest: 2024 amendment</span>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+        <table class="reg-table">
+          <thead><tr><th>Instrument</th><th>Type</th><th>Key Changes</th><th>Links</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>2018/2066/EU</strong></td>
+              <td><span class="tag tag-base">Base</span></td>
+              <td>Core MRR — monitoring plans, emission factors, tiers, data quality</td>
+              <td><a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2066" target="_blank">Original</a></td>
+            </tr>
+            <tr>
+              <td><strong>2020/2085/EU</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Technical corrections and clarifications to monitoring methodology</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32020R2085" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>2023/2122/EU</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Non-CO₂ aviation effects monitoring framework; new data requirements for contrails/NOx</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023R2122" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>2024 non-CO₂ Rules</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>New monitoring rules for non-CO₂ aviation emissions agreed Aug 2024</td>
+              <td><a class="link-pill amendment" href="https://climate.ec.europa.eu/news-your-voice/news/new-monitoring-rules-agreed-eu-ets-including-non-co2-emissions-aviation-sector-2024-08-30_en" target="_blank">EC News</a></td>
+            </tr>
+            <tr>
+              <td><strong>Consolidated (2024)</strong></td>
+              <td><span class="tag tag-base">Consolidated</span></td>
+              <td>Latest consolidated version</td>
+              <td><a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02018R2066-20240101" target="_blank">📄 Consolidated</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>Regulation 2018/2067 — Accreditation &amp; Verification (AVR)</h2>
+        <span class="badge">Latest: 2025/1192</span>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+        <table class="reg-table">
+          <thead><tr><th>Instrument</th><th>Type</th><th>Key Changes</th><th>Links</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>2018/2067/EU</strong></td>
+              <td><span class="tag tag-base">Base</span></td>
+              <td>Core AVR — verifier accreditation, verification process, ISO 17029, competence</td>
+              <td><a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067" target="_blank">Original</a></td>
+            </tr>
+            <tr>
+              <td><strong>2020/2084/EU</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Technical corrections to verification procedures</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32020R2084" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>2025/1192/EU</strong></td>
+              <td><span class="tag tag-amendment">Amendment</span></td>
+              <td>Latest amendment — updates to verification data requirements and accreditation aspects; June 2025</td>
+              <td><a class="link-pill amendment" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32025R1192" target="_blank">EUR-Lex</a></td>
+            </tr>
+            <tr>
+              <td><strong>Consolidated (2024)</strong></td>
+              <td><span class="tag tag-base">Consolidated</span></td>
+              <td>Latest consolidated version</td>
+              <td><a class="link-pill consolidated" href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A02018R2067-20240101" target="_blank">📄 Consolidated</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VERIFIER IMPACT ===== -->
+  <div id="tab-verifier" class="tab-panel">
+    <p class="section-title">Verifier Impact Analysis — EU ETS / CORSIA / UK ETS</p>
+    <p class="intro-text">
+      An impact assessment of regulatory requirements and recent amendments as they apply to accredited verifiers operating across EU ETS, CORSIA, and UK ETS aviation schemes.
+      Impact levels: <span class="impact-level level-high">HIGH</span> <span class="impact-level level-medium">MEDIUM</span> <span class="impact-level level-low">LOW</span>
+    </p>
+
+    <!-- Accreditation -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>🏛️ Accreditation Requirements</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+        <div class="impact-grid">
+          <div class="impact-card">
+            <div class="impact-card-header euets">🇪🇺 EU ETS</div>
+            <div class="impact-card-body">
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>ISO 17029 + National Accreditation Body</h4>
+                <p>Verifiers must be accredited by a NAB per Reg. 2018/2067 (AVR). Accreditation must cover the specific scope (aviation, stationary). Cross-border recognition via EA MLA applies.</p>
+              </div>
+              <div class="impact-item medium">
+                <span class="impact-level level-medium">MEDIUM</span>
+                <h4>AVR Amendment 2025/1192</h4>
+                <p>Latest amendment (June 2025) updates certain accreditation aspects. Verifiers must review whether their scope certificates remain valid under the new rules.</p>
+              </div>
+              <div class="impact-item low">
+                <span class="impact-level level-low">LOW</span>
+                <h4>Accreditation Regulation EC 765/2008</h4>
+                <p>General accreditation framework applies where AVR is silent. No direct action needed unless NAB issues new guidance.</p>
+              </div>
+            </div>
+          </div>
+          <div class="impact-card">
+            <div class="impact-card-header corsia">🌍 CORSIA</div>
+            <div class="impact-card-body">
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>ISO 14065 Accreditation Required</h4>
+                <p>CORSIA verifiers must be accredited under ISO 14065:2013 by a national accreditation body. Appendix 6, Section 2 of ICAO Annex 16 Vol. IV applies. Separate from EU ETS accreditation.</p>
+              </div>
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>ICAO Central Registry (CCR)</h4>
+                <p>Verifiers must be listed in the CORSIA Central Registry. Member State competent authorities manage eligibility. Check CCR before each engagement.</p>
+              </div>
+              <div class="impact-item medium">
+                <span class="impact-level level-medium">MEDIUM</span>
+                <h4>EU Implementation — Delegated Reg. 2025/927</h4>
+                <p>The EU adopted ICAO CORSIA MRV rules via Delegated Reg. 2025/927 (May 2025). EU-based verifiers must understand the interface between CORSIA and EU ETS obligations.</p>
+              </div>
+            </div>
+          </div>
+          <div class="impact-card">
+            <div class="impact-card-header ukets">🇬🇧 UK ETS</div>
+            <div class="impact-card-body">
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>UKAS Accreditation — Mandatory</h4>
+                <p>Only UKAS-accredited verifiers are accepted. EU member state accreditations (e.g. COFRAC, DAkkS, RvA) are NOT recognised for UK ETS. Verifiers serving both schemes need dual accreditation.</p>
+              </div>
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>No Physical UK Presence Required</h4>
+                <p>Verifiers do not need a UK registered office or physical presence — but UKAS accreditation is still mandatory. This creates scope for EU-based firms to hold both accreditations.</p>
+              </div>
+              <div class="impact-item low">
+                <span class="impact-level level-low">LOW</span>
+                <h4>UKAS Maintains Verifier List</h4>
+                <p>Operators must verify their verifier appears on the current UKAS list. Verifiers should ensure their scope certificate is current and covers aviation.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Audit Requirements -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>🔎 Audit &amp; Verification Methodology</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+        <div class="impact-grid">
+          <div class="impact-card">
+            <div class="impact-card-header euets">🇪🇺 EU ETS</div>
+            <div class="impact-card-body">
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>Reasonable Assurance Standard</h4>
+                <p>Verifiers must reach a reasonable assurance opinion. Strategic analysis, risk analysis, and verification plan required per AVR Articles 9–13.</p>
+              </div>
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>Non-CO₂ Aviation Monitoring (2024)</h4>
+                <p>New monitoring rules (Aug 2024) for non-CO₂ effects (contrails, NOx) from aviation. Verifiers must develop competence in reviewing these new data streams for affected operators.</p>
+              </div>
+              <div class="impact-item medium">
+                <span class="impact-level level-medium">MEDIUM</span>
+                <h4>Site Visits &amp; Remote Verification</h4>
+                <p>Risk-based approach to site visits. Remote verification tools permitted under specific conditions. Verifier must document rationale for approach chosen.</p>
+              </div>
+            </div>
+          </div>
+          <div class="impact-card">
+            <div class="impact-card-header corsia">🌍 CORSIA</div>
+            <div class="impact-card-body">
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>Emissions Report + Procedure Conformity</h4>
+                <p>CORSIA verification covers both the emissions data (reasonable assurance) and conformity of procedures with the regulation. Broader scope than EU ETS data-only verification.</p>
+              </div>
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>Verification Report Submission: 31 Jan</h4>
+                <p>Verified Emissions Units Cancellation Report must be submitted by 31 January. Verifier must complete work and issue report well before this date to allow operator submission.</p>
+              </div>
+              <div class="impact-item medium">
+                <span class="impact-level level-medium">MEDIUM</span>
+                <h4>SAF Methodology Changes (2025)</h4>
+                <p>Updated CORSIA default LCA values and SAF methodology (June 2025). Verifiers must apply current values when reviewing SAF credit claims.</p>
+              </div>
+            </div>
+          </div>
+          <div class="impact-card">
+            <div class="impact-card-header ukets">🇬🇧 UK ETS</div>
+            <div class="impact-card-body">
+              <div class="impact-item high">
+                <span class="impact-level level-high">HIGH</span>
+                <h4>Activity Level Data Verification</h4>
+                <p>Operators must submit a verification report for activity level data signed by a UKAS-accredited verifier. Small Emitters Tool (SET) reports also require independent verification.</p>
+              </div>
+              <div class="impact-item medium">
+                <span class="impact-level level-medium">MEDIUM</span>
+                <h4>SAF Treatment Consultation</h4>
+                <p>UK ETS SAF treatment consultation ongoing. Verifiers should monitor GOV.UK for finalised rules that will affect how SAF volumes are treated in verified emissions reports.</p>
+              </div>
+              <div class="impact-item low">
+                <span class="impact-level level-low">LOW</span>
+                <h4>Operator Responsibility for Verifier Scope</h4>
+                <p>Operators are responsible for ensuring their verifier is accredited for the correct scope. Verifiers should communicate scope clearly in engagement letters.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Regulatory Changes Impact -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>⚖️ Recent Regulatory Changes — Verifier Impact</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+
+        <div class="accordion">
+          <button class="accordion-btn" onclick="toggleAccordion(this)">
+            EU ETS Aviation Directive 2023/958 — Free Allocation Phase-Out &amp; CORSIA Interface
+            <span>▼</span>
+          </button>
+          <div class="accordion-content">
+            <p style="font-size:13px;margin-bottom:10px;color:var(--muted);">Directive 2023/958 restores full EEA scope for aviation ETS and phases out free allowances for aviation by 2026. Key verifier impacts:</p>
+            <ul style="font-size:13px;padding-left:18px;line-height:2;">
+              <li>Verifiers must understand the CORSIA/EU ETS interface — operators may have reduced EU ETS obligations for routes also covered by CORSIA offsetting.</li>
+              <li>Verification scope must correctly reflect which flights fall under EU ETS vs. CORSIA vs. both.</li>
+              <li>SAF incentive claims require documented evidence — verifiers must check sustainability certification (e.g. ISCC, RSB) is valid and in scope.</li>
+              <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32023L0958" target="_blank" style="color:var(--blue);">→ Read Directive 2023/958</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="accordion">
+          <button class="accordion-btn" onclick="toggleAccordion(this)">
+            AVR Amendment 2025/1192 — Updated Accreditation &amp; Verification Data Rules
+            <span>▼</span>
+          </button>
+          <div class="accordion-content">
+            <p style="font-size:13px;margin-bottom:10px;color:var(--muted);">The June 2025 amendment to Reg. 2018/2067 is the most recent update to verifier obligations. Key impacts:</p>
+            <ul style="font-size:13px;padding-left:18px;line-height:2;">
+              <li>Review updated accreditation requirements with your NAB — scope certificates may need updating.</li>
+              <li>Check whether any changes to verification data requirements affect your current audit procedures and templates.</li>
+              <li>Update internal quality management documentation (QMS) to reflect new requirements before next verification cycle.</li>
+              <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32025R1192" target="_blank" style="color:var(--blue);">→ Read Reg. 2025/1192</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="accordion">
+          <button class="accordion-btn" onclick="toggleAccordion(this)">
+            CORSIA Phase 1 (2024–2026) — Mandatory Participation &amp; Verifier Obligations
+            <span>▼</span>
+          </button>
+          <div class="accordion-content">
+            <p style="font-size:13px;margin-bottom:10px;color:var(--muted);">CORSIA Phase 1 began 1 January 2024. 126 ICAO Member States are participating. Key verifier impacts:</p>
+            <ul style="font-size:13px;padding-left:18px;line-height:2;">
+              <li>Verifiers must confirm they appear in the CORSIA Central Registry (CCR) before accepting mandates.</li>
+              <li>ISO 14065 accreditation is distinct from ISO 17029 (EU ETS). Both are needed for verifiers serving both schemes.</li>
+              <li>Verification covers procedure conformity in addition to emissions data — expand audit programs accordingly.</li>
+              <li>Offsetting requirement calculations use ICAO growth factor — verifiers must validate the operator's offsetting calculation methodology.</li>
+              <li><a href="https://www.icao.int/environmental-protection/CORSIA/Pages/default.aspx" target="_blank" style="color:var(--blue);">→ ICAO CORSIA Portal</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="accordion">
+          <button class="accordion-btn" onclick="toggleAccordion(this)">
+            Non-CO₂ Aviation Monitoring (MRR 2024 Amendment)
+            <span>▼</span>
+          </button>
+          <div class="accordion-content">
+            <p style="font-size:13px;margin-bottom:10px;color:var(--muted);">New monitoring rules for non-CO₂ aviation effects were agreed in August 2024. Key verifier impacts:</p>
+            <ul style="font-size:13px;padding-left:18px;line-height:2;">
+              <li>This is a monitoring/reporting requirement at present — not yet linked to the cap. However, verifiers should anticipate that verified non-CO₂ data will eventually feed into compliance obligations.</li>
+              <li>Build competence now in reviewing contrail and NOx monitoring data from airline operators.</li>
+              <li>Review what data operators are required to collect and ensure monitoring plans are updated accordingly.</li>
+              <li><a href="https://climate.ec.europa.eu/news-your-voice/news/new-monitoring-rules-agreed-eu-ets-including-non-co2-emissions-aviation-sector-2024-08-30_en" target="_blank" style="color:var(--blue);">→ EC Announcement</a></li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Verifier Checklist -->
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>✅ Verifier Audit Readiness Checklist</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+        <div class="two-col">
+          <div>
+            <p style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue);">Accreditation &amp; Scope</p>
+            <ul class="checklist">
+              <li>ISO 17029 accreditation current and in scope for aviation (EU ETS)</li>
+              <li>ISO 14065 accreditation current and listed in ICAO CCR (CORSIA)</li>
+              <li>UKAS accreditation current with aviation scope (UK ETS)</li>
+              <li>Reviewed <strong>AVR 2025/1192</strong> changes with NAB — scope certificate updated if needed</li>
+              <li>QMS documentation updated for latest AVR requirements</li>
+            </ul>
+          </div>
+          <div>
+            <p style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue);">Audit Process</p>
+            <ul class="checklist">
+              <li>Verification plan covers EU ETS / CORSIA / UK ETS scope correctly</li>
+              <li>CORSIA/EU ETS interface assessed — correct flight categorisation confirmed</li>
+              <li>SAF sustainability certificates checked and in scope</li>
+              <li>Non-CO₂ monitoring data reviewed where operator is required to report</li>
+              <li>Operator's offsetting calculation methodology (CORSIA) validated</li>
+              <li>CORSIA verification report ready for operator submission by 31 January</li>
+              <li>Site visit rationale documented (or remote verification justification recorded)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MRV ===== -->
+  <div id="tab-mrv" class="tab-panel">
+    <p class="section-title">MRV Obligations — Monitoring, Reporting &amp; Verification</p>
+    <p class="intro-text">Comparison of MRV requirements across EU ETS, CORSIA, and UK ETS for aviation operators and their verifiers.</p>
+
+    <div class="card">
+      <div class="card-header" onclick="toggleCard(this)">
+        <h2>Scheme Comparison — MRV Requirements</h2>
+        <span class="toggle">▼</span>
+      </div>
+      <div class="card-body">
+        <table class="mrv-table">
+          <thead>
+            <tr>
+              <th>Requirement</th>
+              <th>🇪🇺 EU ETS</th>
+              <th>🌍 CORSIA</th>
+              <th>🇬🇧 UK ETS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Legal Basis</strong></td>
+              <td>Dir. 2003/87/EC + Reg. 2018/2066 (MRR) + Reg. 2018/2067 (AVR)</td>
+              <td>ICAO Annex 16 Vol. IV + EU Del. Reg. 2025/927</td>
+              <td>SI 2020/1265 + UKAS accreditation requirements</td>
+            </tr>
+            <tr>
+              <td><strong>Monitoring Plan</strong></td>
+              <td>Required; approved by competent authority; changes need approval</td>
+              <td>Emissions Monitoring Plan (EMP) required; ICAO CORSIA SARPs apply</td>
+              <td>Required; approved by relevant UK authority (EA, SEPA, NRW)</td>
+            </tr>
+            <tr>
+              <td><strong>Reporting Period</strong></td>
+              <td>Calendar year (1 Jan – 31 Dec)</td>
+              <td>Calendar year; Pilot Phase ended 2023; Phase 1: 2024–2026</td>
+              <td>Calendar year (1 Jan – 31 Dec)</td>
+            </tr>
+            <tr>
+              <td><strong>Emissions Report Deadline</strong></td>
+              <td>31 March (verified report)</td>
+              <td>31 January (EUCR submission by operator)</td>
+              <td>31 March (verified report)</td>
+            </tr>
+            <tr>
+              <td><strong>Verifier Accreditation</strong></td>
+              <td>NAB per ISO 17029 / AVR (Reg. 2018/2067)</td>
+              <td>National body per ISO 14065 / ICAO Annex 16 Vol. IV App. 6</td>
+              <td>UKAS only — no EU cross-recognition</td>
+            </tr>
+            <tr>
+              <td><strong>Assurance Level</strong></td>
+              <td>Reasonable assurance</td>
+              <td>Reasonable assurance (emissions data + procedure conformity)</td>
+              <td>Reasonable assurance</td>
+            </tr>
+            <tr>
+              <td><strong>Non-CO₂ Scope</strong></td>
+              <td>New monitoring rules from 2024 (contrails, NOx) — reporting only for now</td>
+              <td>CO₂ only in Phase 1; SAF lifecycle covered separately</td>
+              <td>CO₂ only currently</td>
+            </tr>
+            <tr>
+              <td><strong>SAF Treatment</strong></td>
+              <td>Zero-rated CO₂ if certified; SAF incentive credits via Dir. 2023/958</td>
+              <td>CORSIA eligible fuels list; updated LCA values June 2025</td>
+              <td>Consultation ongoing — rules not yet finalised</td>
+            </tr>
+            <tr>
+              <td><strong>Flight Scope</strong></td>
+              <td>All EEA intra-flights + some international; CORSIA interface for international</td>
+              <td>International flights between participating ICAO Member States</td>
+              <td>UK domestic + UK-EEA routes (post-Brexit agreement)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DEADLINES ===== -->
+  <div id="tab-deadlines" class="tab-panel">
+    <p class="section-title">Key Dates &amp; Deadlines</p>
+    <p class="intro-text">Critical deadlines for operators and verifiers across EU ETS, CORSIA, and UK ETS for the current and upcoming compliance cycles.</p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h2>📅 Annual Compliance Calendar</h2>
+          <span class="toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot deadline"></div>
+              <div class="tl-date">31 January</div>
+              <div class="tl-title">CORSIA — Operator EUCR Submission</div>
+              <div class="tl-desc">Verified Emissions Units Cancellation Report submitted to competent authority. Verifier must complete work significantly before this date.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-date">28 February</div>
+              <div class="tl-title">EU ETS / UK ETS — Surrendering Deadline Notice</div>
+              <div class="tl-desc">Operators receive final offsetting requirements (CORSIA). Verification reports for emissions data should be well underway.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot deadline"></div>
+              <div class="tl-date">31 March</div>
+              <div class="tl-title">EU ETS &amp; UK ETS — Verified Emissions Report</div>
+              <div class="tl-desc">Operators submit verified annual emissions report to competent authority. Verifier must issue final verification report before this date.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot deadline"></div>
+              <div class="tl-date">30 April</div>
+              <div class="tl-title">EU ETS — Allowance Surrender Deadline</div>
+              <div class="tl-desc">Operators must surrender EUAs equal to verified emissions from previous year.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-date">30 April</div>
+              <div class="tl-title">UK ETS — Allowance Surrender Deadline</div>
+              <div class="tl-desc">UK operators surrender UKAs equal to verified emissions from previous year.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot amendment"></div>
+              <div class="tl-date">Q4 each year</div>
+              <div class="tl-title">Verifier Accreditation Review</div>
+              <div class="tl-desc">Annual check: confirm NAB / UKAS scope certificates are current; review any regulatory changes that affect accreditation scope for the coming year.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <h2>🗓️ Regulatory Milestones</h2>
+          <span class="toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="timeline">
+            <div class="tl-item">
+              <div class="tl-dot amendment"></div>
+              <div class="tl-date">1 Jan 2024</div>
+              <div class="tl-title">CORSIA Phase 1 Begins</div>
+              <div class="tl-desc">Mandatory participation for 126 ICAO Member States. Runs until 31 Dec 2026.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot amendment"></div>
+              <div class="tl-date">Aug 2024</div>
+              <div class="tl-title">Non-CO₂ MRR Rules Agreed</div>
+              <div class="tl-desc">New monitoring rules for aviation non-CO₂ effects (contrails, NOx) under EU ETS. Reporting only — not yet linked to cap.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot amendment"></div>
+              <div class="tl-date">2025</div>
+              <div class="tl-title">EU ETS Free Allocation Phase-Out</div>
+              <div class="tl-desc">Aviation free allowances being phased out per Dir. 2023/958. Full auctioning by 2026.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot amendment"></div>
+              <div class="tl-date">May 2025</div>
+              <div class="tl-title">EU Delegated Reg. 2025/927</div>
+              <div class="tl-desc">EU adopts ICAO CORSIA MRV measures — formalises CORSIA/EU ETS interface in EU law.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot amendment"></div>
+              <div class="tl-date">Jun 2025</div>
+              <div class="tl-title">AVR Amendment 2025/1192</div>
+              <div class="tl-desc">Latest amendment to Reg. 2018/2067 — verifiers must review accreditation and data verification requirements.</div>
+            </div>
+            <div class="tl-item">
+              <div class="tl-dot"></div>
+              <div class="tl-date">2026</div>
+              <div class="tl-title">CORSIA Phase 1 Ends / Phase 2 Prep</div>
+              <div class="tl-desc">CORSIA Phase 1 concludes 31 Dec 2026. Phase 2 scope to be confirmed by ICAO.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  EU/UK Legal Viewer · References: Directive 2003/87/EC · Reg. 2018/2066 · Reg. 2018/2067 · Reg. 2025/1192 · Del. Reg. 2025/927 · ICAO Annex 16 Vol. IV · SI 2020/1265 ·
+  No personal data processed · Audit-ready reference tool
+</footer>
+
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleCard(header) {
+    const body = header.nextElementSibling;
+    const isHidden = body.classList.contains('hidden');
+    body.classList.toggle('hidden', !isHidden);
+    header.classList.toggle('collapsed', !isHidden);
+  }
+
+  function toggleAccordion(btn) {
+    const content = btn.nextElementSibling;
+    content.classList.toggle('open');
+  }
+</script>
+
+
+</body></html>
