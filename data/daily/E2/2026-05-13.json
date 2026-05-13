@@ -5,7 +5,7 @@
   "flights": [
     {
       "flight_date": "2026-05-13",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Larnaca",
         "timezone": "Asia/Nicosia",
@@ -13,12 +13,12 @@
         "icao": "LCLK",
         "terminal": null,
         "gate": null,
-        "delay": null,
+        "delay": 8,
         "scheduled": "2026-05-13T20:10:00+00:00",
         "estimated": "2026-05-13T20:10:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "actual": "2026-05-13T20:32:00+00:00",
+        "estimated_runway": "2026-05-13T20:32:00+00:00",
+        "actual_runway": "2026-05-13T20:32:00+00:00"
       },
       "arrival": {
         "airport": "Haifa",
@@ -29,8 +29,8 @@
         "gate": null,
         "baggage": null,
         "scheduled": "2026-05-13T21:10:00+00:00",
-        "delay": null,
-        "estimated": null,
+        "delay": 23,
+        "estimated": "2026-05-13T21:18:00+00:00",
         "actual": null,
         "estimated_runway": null,
         "actual_runway": null
@@ -56,7 +56,7 @@
     },
     {
       "flight_date": "2026-05-13",
-      "flight_status": "scheduled",
+      "flight_status": "landed",
       "departure": {
         "airport": "Haifa",
         "timezone": "Asia/Jerusalem",
@@ -67,9 +67,9 @@
         "delay": null,
         "scheduled": "2026-05-13T18:30:00+00:00",
         "estimated": "2026-05-13T18:30:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "actual": "2026-05-13T18:37:00+00:00",
+        "estimated_runway": "2026-05-13T18:37:00+00:00",
+        "actual_runway": "2026-05-13T18:37:00+00:00"
       },
       "arrival": {
         "airport": "Larnaca",
@@ -81,10 +81,10 @@
         "baggage": null,
         "scheduled": "2026-05-13T19:30:00+00:00",
         "delay": null,
-        "estimated": null,
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "estimated": "2026-05-13T19:21:00+00:00",
+        "actual": "2026-05-13T19:24:00+00:00",
+        "estimated_runway": "2026-05-13T19:24:00+00:00",
+        "actual_runway": "2026-05-13T19:24:00+00:00"
       },
       "airline": {
         "name": "airHaifa",
@@ -107,7 +107,7 @@
     },
     {
       "flight_date": "2026-05-13",
-      "flight_status": "active",
+      "flight_status": "landed",
       "departure": {
         "airport": "Haifa",
         "timezone": "Asia/Jerusalem",
@@ -115,7 +115,7 @@
         "icao": "LLHA",
         "terminal": null,
         "gate": null,
-        "delay": null,
+        "delay": 6,
         "scheduled": "2026-05-13T14:30:00+00:00",
         "estimated": "2026-05-13T14:30:00+00:00",
         "actual": "2026-05-13T14:37:00+00:00",
@@ -131,11 +131,11 @@
         "gate": null,
         "baggage": "01",
         "scheduled": "2026-05-13T17:25:00+00:00",
-        "delay": null,
-        "estimated": "2026-05-13T17:13:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "delay": 6,
+        "estimated": "2026-05-13T17:29:00+00:00",
+        "actual": "2026-05-13T17:31:00+00:00",
+        "estimated_runway": "2026-05-13T17:31:00+00:00",
+        "actual_runway": "2026-05-13T17:31:00+00:00"
       },
       "airline": {
         "name": "airHaifa",
@@ -149,38 +149,29 @@
         "codeshared": null
       },
       "aircraft": {
-        "registration": "4X-IHD",
-        "iata": "AT76",
-        "icao": "AT76",
+        "registration": null,
+        "iata": null,
+        "icao": null,
         "icao24": "739603"
       },
-      "live": {
-        "updated": "2026-05-13T13:49:29+00:00",
-        "latitude": 36.8049,
-        "longitude": 26.6049,
-        "altitude": 4259.58,
-        "direction": 305,
-        "speed_horizontal": 442.628,
-        "speed_vertical": 0,
-        "is_ground": false
-      }
+      "live": null
     },
     {
       "flight_date": "2026-05-13",
-      "flight_status": "scheduled",
+      "flight_status": "active",
       "departure": {
         "airport": "Athens International Airport \"Eleftherios Venizelos\"",
         "timezone": "Europe/Athens",
         "iata": "ATH",
         "icao": "LGAV",
         "terminal": "M",
-        "gate": "4",
+        "gate": "A20",
         "delay": null,
         "scheduled": "2026-05-13T18:05:00+00:00",
         "estimated": "2026-05-13T18:05:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "actual": "2026-05-13T18:20:00+00:00",
+        "estimated_runway": "2026-05-13T18:20:00+00:00",
+        "actual_runway": "2026-05-13T18:20:00+00:00"
       },
       "arrival": {
         "airport": "Haifa",
@@ -192,7 +183,7 @@
         "baggage": null,
         "scheduled": "2026-05-13T20:50:00+00:00",
         "delay": 16,
-        "estimated": null,
+        "estimated": "2026-05-13T20:40:00+00:00",
         "actual": null,
         "estimated_runway": null,
         "actual_runway": null
@@ -260,21 +251,12 @@
         "codeshared": null
       },
       "aircraft": {
-        "registration": "4X-IHE",
-        "iata": "AT76",
-        "icao": "AT76",
+        "registration": null,
+        "iata": null,
+        "icao": null,
         "icao24": "739604"
       },
-      "live": {
-        "updated": "2026-05-13T13:59:50+00:00",
-        "latitude": 32.8018,
-        "longitude": 35.0474,
-        "altitude": 53.34,
-        "direction": 339.57,
-        "speed_horizontal": 201.6,
-        "speed_vertical": -11.7,
-        "is_ground": false
-      }
+      "live": null
     },
     {
       "flight_date": "2026-05-13",
@@ -289,9 +271,9 @@
         "delay": null,
         "scheduled": "2026-05-13T16:45:00+00:00",
         "estimated": "2026-05-13T16:45:00+00:00",
-        "actual": null,
-        "estimated_runway": null,
-        "actual_runway": null
+        "actual": "2026-05-13T17:04:00+00:00",
+        "estimated_runway": "2026-05-13T17:04:00+00:00",
+        "actual_runway": "2026-05-13T17:04:00+00:00"
       },
       "arrival": {
         "airport": "Haifa",
@@ -302,8 +284,8 @@
         "gate": null,
         "baggage": null,
         "scheduled": "2026-05-13T17:45:00+00:00",
-        "delay": null,
-        "estimated": null,
+        "delay": 20,
+        "estimated": "2026-05-13T17:41:00+00:00",
         "actual": null,
         "estimated_runway": null,
         "actual_runway": null
@@ -320,21 +302,12 @@
         "codeshared": null
       },
       "aircraft": {
-        "registration": "4X-IHC",
-        "iata": "AT76",
-        "icao": "AT76",
+        "registration": null,
+        "iata": null,
+        "icao": null,
         "icao24": "739602"
       },
-      "live": {
-        "updated": "2026-05-13T13:56:35+00:00",
-        "latitude": 34.8679,
-        "longitude": 33.6117,
-        "altitude": 0,
-        "direction": 225,
-        "speed_horizontal": 14.816,
-        "speed_vertical": 0,
-        "is_ground": true
-      }
+      "live": null
     },
     {
       "flight_date": "2026-05-13",
