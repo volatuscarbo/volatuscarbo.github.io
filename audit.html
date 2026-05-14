@@ -36,20 +36,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
 
-  /* ── AUTH ── */
-  #auth-screen {
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, var(--primary) 0%, #2d6a9f 100%);
-  }
-  .auth-card {
-    background: var(--surface); border-radius: 16px; padding: 48px 40px;
-    width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    text-align: center;
-  }
-  .auth-logo { font-size: 22px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-  .auth-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; }
-  .auth-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-  .auth-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
+  /* Auth CSS removed */
 
   /* ── LAYOUT ── */
   #app { display: flex; min-height: 100vh; }
@@ -205,7 +192,8 @@
   .modal-overlay.open { display: flex; }
   .modal {
     background: var(--surface); border-radius: 12px; width: 100%;
-    max-width: 680px; max-height: 90vh; overflow-y: auto;
+    max-width: 680px; max-height: 90vh;
+    display: flex; flex-direction: column; overflow: hidden;
     box-shadow: 0 20px 60px rgba(0,0,0,.2); animation: slideUp .2s ease;
   }
   .modal-lg { max-width: 860px; }
@@ -213,12 +201,13 @@
   .modal-header {
     padding: 20px 24px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
   }
   .modal-header h2 { font-size: 17px; font-weight: 700; }
   .modal-close { background: none; border: none; cursor: pointer; font-size: 20px; color: var(--text-muted); line-height: 1; }
   .modal-close:hover { color: var(--text); }
-  .modal-body { padding: 24px; }
-  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+  .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
 
   /* ── ALERT ── */
   .alert {
@@ -341,32 +330,195 @@
 
   /* nav section label */
   .nav-section { padding: 16px 16px 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: rgba(255,255,255,.35); text-transform: uppercase; }
+
+  /* ══ WORKFLOW MODAL ══════════════════════════════════════════════════ */
+  .wf-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1100;
+    background: rgba(15,23,42,.55); backdrop-filter: blur(2px);
+    align-items: center; justify-content: center;
+  }
+  .wf-overlay.open { display: flex; }
+  .wf-modal {
+    background: var(--surface); border-radius: 12px;
+    width: 96vw; height: 96vh; max-width: 1400px;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 80px rgba(0,0,0,.25);
+    overflow: hidden;
+  }
+  .wf-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; background: var(--primary); color: #fff;
+    flex-shrink: 0;
+  }
+  .wf-header h2 { font-size: 15px; font-weight: 700; letter-spacing:.3px; }
+  .wf-header .wf-meta { font-size: 12px; opacity:.65; margin-top:2px; }
+  .wf-close {
+    background: none; border: none; color: #fff; font-size: 22px;
+    cursor: pointer; opacity:.7; line-height:1; padding:4px 8px;
+    border-radius: 4px;
+  }
+  .wf-close:hover { opacity:1; background: rgba(255,255,255,.12); }
+
+  /* Tab bar */
+  .wf-tabs {
+    display: flex; background: #f1f5f9; border-bottom: 1px solid var(--border);
+    flex-shrink: 0; overflow-x: auto; gap: 2px; padding: 6px 12px 0;
+  }
+  .wf-tab {
+    padding: 8px 14px; border: none; background: none; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: var(--text-muted);
+    border-bottom: 3px solid transparent; white-space: nowrap;
+    border-radius: 6px 6px 0 0; transition: all .15s;
+  }
+  .wf-tab:hover { background: rgba(26,58,92,.06); color: var(--primary); }
+  .wf-tab.active {
+    color: var(--primary); border-bottom-color: var(--primary);
+    background: var(--surface);
+  }
+  .wf-tab .tab-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 10px;
+    margin-right: 6px;
+  }
+  .wf-tab.active .tab-num { background: var(--primary); }
+
+  /* Panel area */
+  .wf-panels { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .wf-panel { display: none; }
+  .wf-panel.active { display: block; }
+
+  /* Section title */
+  .wf-section-title {
+    font-size: 13px; font-weight: 700; color: var(--primary);
+    text-transform: uppercase; letter-spacing: .6px;
+    border-bottom: 2px solid var(--primary); padding-bottom: 6px;
+    margin: 22px 0 14px;
+  }
+  .wf-section-title:first-child { margin-top: 0; }
+
+  /* Declaration preview */
+  .wf-declaration {
+    background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;
+    padding: 20px 24px; font-size: 13px; line-height: 1.75; color: var(--text);
+    white-space: pre-wrap;
+  }
+  .wf-declaration strong { color: var(--primary); }
+
+  /* Checklist items */
+  .wf-check-item {
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+    margin-bottom: 10px; background: #fafbfc;
+    display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start;
+  }
+  .wf-check-item input[type=checkbox] { width:16px; height:16px; margin-top:2px; cursor:pointer; accent-color: var(--primary); }
+  .wf-check-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height:1.4; }
+  .wf-check-ref { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .wf-check-ref a { color: #2563eb; text-decoration: none; }
+  .wf-check-ref a:hover { text-decoration: underline; }
+  .wf-check-notes {
+    width: 100%; border: 1px solid var(--border); border-radius: 5px;
+    padding: 6px 8px; font-size: 12px; font-family: inherit;
+    resize: vertical; min-height: 36px; background: #fff;
+    color: var(--text);
+  }
+  .wf-check-notes:focus { outline: none; border-color: var(--primary); }
+
+  /* Form fields in workflow */
+  .wf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .wf-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .wf-grid.full { grid-template-columns: 1fr; }
+  .wf-field { display: flex; flex-direction: column; gap: 4px; }
+  .wf-field.span2 { grid-column: 1 / -1; }
+  .wf-field label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing:.4px; }
+  .wf-field input, .wf-field textarea, .wf-field select {
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px;
+    font-size: 13px; font-family: inherit; color: var(--text); background: #fff;
+  }
+  .wf-field input:focus, .wf-field textarea:focus, .wf-field select:focus {
+    outline: none; border-color: var(--primary);
+  }
+  .wf-field input[readonly] { background: #f5f7fa; color: var(--text-muted); }
+  .wf-field textarea { min-height: 72px; resize: vertical; }
+
+  /* Signature block */
+  .wf-sig-block {
+    border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px;
+    background: #f8fafc; margin-top: 16px;
+  }
+  .wf-sig-block .sig-line {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
+  }
+  .wf-sig-block .sig-label { font-size: 12px; font-weight: 700; color: var(--text-muted); min-width: 140px; }
+  .wf-sig-block input {
+    flex: 1; border: none; border-bottom: 2px solid var(--primary);
+    padding: 4px 6px; font-size: 14px; background: transparent;
+  }
+  .wf-sig-block input:focus { outline: none; }
+
+  /* Schedule / doc table */
+  .wf-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .wf-table th {
+    background: var(--primary); color: #fff; padding: 8px 12px;
+    font-size: 11px; text-align: left; font-weight: 700;
+  }
+  .wf-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .wf-table td input, .wf-table td textarea {
+    width: 100%; border: 1px solid var(--border); border-radius: 4px;
+    padding: 5px 7px; font-size: 12px; font-family: inherit; background: #fff;
+  }
+  .wf-table td textarea { min-height: 48px; resize: vertical; }
+  .wf-table .del-row { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px; padding: 2px 6px; }
+
+  /* Footer */
+  .wf-footer {
+    padding: 14px 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0; background: #f8fafc;
+  }
+  .wf-footer .save-status { font-size: 12px; color: var(--text-muted); font-style: italic; }
+  .wf-footer .wf-actions { display: flex; gap: 10px; }
+
+  /* Stub panels */
+  .wf-stub {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 280px; color: var(--text-muted); text-align: center; gap: 12px;
+  }
+  .wf-stub svg { opacity: .25; }
+  .wf-stub p { font-size: 14px; max-width: 320px; line-height: 1.6; }
+
+
+  /* ── Audit workflow tab bar (inside audit modal) ── */
+  .audit-wf-tabbar {
+    display: flex; flex-wrap: nowrap; overflow-x: auto;
+    background: #f0f4f8;
+    border-bottom: 2px solid var(--primary);
+    padding: 0 8px; gap: 2px;
+    flex-shrink: 0;
+  }
+  .audit-wf-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 9px 13px; border: none; background: transparent;
+    cursor: pointer; font-size: 12px; font-weight: 600;
+    color: #4a5568; white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px; border-radius: 6px 6px 0 0;
+    transition: all .15s; font-family: inherit;
+  }
+  .audit-wf-tab:hover { background: rgba(26,58,92,.08); color: var(--primary); }
+  .audit-wf-tab:active { background: rgba(26,58,92,.14); }
+  .audit-wf-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); color: #fff; font-size: 10px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
 </style>
 </head>
 <body>
 
-<!-- ══════════════════ AUTH SCREEN ══════════════════ -->
-<div id="auth-screen">
-  <div class="auth-card">
-    <div class="auth-logo">✈ ETSverification</div>
-    <div class="auth-sub">Aviation ETS Compliance</div>
-    <h2 class="auth-title">Sign in to Audit Tracker</h2>
-    <p class="auth-desc">Enter your email address and we'll send you a secure magic link to sign in.</p>
-    <div id="auth-alert"></div>
-    <div class="form-group" style="text-align:left; margin-bottom:14px;">
-      <label>Email Address</label>
-      <input type="email" id="auth-email" placeholder="your@etsverification.com" autocomplete="email"/>
-    </div>
-    <button class="btn btn-primary" style="width:100%; justify-content:center; padding:11px;" onclick="sendMagicLink()">
-      Send Magic Link
-    </button>
-    <div id="auth-success" style="display:none; margin-top:20px;">
-      <div class="alert alert-success">
-        ✓ Magic link sent! Check your email and click the link to sign in.
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Auth removed — no login required -->
 
 <!-- ══════════════════ APP ══════════════════ -->
 <div id="app" style="display:none;">
@@ -603,6 +755,35 @@
       <h2 id="audit-modal-title">New Audit</h2>
       <button class="modal-close" onclick="closeModal('audit-modal')">✕</button>
     </div>
+
+    <!-- ── 8 Workflow Tab buttons ─────────────────────────── -->
+    <div class="audit-wf-tabbar">
+      <button class="audit-wf-tab" onclick="openWfModal(0)" title="Independence Statement">
+        <span class="audit-wf-num">1</span>Independence
+      </button>
+      <button class="audit-wf-tab" onclick="openWfModal(1)" title="Due Diligence">
+        <span class="audit-wf-num">2</span>Due Diligence
+      </button>
+      <button class="audit-wf-tab" onclick="openWfModal(2)" title="Audit Plan">
+        <span class="audit-wf-num">3</span>Audit Plan
+      </button>
+      <button class="audit-wf-tab" onclick="openWfModal(3)" title="Test Plan">
+        <span class="audit-wf-num">4</span>Test Plan
+      </button>
+      <button class="audit-wf-tab" onclick="openWfModal(4)" title="Data Analysis">
+        <span class="audit-wf-num">5</span>Data Analysis
+      </button>
+      <button class="audit-wf-tab" onclick="openWfModal(5)" title="Verification Opinion">
+        <span class="audit-wf-num">6</span>Verif. Opinion
+      </button>
+      <button class="audit-wf-tab" onclick="openWfModal(6)" title="Independent Review">
+        <span class="audit-wf-num">7</span>Indep. Review
+      </button>
+      <button class="audit-wf-tab" onclick="openWfModal(7)" title="Submission">
+        <span class="audit-wf-num">8</span>Submission
+      </button>
+    </div>
+
     <div class="modal-body">
       <div id="audit-contract-alert"></div>
       <div class="form-grid cols-3">
@@ -655,6 +836,255 @@
     </div>
   </div>
 </div>
+
+<!-- Workflow Tabs Modal -->
+
+<!-- ══════════════════ WORKFLOW TABS MODAL ══════════════════ -->
+<div class="wf-overlay" id="wf-overlay">
+  <div class="wf-modal">
+    <div class="wf-header">
+      <div>
+        <h2 id="wf-title">Audit Workflow</h2>
+        <div class="wf-meta" id="wf-meta">– / –</div>
+      </div>
+      <button class="wf-close" onclick="closeWorkflow()">✕</button>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="wf-tabs">
+      <button class="wf-tab active" onclick="switchWfTab(0,this)"><span class="tab-num">1</span>Independence</button>
+      <button class="wf-tab" onclick="switchWfTab(1,this)"><span class="tab-num">2</span>Due Diligence</button>
+      <button class="wf-tab" onclick="switchWfTab(2,this)"><span class="tab-num">3</span>Audit Plan</button>
+      <button class="wf-tab" onclick="switchWfTab(3,this)"><span class="tab-num">4</span>Test Plan</button>
+      <button class="wf-tab" onclick="switchWfTab(4,this)"><span class="tab-num">5</span>Data Analysis</button>
+      <button class="wf-tab" onclick="switchWfTab(5,this)"><span class="tab-num">6</span>Verif. Opinion</button>
+      <button class="wf-tab" onclick="switchWfTab(6,this)"><span class="tab-num">7</span>Indep. Review</button>
+      <button class="wf-tab" onclick="switchWfTab(7,this)"><span class="tab-num">8</span>Submission</button>
+    </div>
+
+    <!-- Panels -->
+    <div class="wf-panels">
+
+      <!-- ── TAB 1: Independence Statement ─────────────────── -->
+      <div class="wf-panel active" id="wf-panel-0">
+        <div class="wf-section-title">Declaration of Independence and Impartiality</div>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+          Ref: <span id="wf-ind-ref-label">–</span> &nbsp;|&nbsp;
+          Regulatory basis: <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067" target="_blank" style="color:#2563eb;font-size:12px;">AVR Art. 43 &amp; 52 ↗</a> &nbsp;
+          <a href="https://european-accreditation.org/wp-content/uploads/2018/10/EA-6_03.pdf" target="_blank" style="color:#2563eb;font-size:12px;">EA-6/03 ↗</a>
+        </p>
+        <div class="wf-grid cols-3">
+          <div class="wf-field">
+            <label>Verification Body</label>
+            <input type="text" id="wf-vb-name" value="ETSverification GmbH"/>
+          </div>
+          <div class="wf-field">
+            <label>Accreditation Number</label>
+            <input type="text" id="wf-acc-number" placeholder="e.g. NAB-2024-001"/>
+          </div>
+          <div class="wf-field">
+            <label>Operator Name</label>
+            <input type="text" id="wf-ind-operator" readonly/>
+          </div>
+          <div class="wf-field">
+            <label>Reporting Year</label>
+            <input type="text" id="wf-ind-year" readonly/>
+          </div>
+          <div class="wf-field">
+            <label>Scheme</label>
+            <input type="text" id="wf-ind-scheme" readonly/>
+          </div>
+        </div>
+
+        <div class="wf-section-title" style="margin-top:20px;">Declaration Preview</div>
+        <div class="wf-declaration" id="wf-declaration-preview"></div>
+
+        <div class="wf-section-title" style="margin-top:20px;">Electronic Signature</div>
+        <div class="wf-sig-block">
+          <div class="sig-line">
+            <span class="sig-label">Signed (typed name):</span>
+            <input type="text" id="wf-sig-name" placeholder="Full name of authorized signatory" oninput="updateWfDeclaration()"/>
+          </div>
+          <div class="sig-line">
+            <span class="sig-label">Title:</span>
+            <input type="text" id="wf-sig-title" placeholder="e.g. Lead Verifier / Director" oninput="updateWfDeclaration()"/>
+          </div>
+          <div class="sig-line">
+            <span class="sig-label">Date signed:</span>
+            <input type="date" id="wf-sig-date" oninput="updateWfDeclaration()"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TAB 2: Due Diligence ─────────────────────────── -->
+      <div class="wf-panel" id="wf-panel-1">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+          Source: Due Diligence checklist per ETSverification procedure &nbsp;|&nbsp;
+          <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067" target="_blank" style="color:#2563eb;font-size:12px;">AVR (EU) 2018/2067 ↗</a>
+        </p>
+
+        <div class="wf-grid">
+          <div class="wf-field"><label>Lead Auditor</label><input type="text" id="wf-dd-auditor" placeholder="Auto-filled"/></div>
+          <div class="wf-field"><label>Reviewer</label><input type="text" id="wf-dd-reviewer" placeholder="Auto-filled"/></div>
+          <div class="wf-field"><label>Date Assessed</label><input type="date" id="wf-dd-date"/></div>
+        </div>
+
+        <div class="wf-section-title">A · Pre-contract</div>
+        <div id="wf-dd-pre"></div>
+
+        <div class="wf-section-title">B · Before the Audit</div>
+        <div id="wf-dd-before"></div>
+      </div>
+
+      <!-- ── TAB 3: Audit Plan ────────────────────────────── -->
+      <div class="wf-panel" id="wf-panel-2">
+        <div class="wf-section-title">1 · Audit Details</div>
+        <div class="wf-grid cols-3">
+          <div class="wf-field"><label>Audited Organisation</label><input type="text" id="wf-ap-org" readonly/></div>
+          <div class="wf-field"><label>Audited Year</label><input type="text" id="wf-ap-year" readonly/></div>
+          <div class="wf-field"><label>Location / Date</label><input type="text" id="wf-ap-location" value="Remote Audit"/></div>
+          <div class="wf-field"><label>Lead Auditor</label><input type="text" id="wf-ap-lead" readonly/></div>
+          <div class="wf-field"><label>Co-Auditors</label><input type="text" id="wf-ap-co" placeholder="Names, comma-separated"/></div>
+        </div>
+
+        <div class="wf-section-title">2 · Audit Type &amp; Applicable Norms</div>
+        <div class="wf-grid">
+          <div class="wf-field"><label>Audit Type</label><input type="text" id="wf-ap-type" placeholder="e.g. Full-year Verification CORSIA AEm Report"/></div>
+          <div class="wf-field"><label>Related Norms</label><input type="text" id="wf-ap-norms" placeholder="e.g. CORSIA SARPS, Annex 16 Vol IV, AVR, ISO 14065"/></div>
+        </div>
+
+        <div class="wf-section-title">3 · Audit Schedule (Kick-off)</div>
+        <table class="wf-table" id="wf-ap-schedule-table">
+          <thead><tr><th style="width:22%">Date / Time</th><th>Subject &amp; Activities</th><th style="width:22%">Client Attendee</th><th style="width:36px"></th></tr></thead>
+          <tbody id="wf-ap-schedule-body"></tbody>
+        </table>
+        <button class="btn btn-ghost btn-sm" onclick="addApRow('schedule')">+ Add Row</button>
+
+        <div class="wf-section-title">4 · Documents to be Submitted</div>
+        <table class="wf-table">
+          <thead><tr><th style="width:36px">✓</th><th>Document</th><th style="width:20%">Timing</th><th style="width:22%">Notes</th></tr></thead>
+          <tbody id="wf-ap-docs-body"></tbody>
+        </table>
+
+        <div class="wf-section-title">5 · Remote Audit Activities</div>
+        <table class="wf-table" id="wf-ap-activities-table">
+          <thead><tr><th style="width:22%">Date</th><th>Subject &amp; Activities</th><th style="width:22%">Client Attendee</th><th style="width:36px"></th></tr></thead>
+          <tbody id="wf-ap-activities-body"></tbody>
+        </table>
+        <button class="btn btn-ghost btn-sm" onclick="addApRow('activities')">+ Add Row</button>
+      </div>
+
+      <!-- ── TAB 4: Test Plan ─────────────────────────────── -->
+      <div class="wf-panel" id="wf-panel-3">
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+          Scheme references auto-filled from the audit's scheme.&nbsp;
+          <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067" target="_blank" style="color:#2563eb;font-size:12px;">AVR ↗</a>&nbsp;
+          <a href="https://www.icao.int/environmental-protection/CORSIA/Pages/CORSIA-Annex-16-Volume-IV.aspx" target="_blank" style="color:#2563eb;font-size:12px;">ICAO Annex 16 Vol IV ↗</a>
+        </p>
+        <div class="wf-section-title">Document Request</div>
+        <div id="wf-tp-docs"></div>
+        <div class="wf-section-title">Checklist</div>
+        <div id="wf-tp-checks"></div>
+      </div>
+
+      <!-- ── TAB 5: Data Analysis ─────────────────────────── -->
+      <div class="wf-panel" id="wf-panel-4">
+        <div class="wf-section-title">Data Analysis Findings</div>
+        <div class="wf-grid">
+          <div class="wf-field"><label>Analysis Date</label><input type="date" id="wf-da-date"/></div>
+          <div class="wf-field"><label>Performed By</label><input type="text" id="wf-da-by" placeholder="Auditor name"/></div>
+          <div class="wf-field span2"><label>Summary of Findings</label><textarea id="wf-da-summary" placeholder="Describe data analysis findings, anomalies, sampling results…"></textarea></div>
+          <div class="wf-field span2"><label>Materiality Assessment</label><textarea id="wf-da-materiality" placeholder="Quantify material misstatements; threshold applied…"></textarea></div>
+          <div class="wf-field span2"><label>Open Issues / Follow-up Required</label><textarea id="wf-da-issues" placeholder="List any unresolved issues requiring follow-up before opinion…"></textarea></div>
+        </div>
+        <div class="wf-stub" style="min-height:80px;align-items:flex-start;">
+          <p style="text-align:left;color:var(--text-muted);font-size:12px;">Additional detailed data analysis sections will be added here in a future update.</p>
+        </div>
+      </div>
+
+      <!-- ── TAB 6: Verification Opinion ─────────────────── -->
+      <div class="wf-panel" id="wf-panel-5">
+        <div class="wf-section-title">Verification Opinion</div>
+        <div class="wf-grid">
+          <div class="wf-field">
+            <label>Opinion Type <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067" target="_blank" style="color:#2563eb;font-size:11px;">AVR Art. 27 ↗</a></label>
+            <select id="wf-vo-type">
+              <option value="">Select…</option>
+              <option>Positive (Satisfied)</option>
+              <option>Qualified (Satisfied with exceptions)</option>
+              <option>Adverse (Not satisfied)</option>
+              <option>Disclaimed (Unable to reach conclusion)</option>
+            </select>
+          </div>
+          <div class="wf-field"><label>Opinion Date</label><input type="date" id="wf-vo-date"/></div>
+          <div class="wf-field span2"><label>Opinion Statement</label><textarea id="wf-vo-statement" placeholder="Full text of the verification opinion to be included in the report…"></textarea></div>
+          <div class="wf-field span2"><label>Findings / Misstatements</label><textarea id="wf-vo-findings" placeholder="List material misstatements, non-conformities or significant discrepancies found…"></textarea></div>
+          <div class="wf-field span2"><label>Recommendations</label><textarea id="wf-vo-recs" placeholder="Recommendations to the operator for corrective action or monitoring plan improvement…"></textarea></div>
+        </div>
+        <div class="wf-stub" style="min-height:60px;align-items:flex-start;">
+          <p style="text-align:left;color:var(--text-muted);font-size:12px;">Full verification opinion template will be added here in a future update.</p>
+        </div>
+      </div>
+
+      <!-- ── TAB 7: Independent Review ───────────────────── -->
+      <div class="wf-panel" id="wf-panel-6">
+        <div class="wf-section-title">Independent Review</div>
+        <div class="wf-grid">
+          <div class="wf-field"><label>Reviewer</label><input type="text" id="wf-ir-reviewer" readonly placeholder="Auto-filled from audit"/></div>
+          <div class="wf-field"><label>Review Date</label><input type="date" id="wf-ir-date"/></div>
+          <div class="wf-field span2"><label>Review Notes</label><textarea id="wf-ir-notes" placeholder="Independent reviewer's observations, checks performed, conclusions…"></textarea></div>
+          <div class="wf-field span2">
+            <label>Sign-off</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+              <input type="checkbox" id="wf-ir-signoff" style="width:18px;height:18px;accent-color:var(--primary);"/>
+              <span style="font-size:13px;">I confirm this audit file has been independently reviewed and is ready for submission.</span>
+            </div>
+          </div>
+        </div>
+        <div class="wf-stub" style="min-height:60px;align-items:flex-start;">
+          <p style="text-align:left;color:var(--text-muted);font-size:12px;">Full independent review checklist will be added here in a future update.</p>
+        </div>
+      </div>
+
+      <!-- ── TAB 8: Submission ─────────────────────────────── -->
+      <div class="wf-panel" id="wf-panel-7">
+        <div class="wf-section-title">Submission Details</div>
+        <div class="wf-grid">
+          <div class="wf-field"><label>Submission Date</label><input type="date" id="wf-sub-date"/></div>
+          <div class="wf-field"><label>Submitted To (Competent Authority)</label><input type="text" id="wf-sub-ca" placeholder="e.g. Luftfahrt-Bundesamt (LBA)"/></div>
+          <div class="wf-field"><label>Submission Reference Number</label><input type="text" id="wf-sub-ref" placeholder="e.g. AVR-2026-00123"/></div>
+          <div class="wf-field"><label>Submission Method</label>
+            <select id="wf-sub-method">
+              <option value="">Select…</option>
+              <option>AGES Portal</option>
+              <option>Email to C.A.</option>
+              <option>National Registry</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="wf-field span2"><label>Notes</label><textarea id="wf-sub-notes" placeholder="Any remarks about the submission process or confirmation received…"></textarea></div>
+          <div class="wf-field span2">
+            <label>Submitted</label>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+              <input type="checkbox" id="wf-sub-done" style="width:18px;height:18px;accent-color:var(--primary);"/>
+              <span style="font-size:13px;">Audit has been submitted to the competent authority.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /wf-panels -->
+
+    <div class="wf-footer">
+      <span class="save-status" id="wf-save-status">Changes saved locally</span>
+      <div class="wf-actions">
+        <button class="btn btn-ghost" onclick="closeWorkflow()">Close</button>
+        <button class="btn btn-primary" onclick="saveWorkflow()">💾 Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- Invoice Creation Modal -->
 <div class="modal-overlay" id="invoice-modal">
@@ -958,78 +1388,15 @@ let editingAuditorId = null;
 let operatorsCache = [];
 let auditorsCache = [];
 
-// ── REDIRECT URL (dynamic — always points back to this page) ──
-function getRedirectUrl() {
-  return window.location.origin + window.location.pathname;
-}
-
-// ── INIT ──────────────────────────────────────────────────
-window.addEventListener('load', async () => {
-  // Handle magic link callback — Supabase returns ?code= in the URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const code = urlParams.get('code');
-  const urlError = urlParams.get('error');
-
-  if (urlError) {
-    document.getElementById('auth-screen').style.display = 'flex';
-    document.getElementById('auth-alert').innerHTML = `<div class="alert alert-danger">Sign-in failed: ${urlParams.get('error_description') || urlError}</div>`;
-    window.history.replaceState({}, document.title, window.location.pathname);
-    return;
-  }
-
-  if (code) {
-    // Exchange the code for a session
-    const { data, error } = await db.auth.exchangeCodeForSession(window.location.href);
-    // Clean the URL
-    window.history.replaceState({}, document.title, window.location.pathname);
-    if (!error && data?.session) {
-      currentUser = data.session.user;
-      showApp();
-      return;
-    }
-  }
-
-  // Normal session check (already logged in)
-  const { data: { session } } = await db.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    showApp();
-  } else {
-    document.getElementById('auth-screen').style.display = 'flex';
-  }
-
-  db.auth.onAuthStateChange((event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      currentUser = session.user;
-      document.getElementById('auth-screen').style.display = 'none';
-      showApp();
-    }
-    if (event === 'SIGNED_OUT') {
-      currentUser = null;
-      document.getElementById('app').style.display = 'none';
-      document.getElementById('auth-screen').style.display = 'flex';
-    }
-  });
+// ── INIT (no auth — open directly) ────────────────────────
+window.addEventListener('load', () => {
+  currentUser = { email: 'local' };
+  showApp();
 });
-
-async function sendMagicLink() {
-  const email = document.getElementById('auth-email').value.trim();
-  const alertEl = document.getElementById('auth-alert');
-  if (!email) { alertEl.innerHTML = '<div class="alert alert-danger">Please enter your email address.</div>'; return; }
-  alertEl.innerHTML = '';
-  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: getRedirectUrl() } });
-  if (error) { alertEl.innerHTML = `<div class="alert alert-danger">${error.message}</div>`; return; }
-  document.getElementById('auth-success').style.display = 'block';
-}
-
-async function signOut() {
-  await db.auth.signOut();
-}
 
 async function showApp() {
   document.getElementById('app').style.display = 'flex';
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('user-email-display').textContent = currentUser?.email || '';
+  document.getElementById('user-email-display').textContent = 'ETSverification';
   await Promise.all([loadOperatorsCache(), loadAuditorsCache()]);
   navigate('dashboard');
 }
@@ -1291,7 +1658,7 @@ function populateAuditFormDropdowns() {
   revSel.innerHTML = revOpts;
 }
 
-async function checkContract() {
+async function checkContract() { updateWfBtnVisibility();
   const opId   = document.getElementById('f-operator').value;
   const scheme = document.getElementById('f-scheme').value;
   const year   = parseInt(document.getElementById('f-audit-year').value);
@@ -2363,6 +2730,482 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
     if (e.target === overlay) closeModal(overlay.id);
   });
 });
+
+function showConfirm(title, message, onConfirm) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-message').textContent = message;
+  const btn = document.getElementById('confirm-ok-btn');
+  btn.onclick = () => { onConfirm(); closeModal('confirm-modal'); };
+  openModal('confirm-modal');
+}
+
+/* ══════════════════════════════════════════════
+   WORKFLOW TABS — localStorage-backed
+   ══════════════════════════════════════════════ */
+
+let wfAuditId   = null;   // audit_id or 'new'
+let wfAuditData = {};     // {operator, year, scheme, auditor, reviewer}
+let wfActiveTab = 0;
+
+// ── Due Diligence checklist data ─────────────
+const DD_PRE = [
+  { id:'dd_pre_1', label:'Determine whether the operator's GHG emissions fall within the verification framework scope.', ref:'AVR Art. 3', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_pre_2', label:'Review of information supplied by the operator to determine scope and assess whether engagement falls within accreditation scope.', ref:'AVR Art. 7', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_pre_3', label:'Evaluate the risks involved to undertake the verification of the operator's report in accordance with this Regulation.', ref:'AVR Art. 8', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_pre_4', label:'Determine the time allocation needed to properly carry out the verification (e.g. earlier submission date of AEm report).', ref:'AVR Art. 8', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_pre_5', label:'Assess whether ETSverification has the competence, personnel and resources required to select a verification team capable of dealing with the complexity of the aircraft operator's activities and fleet.', ref:'AVR Art. 9', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_pre_6', label:'Assess whether ETSverification is capable of ensuring the potential verification team holds all competence and persons required to carry out verification activities for that specific operator.', ref:'AVR Art. 9', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+];
+const DD_BEFORE = [
+  { id:'dd_bef_1', label:'Determine whether any national legislation or national requirements have to be considered for the verification.', ref:'AVR Art. 5', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_bef_2', label:'Assess the independence of the verifier and its organisation so that no conflict of interest is assured.', ref:'AVR Art. 43', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_bef_3', label:'Has approval from the relevant state authority for a remote verification been obtained in writing?', ref:'AVR Art. 31', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_bef_4', label:'Are previous and actual data and reports available?', ref:'AVR Art. 10', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_bef_5', label:'Has the customer received the current version of the service agreement, and has the signed agreement been obtained prior to the start of activities?', ref:'AVR Art. 7', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_bef_6', label:'Assess whether there exists any actual or potential conflict of interest (current or historical) in the selected members of the verification team when working in the current engagement.', ref:'AVR Art. 43', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_bef_7', label:'Assure that the leader of the verification team has undertaken fewer than six annual verifications for the same operator. If more, a three-year break is required.', ref:'AVR Art. 44', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+  { id:'dd_bef_8', label:'Is the customer using an external 3rd party service provider for the creation of the present report? If so — list it in the notes.', ref:'AVR Art. 43', url:'https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32018R2067' },
+];
+
+// ── Test Plan data ────────────────────────────
+const TP_DOCS = [
+  'AOC (Air Operator Certificate), Operating Licence',
+  'Monitoring Plan (MP) for AEm',
+  'Approval for MP by State or Competent Authority (C.A.)',
+  'List of possible imposed requirements to MP',
+  'Internal process documentation for emissions',
+  'Flow charts relevant for emissions',
+  'Overview IT System Landscape',
+  'Description of controls',
+  'Any relevant communication with State or C.A.',
+];
+const TP_CHECKS = [
+  { q:'What feedback has been received from the C.A. for the previous AEm report? Have recommended or mandated changes been implemented?' },
+  { q:'Has the AEm MP been approved? Has the C.A. imposed any conditions on the approval?' },
+  { q:'Is the monitoring plan still in compliance with the current regulations/directives?' },
+  { q:'What has changed compared to the previous year? Fleet, Stations, Fuel Types.' },
+  { q:'Is the current monitoring plan updated with the above changes?' },
+  { q:'Has the C.A. approved these changes?' },
+  { q:'Has the current process of data collection changed (ACARS, EFB, etc.)?' },
+  { q:'Are there different or new IT-systems or new interfaces involved in the emission report creation?' },
+  { q:'Has the C.A. approved these IT/system changes?' },
+  { q:'Has the operator implemented an internal emissions manual with documented roles and responsibilities, activities and systems involved?' },
+  { q:'Are there regular and documented internal controls & audits on the process and the fuel & emissions data?' },
+  { q:'Is the VPS correctly installed and in operating mode?' },
+  { q:'Is the signature card and card reader in place? Does the operator have an account in AGES?' },
+  { q:'Can the operator access the monitoring plan and emission reports through the required and relevant tools?' },
+  { q:'Does the operator perform archiving of emission report relevant evidence and data for 10 years?' },
+  { q:'Has the operator registered with Eurocontrol to get online access to the invoices file? (Applicable to operators operating in Europe)' },
+  { q:'Are the current emissions data collection procedures and data sources (evidence) suitable for the audit to support the calculated figures?' },
+  { q:'Are there any abnormal or wrong values? Are there obvious data gaps or mismatches?' },
+  { q:'Has the operator used the correct monitoring method for fuel use / consumption?' },
+  { q:'Which procedure has been used to close data gaps?' },
+  { q:'Are all flights from Eurocontrol included in the current AEm report? Is there a difference between CRCO and flights in AEm report?' },
+  { q:'Review the entire flight dataset provided from the operator's internal data source to ensure data completeness: raw data from IT-system for at least 2–3 months; signed data completeness declaration.' },
+  { q:'Review how AO differentiates between {SCHEME} vs. Non-{SCHEME} aerodromes. Review the selection of {SCHEME} flights.' },
+  { q:'Compare fuel-uplift vs max tank capacity. Compare fuel-uplift vs accounting invoiced fuel.' },
+  { q:'Plausibility of fuel / emissions with small emitters tool. Plausibility of fuel with historic fuel comparison.' },
+  { q:'Select individual flights and review data origin. Specify risk class and sample size. Examine (Flight log, Voyage report, Fuel ticket).' },
+];
+
+const AP_DOCS = [
+  { doc:'Air Operator Certificate (AOC) and Operating Licence', timing:'Prior to Audit' },
+  { doc:'ETS & CORSIA Monitoring Plan (MP) for AEm incl. any changes, CA approvals, internal process docs, flow charts, IT landscape, controls', timing:'Prior to Audit' },
+  { doc:'Any relevant communication with Competent Authority related to Monitoring Plan and AEm of previous year', timing:'Prior to Audit' },
+  { doc:'Full list of flights (EU-ETS and CORSIA) with all relevant data → Excel Verification Template (Tab 2_Flight Source)', timing:'Prior to Audit' },
+  { doc:'Final Aircraft list with evidence for ownership and leasing contracts → Excel Verification Template (Tab 3_AC and Fleet Data)', timing:'Prior to Audit' },
+  { doc:'Full list of ATC flight data (Eurocontrol / CRCO data files) → Excel Verification Template (Tab 4_CRCO Data)', timing:'Prior to Audit' },
+];
+
+// ─────────────────────────────────────────
+function openWorkflow(auditId, data, tabIndex) {
+  wfAuditId   = auditId || 'new';
+  wfAuditData = data || {};
+  wfActiveTab = 0;
+
+  // header meta
+  const opName  = wfAuditData.operator || '–';
+  const year    = wfAuditData.audit_year || '–';
+  const scheme  = wfAuditData.scheme || '–';
+  document.getElementById('wf-title').textContent = 'Audit Workflow — ' + opName;
+  document.getElementById('wf-meta').textContent  = scheme + ' · ' + year;
+
+  // Build dynamic sections (idempotent)
+  buildDdChecks();
+  buildTpChecks(scheme);
+  buildApDocs();
+  buildApScheduleRow();   // seed one row if empty
+  buildApActivitiesRow();
+
+  // Fill static read-only fields
+  document.getElementById('wf-ind-operator').value = opName;
+  document.getElementById('wf-ind-year').value     = year;
+  document.getElementById('wf-ind-scheme').value   = scheme;
+  document.getElementById('wf-ind-ref-label').textContent = opName + ' – ' + year + ' Emissions Report';
+  document.getElementById('wf-ap-org').value        = opName;
+  document.getElementById('wf-ap-year').value       = year;
+  document.getElementById('wf-ap-lead').value       = wfAuditData.auditor || '';
+  document.getElementById('wf-dd-auditor').value    = wfAuditData.auditor || '';
+  document.getElementById('wf-dd-reviewer').value   = wfAuditData.reviewer || '';
+  document.getElementById('wf-ir-reviewer').value   = wfAuditData.reviewer || '';
+
+  // Set today as default sig date if blank
+  const sigDate = document.getElementById('wf-sig-date');
+  if (!sigDate.value) sigDate.value = new Date().toISOString().slice(0,10);
+
+  // Load from localStorage
+  loadWorkflow();
+  updateWfDeclaration();
+  const _tIdx = tabIndex || 0; switchWfTab(_tIdx, document.querySelectorAll('.wf-tab')[_tIdx]);
+
+  document.getElementById('wf-overlay').classList.add('open');
+  document.getElementById('wf-save-status').textContent = 'Changes saved locally';
+}
+
+function closeWorkflow() {
+  document.getElementById('wf-overlay').classList.remove('open');
+}
+
+function switchWfTab(idx, el) {
+  wfActiveTab = idx;
+  document.querySelectorAll('.wf-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+  document.querySelectorAll('.wf-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+}
+
+// ── Build Due Diligence checkboxes ─────────────
+function buildDdChecks() {
+  buildCheckList('wf-dd-pre',    DD_PRE);
+  buildCheckList('wf-dd-before', DD_BEFORE);
+}
+
+function buildCheckList(containerId, items) {
+  const el = document.getElementById(containerId);
+  if (!el || el.dataset.built) return;
+  el.dataset.built = '1';
+  el.innerHTML = items.map(item => `
+    <div class="wf-check-item">
+      <input type="checkbox" id="${item.id}" onchange="markWfDirty()"/>
+      <div>
+        <div class="wf-check-label">${item.label}</div>
+        <div class="wf-check-ref">Ref: <a href="${item.url}" target="_blank">${item.ref} ↗</a></div>
+        <textarea class="wf-check-notes" id="${item.id}_notes" placeholder="Notes / assessment…" oninput="markWfDirty()"></textarea>
+      </div>
+    </div>`).join('');
+}
+
+// ── Build Test Plan checkboxes ─────────────────
+function buildTpChecks(scheme) {
+  const s = scheme || 'the scheme';
+  const docsEl = document.getElementById('wf-tp-docs');
+  if (docsEl && !docsEl.dataset.built) {
+    docsEl.dataset.built = '1';
+    docsEl.innerHTML = TP_DOCS.map((doc, i) => `
+      <div class="wf-check-item">
+        <input type="checkbox" id="tp_doc_${i}" onchange="markWfDirty()"/>
+        <div>
+          <div class="wf-check-label">${doc}</div>
+          <textarea class="wf-check-notes" id="tp_doc_${i}_notes" placeholder="Notes / received date…" oninput="markWfDirty()"></textarea>
+        </div>
+      </div>`).join('');
+  }
+  const checksEl = document.getElementById('wf-tp-checks');
+  if (checksEl && !checksEl.dataset.built) {
+    checksEl.dataset.built = '1';
+    checksEl.innerHTML = TP_CHECKS.map((item, i) => {
+      const q = item.q.replace(/\{SCHEME\}/g, s);
+      return `
+        <div class="wf-check-item">
+          <input type="checkbox" id="tp_chk_${i}" onchange="markWfDirty()"/>
+          <div>
+            <div class="wf-check-label">${q}</div>
+            <textarea class="wf-check-notes" id="tp_chk_${i}_notes" placeholder="Notes / findings…" oninput="markWfDirty()"></textarea>
+          </div>
+        </div>`;
+    }).join('');
+  }
+}
+
+// ── Build Audit Plan docs table ────────────────
+function buildApDocs() {
+  const el = document.getElementById('wf-ap-docs-body');
+  if (!el || el.dataset.built) return;
+  el.dataset.built = '1';
+  el.innerHTML = AP_DOCS.map((d, i) => `
+    <tr>
+      <td style="text-align:center;"><input type="checkbox" id="ap_doc_${i}" style="accent-color:var(--primary);" onchange="markWfDirty()"/></td>
+      <td style="font-size:12px;">${d.doc}</td>
+      <td><input type="text" id="ap_doc_${i}_timing" value="${d.timing}" oninput="markWfDirty()"/></td>
+      <td><input type="text" id="ap_doc_${i}_notes" placeholder="Notes…" oninput="markWfDirty()"/></td>
+    </tr>`).join('');
+}
+
+function buildApScheduleRow() {
+  const el = document.getElementById('wf-ap-schedule-body');
+  if (el && el.children.length === 0) addApRow('schedule');
+}
+function buildApActivitiesRow() {
+  const el = document.getElementById('wf-ap-activities-body');
+  if (el && el.children.length === 0) addApRow('activities');
+}
+
+function addApRow(type) {
+  const el = document.getElementById('wf-ap-' + type + '-body');
+  if (!el) return;
+  const idx = el.children.length;
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td><input type="text" id="ap_${type}_${idx}_date" placeholder="DD MMM YYYY · HH:mm" oninput="markWfDirty()"/></td>
+    <td><textarea id="ap_${type}_${idx}_subj" placeholder="Activities…" oninput="markWfDirty()"></textarea></td>
+    <td><input type="text" id="ap_${type}_${idx}_attendee" placeholder="Name" oninput="markWfDirty()"/></td>
+    <td><button class="del-row" onclick="this.closest('tr').remove();markWfDirty();">✕</button></td>`;
+  el.appendChild(row);
+  markWfDirty();
+}
+
+// ── Declaration preview ────────────────────────
+function updateWfDeclaration() {
+  const vb   = document.getElementById('wf-vb-name')?.value   || '[Verifier Name]';
+  const acc  = document.getElementById('wf-acc-number')?.value || '[Accreditation No.]';
+  const op   = document.getElementById('wf-ind-operator')?.value || '[Operator Name]';
+  const yr   = document.getElementById('wf-ind-year')?.value    || '[Year]';
+  const sig  = document.getElementById('wf-sig-name')?.value   || '________________________';
+  const title= document.getElementById('wf-sig-title')?.value  || '[Title]';
+  const dt   = document.getElementById('wf-sig-date')?.value   || '[Date]';
+
+  const text = `Declaration of Independence and Impartiality
+Ref: ${op} – ${yr} Emissions Report
+
+Verification Body: ${vb}   |   Accreditation No.: ${acc}
+
+1. Commitment to Independence
+${vb} declares that it is an accredited, independent third party to ${op}.
+
+2. No Conflicts of Interest
+We confirm that our organisation, our lead auditors, technical experts, and all personnel involved in the verification activities for the ${yr} reporting period have no financial, commercial, or personal relationship with the operator ${op} that could pose a threat to our independence or impartiality.
+
+3. No Consultancy Involvement
+In accordance with Article 43 of the AVR, we declare that neither ${vb} nor any associated entity has provided any consultancy services, technical assistance, or preparation of the Greenhouse Gas (GHG) Emissions Report, Monitoring Plan, or data monitoring systems for the operator.
+
+4. Objectivity of Personnel
+All personnel involved have acted objectively and based their findings solely on evidence gathered during the verification process.
+
+5. AVR Compliance
+We confirm that our verification activities were conducted in compliance with the requirements of Commission Implementing Regulation (EU) 2018/2067 (AVR).
+
+Signed: ${sig}
+Name of Authorized Signatory: ${sig}
+Title: ${title}
+Date: ${dt}`;
+
+  const el = document.getElementById('wf-declaration-preview');
+  if (el) el.textContent = text;
+  markWfDirty();
+}
+
+// ── Dirty / Save / Load ───────────────────────
+function markWfDirty() {
+  const el = document.getElementById('wf-save-status');
+  if (el) el.textContent = 'Unsaved changes';
+}
+
+function wfStorageKey() {
+  return 'audit_workflow_' + (wfAuditId || 'new');
+}
+
+function saveWorkflow() {
+  const data = {};
+
+  // Tab 1 - Independence
+  data.tab1 = {
+    vb_name:   document.getElementById('wf-vb-name')?.value,
+    acc_number:document.getElementById('wf-acc-number')?.value,
+    sig_name:  document.getElementById('wf-sig-name')?.value,
+    sig_title: document.getElementById('wf-sig-title')?.value,
+    sig_date:  document.getElementById('wf-sig-date')?.value,
+  };
+
+  // Tab 2 - Due Diligence
+  data.tab2 = { auditor: document.getElementById('wf-dd-auditor')?.value, reviewer: document.getElementById('wf-dd-reviewer')?.value, date: document.getElementById('wf-dd-date')?.value };
+  [...DD_PRE, ...DD_BEFORE].forEach(item => {
+    const cb = document.getElementById(item.id);
+    const nt = document.getElementById(item.id + '_notes');
+    if (cb) data.tab2[item.id] = { checked: cb.checked, notes: nt?.value || '' };
+  });
+
+  // Tab 3 - Audit Plan
+  data.tab3 = {
+    location: document.getElementById('wf-ap-location')?.value,
+    co:       document.getElementById('wf-ap-co')?.value,
+    type:     document.getElementById('wf-ap-type')?.value,
+    norms:    document.getElementById('wf-ap-norms')?.value,
+  };
+  // docs
+  data.tab3.docs = AP_DOCS.map((_,i) => ({
+    checked: document.getElementById('ap_doc_'+i)?.checked,
+    timing:  document.getElementById('ap_doc_'+i+'_timing')?.value,
+    notes:   document.getElementById('ap_doc_'+i+'_notes')?.value,
+  }));
+  // schedule rows
+  data.tab3.schedule  = collectTableRows('wf-ap-schedule-body',  'schedule');
+  data.tab3.activities= collectTableRows('wf-ap-activities-body','activities');
+
+  // Tab 4 - Test Plan
+  data.tab4 = {};
+  TP_DOCS.forEach((_,i) => {
+    data.tab4['doc_'+i] = { checked: document.getElementById('tp_doc_'+i)?.checked, notes: document.getElementById('tp_doc_'+i+'_notes')?.value };
+  });
+  TP_CHECKS.forEach((_,i) => {
+    data.tab4['chk_'+i] = { checked: document.getElementById('tp_chk_'+i)?.checked, notes: document.getElementById('tp_chk_'+i+'_notes')?.value };
+  });
+
+  // Tab 5 - Data Analysis
+  data.tab5 = { date: document.getElementById('wf-da-date')?.value, by: document.getElementById('wf-da-by')?.value, summary: document.getElementById('wf-da-summary')?.value, materiality: document.getElementById('wf-da-materiality')?.value, issues: document.getElementById('wf-da-issues')?.value };
+
+  // Tab 6 - Verification Opinion
+  data.tab6 = { type: document.getElementById('wf-vo-type')?.value, date: document.getElementById('wf-vo-date')?.value, statement: document.getElementById('wf-vo-statement')?.value, findings: document.getElementById('wf-vo-findings')?.value, recs: document.getElementById('wf-vo-recs')?.value };
+
+  // Tab 7 - Independent Review
+  data.tab7 = { date: document.getElementById('wf-ir-date')?.value, notes: document.getElementById('wf-ir-notes')?.value, signoff: document.getElementById('wf-ir-signoff')?.checked };
+
+  // Tab 8 - Submission
+  data.tab8 = { date: document.getElementById('wf-sub-date')?.value, ca: document.getElementById('wf-sub-ca')?.value, ref: document.getElementById('wf-sub-ref')?.value, method: document.getElementById('wf-sub-method')?.value, notes: document.getElementById('wf-sub-notes')?.value, done: document.getElementById('wf-sub-done')?.checked };
+
+  localStorage.setItem(wfStorageKey(), JSON.stringify(data));
+  const el = document.getElementById('wf-save-status');
+  if (el) el.textContent = 'Saved at ' + new Date().toLocaleTimeString();
+}
+
+function collectTableRows(tbodyId, type) {
+  const el = document.getElementById(tbodyId);
+  if (!el) return [];
+  return Array.from(el.children).map((_, i) => ({
+    date:     document.getElementById('ap_'+type+'_'+i+'_date')?.value,
+    subj:     document.getElementById('ap_'+type+'_'+i+'_subj')?.value,
+    attendee: document.getElementById('ap_'+type+'_'+i+'_attendee')?.value,
+  }));
+}
+
+function loadWorkflow() {
+  const raw = localStorage.getItem(wfStorageKey());
+  if (!raw) return;
+  let data;
+  try { data = JSON.parse(raw); } catch(e) { return; }
+
+  // Tab 1
+  if (data.tab1) {
+    setVal('wf-vb-name',    data.tab1.vb_name);
+    setVal('wf-acc-number', data.tab1.acc_number);
+    setVal('wf-sig-name',   data.tab1.sig_name);
+    setVal('wf-sig-title',  data.tab1.sig_title);
+    setVal('wf-sig-date',   data.tab1.sig_date);
+  }
+
+  // Tab 2
+  if (data.tab2) {
+    setVal('wf-dd-auditor',  data.tab2.auditor);
+    setVal('wf-dd-reviewer', data.tab2.reviewer);
+    setVal('wf-dd-date',     data.tab2.date);
+    [...DD_PRE, ...DD_BEFORE].forEach(item => {
+      const d = data.tab2[item.id];
+      if (!d) return;
+      const cb = document.getElementById(item.id);
+      const nt = document.getElementById(item.id + '_notes');
+      if (cb) cb.checked = d.checked;
+      if (nt) nt.value   = d.notes;
+    });
+  }
+
+  // Tab 3
+  if (data.tab3) {
+    setVal('wf-ap-location', data.tab3.location);
+    setVal('wf-ap-co',       data.tab3.co);
+    setVal('wf-ap-type',     data.tab3.type);
+    setVal('wf-ap-norms',    data.tab3.norms);
+    if (data.tab3.docs) data.tab3.docs.forEach((d,i) => {
+      const cb = document.getElementById('ap_doc_'+i); if (cb) cb.checked = d.checked;
+      setVal('ap_doc_'+i+'_timing', d.timing);
+      setVal('ap_doc_'+i+'_notes',  d.notes);
+    });
+    if (data.tab3.schedule)   restoreTableRows('wf-ap-schedule-body',   'schedule',   data.tab3.schedule);
+    if (data.tab3.activities) restoreTableRows('wf-ap-activities-body', 'activities', data.tab3.activities);
+  }
+
+  // Tab 4
+  if (data.tab4) {
+    TP_DOCS.forEach((_,i) => {
+      const d = data.tab4['doc_'+i]; if (!d) return;
+      const cb = document.getElementById('tp_doc_'+i); if (cb) cb.checked = d.checked;
+      setVal('tp_doc_'+i+'_notes', d.notes);
+    });
+    TP_CHECKS.forEach((_,i) => {
+      const d = data.tab4['chk_'+i]; if (!d) return;
+      const cb = document.getElementById('tp_chk_'+i); if (cb) cb.checked = d.checked;
+      setVal('tp_chk_'+i+'_notes', d.notes);
+    });
+  }
+
+  // Tab 5
+  if (data.tab5) { setVal('wf-da-date',data.tab5.date); setVal('wf-da-by',data.tab5.by); setVal('wf-da-summary',data.tab5.summary); setVal('wf-da-materiality',data.tab5.materiality); setVal('wf-da-issues',data.tab5.issues); }
+
+  // Tab 6
+  if (data.tab6) { setVal('wf-vo-type',data.tab6.type); setVal('wf-vo-date',data.tab6.date); setVal('wf-vo-statement',data.tab6.statement); setVal('wf-vo-findings',data.tab6.findings); setVal('wf-vo-recs',data.tab6.recs); }
+
+  // Tab 7
+  if (data.tab7) { setVal('wf-ir-date',data.tab7.date); setVal('wf-ir-notes',data.tab7.notes); const cb=document.getElementById('wf-ir-signoff'); if(cb) cb.checked=data.tab7.signoff; }
+
+  // Tab 8
+  if (data.tab8) { setVal('wf-sub-date',data.tab8.date); setVal('wf-sub-ca',data.tab8.ca); setVal('wf-sub-ref',data.tab8.ref); setVal('wf-sub-method',data.tab8.method); setVal('wf-sub-notes',data.tab8.notes); const cb=document.getElementById('wf-sub-done'); if(cb) cb.checked=data.tab8.done; }
+
+  document.getElementById('wf-save-status').textContent = 'Loaded from local storage';
+}
+
+function restoreTableRows(tbodyId, type, rows) {
+  const el = document.getElementById(tbodyId);
+  if (!el) return;
+  el.innerHTML = '';
+  rows.forEach((r, i) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><input type="text" id="ap_${type}_${i}_date" value="${r.date||''}" oninput="markWfDirty()"/></td>
+      <td><textarea id="ap_${type}_${i}_subj" oninput="markWfDirty()">${r.subj||''}</textarea></td>
+      <td><input type="text" id="ap_${type}_${i}_attendee" value="${r.attendee||''}" oninput="markWfDirty()"/></td>
+      <td><button class="del-row" onclick="this.closest('tr').remove();markWfDirty();">✕</button></td>`;
+    el.appendChild(row);
+  });
+}
+
+function setVal(id, val) {
+  if (val === undefined || val === null) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (el.tagName === 'SELECT') el.value = val;
+  else el.value = val;
+}
+
+
+// ── Open a specific workflow tab modal from the audit form ──
+function openWfModal(tabIndex) {
+  const opId   = document.getElementById('f-operator')?.value || '';
+  const scheme = document.getElementById('f-scheme')?.value   || '';
+  const year   = document.getElementById('f-audit-year')?.value || '';
+  const audId  = document.getElementById('f-auditor')?.value  || '';
+  const revId  = document.getElementById('f-reviewer')?.value || '';
+
+  const op  = operatorsCache.find(o => o.operator_id === opId);
+  const aud = auditorsCache.find(a => a.auditor_id   === audId);
+  const rev = auditorsCache.find(a => a.auditor_id   === revId);
+
+  openWorkflow(editingAuditId || 'new', {
+    operator:  op?.operator || '',
+    audit_year: year,
+    scheme:    scheme,
+    auditor:   aud?.auditor_name || '',
+    reviewer:  rev?.auditor_name || '',
+  }, tabIndex);
+}
+
+// (legacy stub — no longer needed but kept to avoid reference errors)
+function updateWfBtnVisibility() {}
 
 </script>
 <!-- Hidden print target — must be a direct body child so @media print can isolate it -->
