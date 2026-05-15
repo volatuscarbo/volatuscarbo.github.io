@@ -1,12 +1,4 @@
-<!DOCTYPE html><script type="application/json" id="cowork-artifact-meta">
-{
-  "name": "Eu Amendment Tree",
-  "schemaVersion": 1,
-  "description": "Amendment tree + latest consolidated version for EU acts 2003/87 (ETS), 2018/2066 (MRR) and 2018/2067 (AVR). Fetches amendments and consolidated versions from EUR-Lex Cellar SPARQL. Generates summaries and aviation AER verifier impact analysis via Claude. Caches daily in localStorage.",
-  "mcpTools": [],
-  "mcpServerNames": []
-}
-</script>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -42,7 +34,6 @@ body {
 .status-bar.loading { display: flex; background: #eef4ff; color: #2255aa; }
 .status-bar.error { display: flex; background: #fff2f2; color: #aa2222; }
 .status-bar.success { display: flex; background: #edfaf4; color: #1a7a4a; }
-
 .tabs { display: flex; gap: 0; border-bottom: 1px solid #e0e0e0; margin-bottom: 20px; }
 .tab {
   padding: 9px 18px; font-size: 13px; font-weight: 400; color: #666;
@@ -57,24 +48,15 @@ body {
   font-size: 11px; padding: 1px 6px; margin-left: 5px;
 }
 .tab.active .tab-count { background: #1a1a1a; color: #fff; }
-
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
-
-/* Consolidated version banner */
 .consol-banner {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 14px; margin-bottom: 10px;
-  background: #f0f7ff;
-  border: 0.5px solid #b8d4f8;
-  border-radius: 10px;
+  background: #f0f7ff; border: 0.5px solid #b8d4f8; border-radius: 10px;
 }
-.consol-banner.loading-state {
-  background: #f8f8f8; border-color: #e0e0e0;
-}
-.consol-banner.not-found {
-  background: #fafafa; border-color: #e8e8e8;
-}
+.consol-banner.loading-state { background: #f8f8f8; border-color: #e0e0e0; }
+.consol-banner.not-found { background: #fafafa; border-color: #e8e8e8; }
 .consol-icon { font-size: 15px; flex-shrink: 0; }
 .consol-content { flex: 1; min-width: 0; }
 .consol-label {
@@ -92,7 +74,6 @@ body {
   padding: 4px 10px; background: #fff; white-space: nowrap;
 }
 .consol-link:hover { background: #e8f0fe; }
-
 .root-node {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 14px; background: #fff;
@@ -101,72 +82,40 @@ body {
 .root-celex { font-size: 11px; font-family: monospace; color: #888; flex-shrink: 0; }
 .root-label { font-size: 13px; font-weight: 500; color: #1a1a1a; }
 .root-icon { font-size: 15px; color: #aaa; flex-shrink: 0; }
-
 .section-heading {
   font-size: 10px; font-weight: 600; color: #bbb;
-  text-transform: uppercase; letter-spacing: 0.07em;
-  margin: 14px 0 6px 0;
+  text-transform: uppercase; letter-spacing: 0.07em; margin: 14px 0 6px 0;
 }
-
-.tree-branch {
-  padding-left: 16px;
-  border-left: 1.5px solid #e4e4e4;
-  margin-left: 20px;
-  margin-top: 4px;
-}
+.tree-branch { padding-left: 16px; border-left: 1.5px solid #e4e4e4; margin-left: 20px; margin-top: 4px; }
 .amendment { margin-bottom: 5px; position: relative; }
-.amendment::before {
-  content: '';
-  position: absolute;
-  left: -16px; top: 18px;
-  width: 12px; height: 1px;
-  background: #e4e4e4;
-}
-
+.amendment::before { content: ''; position: absolute; left: -16px; top: 18px; width: 12px; height: 1px; background: #e4e4e4; }
 .amend-header {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 12px; background: #fff;
-  border: 0.5px solid #e0e0e0; border-radius: 8px;
-  cursor: pointer; transition: background 0.12s; user-select: none;
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff;
+  border: 0.5px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: background 0.12s; user-select: none;
 }
 .amend-header:hover { background: #fafafa; }
 .amend-header.open { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
 .chevron {
-  font-size: 10px; color: #aaa; flex-shrink: 0;
-  transition: transform 0.18s; border: 0.5px solid #ddd;
-  border-radius: 4px; width: 18px; height: 18px;
+  font-size: 10px; color: #aaa; flex-shrink: 0; transition: transform 0.18s;
+  border: 0.5px solid #ddd; border-radius: 4px; width: 18px; height: 18px;
   display: flex; align-items: center; justify-content: center;
 }
 .chevron.open { transform: rotate(90deg); }
 .amend-celex { font-size: 11px; font-family: monospace; color: #999; flex-shrink: 0; min-width: 90px; }
 .amend-title { font-size: 13px; color: #1a1a1a; flex: 1; line-height: 1.4; }
 .amend-date { font-size: 11px; color: #aaa; flex-shrink: 0; white-space: nowrap; }
-.latest-badge {
-  font-size: 10px; padding: 2px 7px; border-radius: 10px; flex-shrink: 0;
-  background: #e8f0fe; color: #1a56c4; font-weight: 500;
-}
-.material-badge {
-  font-size: 10px; padding: 2px 7px; border-radius: 10px; flex-shrink: 0;
-  background: #fff8e6; color: #b36a00; font-weight: 500;
-}
-
+.latest-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; background: #e8f0fe; color: #1a56c4; font-weight: 500; }
+.material-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; flex-shrink: 0; background: #fff8e6; color: #b36a00; font-weight: 500; }
 .amend-body {
-  display: none; padding: 14px 16px 16px;
-  border: 0.5px solid #e0e0e0; border-top: none;
-  border-radius: 0 0 8px 8px; background: #fff;
-  animation: slideDown 0.15s ease;
+  display: none; padding: 14px 16px 16px; border: 0.5px solid #e0e0e0; border-top: none;
+  border-radius: 0 0 8px 8px; background: #fff; animation: slideDown 0.15s ease;
 }
 .amend-body.open { display: block; }
 @keyframes slideDown { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
 .body-section { margin-bottom: 14px; }
 .body-section:last-child { margin-bottom: 0; }
-.section-label {
-  font-size: 10px; font-weight: 600; color: #aaa;
-  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
-}
+.section-label { font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
 .section-text { font-size: 13px; color: #333; line-height: 1.6; }
-
 .impact-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .impact-table tr { border-bottom: 0.5px solid #f0f0f0; }
 .impact-table tr:last-child { border-bottom: none; }
@@ -174,641 +123,97 @@ body {
 .impact-table td:first-child { color: #888; width: 150px; padding-right: 12px; white-space: nowrap; }
 .impact-table td:last-child { color: #333; line-height: 1.55; }
 .null-val { color: #bbb; font-style: italic; }
-
-.overall-row {
-  margin-top: 10px; padding: 8px 10px; border-radius: 7px;
-  font-size: 12px; line-height: 1.5; display: flex; align-items: flex-start; gap: 7px;
-}
+.overall-row { margin-top: 10px; padding: 8px 10px; border-radius: 7px; font-size: 12px; line-height: 1.5; display: flex; align-items: flex-start; gap: 7px; }
 .overall-row.material { background: #fff8e6; color: #8a5000; }
 .overall-row.not-material { background: #f4f4f4; color: #777; }
 .overall-icon { flex-shrink: 0; font-size: 13px; margin-top: 1px; }
-
-.ext-link {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; color: #2255cc; text-decoration: none; margin-top: 10px;
-}
+.ext-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #2255cc; text-decoration: none; margin-top: 10px; }
 .ext-link:hover { text-decoration: underline; }
-
-.loading-row {
-  text-align: center; padding: 40px 20px; color: #aaa; font-size: 13px;
-}
-.spinner {
-  display: inline-block; width: 16px; height: 16px;
-  border: 2px solid #e0e0e0; border-top-color: #888;
-  border-radius: 50%; animation: spin 0.7s linear infinite;
-  vertical-align: middle; margin-right: 8px;
-}
-.spinner-sm {
-  display: inline-block; width: 12px; height: 12px;
-  border: 1.5px solid #cde; border-top-color: #5588cc;
-  border-radius: 50%; animation: spin 0.7s linear infinite;
-  vertical-align: middle; margin-right: 6px;
-}
+.loading-row { text-align: center; padding: 40px 20px; color: #aaa; font-size: 13px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #e0e0e0; border-top-color: #888; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 8px; }
+.spinner-sm { display: inline-block; width: 12px; height: 12px; border: 1.5px solid #cde; border-top-color: #5588cc; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-.empty-impact {
-  font-size: 12px; color: #aaa; font-style: italic; padding: 6px 0;
-}
+.empty-impact { font-size: 12px; color: #aaa; font-style: italic; padding: 6px 0; }
 </style>
 </head>
 <body>
 <div class="app">
   <div class="header">
-    <span class="created-date" id="created-date"></span>
-    <h1>EU acts — amendment tree</h1>
+    <span class="created-date">Created 11 May 2026</span>
+    <h1>EU acts &#8212; amendment tree</h1>
     <div class="meta">
       <span>Source: EUR-Lex Cellar SPARQL</span>
       <span class="meta-dot"></span>
       <span id="last-updated">Checking cache...</span>
       <span class="meta-dot"></span>
-      <button class="refresh-btn" id="refresh-btn" onclick="forceRefresh()">
-        &#8635; Refresh
-      </button>
+      <button class="refresh-btn" id="refresh-btn" onclick="forceRefresh()">&#8635; Refresh</button>
     </div>
   </div>
-
-  <div class="status-bar" id="status-bar">
-    <span class="spinner"></span>
-    <span id="status-text">Loading...</span>
-  </div>
-
+  <div class="status-bar" id="status-bar"><span class="spinner"></span><span id="status-text">Loading...</span></div>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('ets',this)">
-      Directive 2003/87 <span class="tab-count" id="count-ets">—</span>
-    </button>
-    <button class="tab" onclick="switchTab('mrr',this)">
-      Regulation 2018/2066 <span class="tab-count" id="count-mrr">—</span>
-    </button>
-    <button class="tab" onclick="switchTab('avr',this)">
-      Regulation 2018/2067 <span class="tab-count" id="count-avr">—</span>
-    </button>
+    <button class="tab active" onclick="switchTab('ets',this)">Directive 2003/87 <span class="tab-count" id="count-ets">&#8212;</span></button>
+    <button class="tab" onclick="switchTab('mrr',this)">Regulation 2018/2066 <span class="tab-count" id="count-mrr">&#8212;</span></button>
+    <button class="tab" onclick="switchTab('avr',this)">Regulation 2018/2067 <span class="tab-count" id="count-avr">&#8212;</span></button>
   </div>
-
-  <!-- ETS -->
   <div id="ets" class="tab-panel active">
-    <div class="root-node">
-      <span class="root-icon">&#128196;</span>
-      <span class="root-celex">32003L0087</span>
-      <span class="root-label">Directive 2003/87/EC — EU Emissions Trading System</span>
-    </div>
-    <!-- consolidated banner injected here -->
+    <div class="root-node"><span class="root-icon">&#128196;</span><span class="root-celex">32003L0087</span><span class="root-label">Directive 2003/87/EC &#8212; EU Emissions Trading System</span></div>
     <div id="ets-consol"></div>
     <div class="section-heading">Amending acts</div>
-    <div class="tree-branch" id="ets-tree">
-      <div class="loading-row"><span class="spinner"></span>Loading amendments...</div>
-    </div>
+    <div class="tree-branch" id="ets-tree"><div class="loading-row"><span class="spinner"></span>Loading amendments...</div></div>
   </div>
-
-  <!-- MRR -->
   <div id="mrr" class="tab-panel">
-    <div class="root-node">
-      <span class="root-icon">&#128196;</span>
-      <span class="root-celex">32018R2066</span>
-      <span class="root-label">Regulation 2018/2066 — Monitoring &amp; Reporting (MRR)</span>
-    </div>
+    <div class="root-node"><span class="root-icon">&#128196;</span><span class="root-celex">32018R2066</span><span class="root-label">Regulation 2018/2066 &#8212; Monitoring &amp; Reporting (MRR)</span></div>
     <div id="mrr-consol"></div>
     <div class="section-heading">Amending acts</div>
-    <div class="tree-branch" id="mrr-tree">
-      <div class="loading-row"><span class="spinner"></span>Loading amendments...</div>
-    </div>
+    <div class="tree-branch" id="mrr-tree"><div class="loading-row"><span class="spinner"></span>Loading amendments...</div></div>
   </div>
-
-  <!-- AVR -->
   <div id="avr" class="tab-panel">
-    <div class="root-node">
-      <span class="root-icon">&#128196;</span>
-      <span class="root-celex">32018R2067</span>
-      <span class="root-label">Regulation 2018/2067 — Accreditation &amp; Verification (AVR)</span>
-    </div>
+    <div class="root-node"><span class="root-icon">&#128196;</span><span class="root-celex">32018R2067</span><span class="root-label">Regulation 2018/2067 &#8212; Accreditation &amp; Verification (AVR)</span></div>
     <div id="avr-consol"></div>
     <div class="section-heading">Amending acts</div>
-    <div class="tree-branch" id="avr-tree">
-      <div class="loading-row"><span class="spinner"></span>Loading amendments...</div>
-    </div>
+    <div class="tree-branch" id="avr-tree"><div class="loading-row"><span class="spinner"></span>Loading amendments...</div></div>
   </div>
 </div>
-
 <script>
-const ACTS = {
-  ets: { celex: '32003L0087', treeId: 'ets-tree', countId: 'count-ets', consolId: 'ets-consol' },
-  mrr: { celex: '32018R2066', treeId: 'mrr-tree', countId: 'count-mrr', consolId: 'mrr-consol' },
-  avr: { celex: '32018R2067', treeId: 'avr-tree', countId: 'count-avr', consolId: 'avr-consol' }
-};
-
-const CACHE_KEY = 'eu_acts_cache_v3';
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const SPARQL_ENDPOINT = 'https://publications.europa.eu/webapi/rdf/sparql';
-
-// ── Creation date ─────────────────────────────────────────────────────────────
-
-function initCreatedDate() {
-  document.getElementById('created-date').textContent = 'Created 11 May 2026';
-}
-
-// ── CELEX helpers ──────────────────────────────────────────────────────────────
-
-function celexToUri(celex) {
-  return `http://publications.europa.eu/resource/celex/${celex}`;
-}
-function celexToUrl(celex) {
-  return `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:${celex}`;
-}
-
-// ── SPARQL: amending acts ──────────────────────────────────────────────────────
-
-function sparqlAmendments(celexUri) {
-  return `PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+const ACTS={ets:{celex:'32003L0087',treeId:'ets-tree',countId:'count-ets',consolId:'ets-consol'},mrr:{celex:'32018R2066',treeId:'mrr-tree',countId:'count-mrr',consolId:'mrr-consol'},avr:{celex:'32018R2067',treeId:'avr-tree',countId:'count-avr',consolId:'avr-consol'}};
+const CACHE_KEY='eu_acts_cache_v3',CACHE_TTL_MS=864e5,SPARQL='https://publications.europa.eu/webapi/rdf/sparql';
+function celexToUri(c){return`http://publications.europa.eu/resource/celex/${c}`}
+function celexToUrl(c){return`https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:${c}`}
+function sparqlAmendments(uri){return`PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
 SELECT DISTINCT ?amendingAct ?celex ?pubDate WHERE {
-  ?amendingAct cdm:resource_legal_amends <${celexUri}> .
+  ?amendingAct cdm:resource_legal_amends <${uri}> .
   OPTIONAL { ?amendingAct cdm:resource_legal_id_celex ?celex . }
   OPTIONAL { ?amendingAct cdm:work_date_document ?pubDate . }
-}
-ORDER BY DESC(?pubDate)`;
-}
-
-// ── SPARQL: consolidated versions ─────────────────────────────────────────────
-// Consolidated texts live under sector "0" in the CELEX scheme.
-// In Cellar they are linked via cdm:resource_legal_is_consolidation_of.
-// We query by that predicate and also try the inverse
-// cdm:resource_legal_based_on_concept_legal (fallback).
-// We request celex + date, sort DESC, take the first row = latest.
-
-function sparqlConsolidated(celexUri) {
-  return `PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+} ORDER BY DESC(?pubDate)`}
+function sparqlConsolidated(uri){return`PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
 SELECT DISTINCT ?consWork ?celex ?applDate WHERE {
-  {
-    ?consWork cdm:resource_legal_is_consolidation_of <${celexUri}> .
-  } UNION {
-    ?consWork cdm:resource_legal_based_on_concept_legal <${celexUri}> .
-    FILTER( STRSTARTS( STR(?consWork), "http://publications.europa.eu/resource/celex/0" ) )
-  }
+  { ?consWork cdm:resource_legal_is_consolidation_of <${uri}> . }
+  UNION { ?consWork cdm:resource_legal_based_on_concept_legal <${uri}> . FILTER( STRSTARTS( STR(?consWork), "http://publications.europa.eu/resource/celex/0" ) ) }
   OPTIONAL { ?consWork cdm:resource_legal_id_celex ?celex . }
   OPTIONAL { ?consWork cdm:work_date_application_start ?applDate . }
-}
-ORDER BY DESC(?applDate)
-LIMIT 20`;
-}
-
-async function runSparql(queryStr) {
-  const url = SPARQL_ENDPOINT + '?query=' + encodeURIComponent(queryStr) +
-               '&format=application%2Fsparql-results%2Bjson';
-  const res = await fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } });
-  if (!res.ok) throw new Error('SPARQL HTTP ' + res.status);
-  const json = await res.json();
-  return (json.results && json.results.bindings) ? json.results.bindings : [];
-}
-
-// ── Fetch consolidated version for one base act ───────────────────────────────
-
-async function fetchConsolidated(baseCelex) {
-  const uri = celexToUri(baseCelex);
-  let bindings = [];
-  try {
-    bindings = await runSparql(sparqlConsolidated(uri));
-  } catch(e) { return null; }
-
-  // Filter to rows that actually have a CELEX starting with "0"
-  const valid = bindings.filter(b => {
-    const c = b.celex && b.celex.value;
-    if (c) return c.startsWith('0');
-    // fallback: check the work URI
-    const w = b.consWork && b.consWork.value;
-    return w && w.includes('/celex/0');
-  });
-
-  if (!valid.length) {
-    // Last resort: build the consolidated CELEX manually from the base CELEX
-    // pattern: sector 3 → sector 0, keep rest, no date suffix
-    // This gives us the "umbrella" consolidated URI which EUR-Lex resolves to latest
-    return buildFallbackConsolidated(baseCelex);
-  }
-
-  // Pick the one with the latest date
-  valid.sort((a, b) => {
-    const da = (a.applDate && a.applDate.value) || '';
-    const db = (b.applDate && b.applDate.value) || '';
-    return db.localeCompare(da);
-  });
-
-  const best = valid[0];
-  const celex = (best.celex && best.celex.value) ||
-                extractCelexFromUri((best.consWork && best.consWork.value) || '');
-  const date  = (best.applDate && best.applDate.value) ? best.applDate.value.slice(0, 10) : null;
-
-  return { celex, date, url: celexToUrl(celex), source: 'sparql' };
-}
-
-function extractCelexFromUri(uri) {
-  // e.g. http://publications.europa.eu/resource/celex/02003L0087-20230605
-  const m = uri.match(/\/celex\/([^/]+)$/);
-  return m ? m[1] : null;
-}
-
-// Fallback: construct the standard consolidated CELEX without a date suffix.
-// EUR-Lex will redirect to the latest consolidated version.
-// e.g. 32003L0087 → 02003L0087
-function buildFallbackConsolidated(baseCelex) {
-  // CELEX format: sector(1) + year(4) + type(1 or more letters) + number
-  // Sector 3 = legislation. Replace leading '3' with '0'.
-  if (!baseCelex.startsWith('3')) return null;
-  const consolCelex = '0' + baseCelex.slice(1);
-  // Use the ELI URI pattern which EUR-Lex resolves to latest consolidation
-  const url = `https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:${consolCelex}`;
-  return { celex: consolCelex, date: null, url, source: 'fallback' };
-}
-
-// ── Fetch amendments ──────────────────────────────────────────────────────────
-
-async function fetchAmendments(celex) {
-  const uri = celexToUri(celex);
-  const bindings = await runSparql(sparqlAmendments(uri));
-  return bindings
-    .filter(b => b.celex && b.celex.value)
-    .map(b => ({
-      celex: b.celex.value,
-      pubDate: b.pubDate ? b.pubDate.value.slice(0, 10) : null,
-      url: celexToUrl(b.celex.value),
-      title: null, summary: null, impact: null
-    }))
-    .sort((a, b) => (b.pubDate || '').localeCompare(a.pubDate || ''));
-}
-
-// ── EUR-Lex page scraping ─────────────────────────────────────────────────────
-
-async function fetchTitle(celex) {
-  try {
-    const url = `https://eur-lex.europa.eu/legal-content/EN/TIT/?uri=CELEX:${celex}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const text = await res.text();
-    const match = text.match(/<title[^>]*>([^<]+)<\/title>/i);
-    return match ? match[1].replace(' - EUR-Lex', '').trim() : null;
-  } catch(e) { return null; }
-}
-
-async function fetchFullText(celex) {
-  try {
-    const url = `https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:${celex}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const html = await res.text();
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    const text = (tmp.innerText || tmp.textContent || '').replace(/\s+/g, ' ').trim();
-    return text.slice(0, 6000);
-  } catch(e) { return null; }
-}
-
-// Fetch the title for a consolidated version by hitting its EUR-Lex page
-async function fetchConsolTitle(url) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const text = await res.text();
-    const match = text.match(/<title[^>]*>([^<]+)<\/title>/i);
-    return match ? match[1].replace(' - EUR-Lex', '').trim() : null;
-  } catch(e) { return null; }
-}
-
-// ── Claude impact analysis ────────────────────────────────────────────────────
-
-async function generateImpact(celex, title, pubDate, fullText) {
-  if (!window.cowork || !window.cowork.askClaude) return null;
-  const textSection = fullText
-    ? `Full text (truncated):\n${fullText}`
-    : `No full text available. Base analysis on title only.`;
-  const prompt = `You are an expert in EU and international aviation emissions regulation.
-Your audience is an accredited verification body that verifies Annual Emissions Reports (AERs) for aircraft operators under:
-- EU ETS Aviation (Directive 2003/87, Annex I)
-- CORSIA (ICAO Carbon Offsetting and Reduction Scheme for International Aviation)
-- UK ETS Aviation
-
-CELEX: ${celex}
-Title: ${title || celex}
-Publication date: ${pubDate || 'unknown'}
-
-${textSection}
-
-Respond in JSON with exactly two keys:
-{
-  "summary": "2-3 sentence plain-language summary of what this amendment changes and why.",
-  "impact": {
-    "monitoring_plan": "Changes to what must be in an aircraft operator's monitoring plan and how the verifier assesses it. Write null if not applicable.",
-    "emission_methodology": "Changes to fuel-based or block-hour methods, emission factors, Tier requirements, or calculation rules. Write null if not applicable.",
-    "flight_scope": "Changes to which routes, operators, or flight types are in or out of scope. Write null if not applicable.",
-    "reporting_deadlines": "Changes to reporting content or deadlines that affect the verification timeline. Write null if not applicable.",
-    "overall": "One sentence: is this amendment material for aviation AER verifiers? If yes, state the primary reason.",
-    "material": true or false
-  }
-}
-Only include what is directly supported by the text. If this amendment has no relevance to aviation AER verification, set all sub-fields to null except overall and set material to false.`;
-
-  try {
-    const raw = await window.cowork.askClaude(prompt, []);
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return null;
-    return JSON.parse(jsonMatch[0]);
-  } catch(e) { return null; }
-}
-
-// ── Status bar ────────────────────────────────────────────────────────────────
-
-function setStatus(type, text) {
-  const bar = document.getElementById('status-bar');
-  const txt = document.getElementById('status-text');
-  bar.className = 'status-bar ' + type;
-  txt.textContent = text;
-  if (type === 'success') setTimeout(() => { bar.className = 'status-bar'; }, 3000);
-}
-
-// ── Cache ─────────────────────────────────────────────────────────────────────
-
-function loadCache() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch(e) { return null; }
-}
-
-function saveCache(data) {
-  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) {}
-}
-
-// ── Build (full refresh) ──────────────────────────────────────────────────────
-
-async function buildCache() {
-  setStatus('loading', 'Querying EUR-Lex Cellar for amendments...');
-  document.getElementById('refresh-btn').disabled = true;
-
-  const cache = { timestamp: new Date().toISOString(), acts: {} };
-
-  for (const [key, act] of Object.entries(ACTS)) {
-
-    // 1. Consolidated version
-    setStatus('loading', `Fetching consolidated version for ${act.celex}...`);
-    let consolidated = null;
-    try {
-      consolidated = await fetchConsolidated(act.celex);
-      if (consolidated) {
-        const title = await fetchConsolTitle(consolidated.url);
-        consolidated.title = title || null;
-      }
-    } catch(e) { consolidated = buildFallbackConsolidated(act.celex); }
-
-    // 2. Amendments
-    setStatus('loading', `Fetching amendments for ${act.celex}...`);
-    let amendments = [];
-    try {
-      amendments = await fetchAmendments(act.celex);
-    } catch(e) {
-      setStatus('error', `Could not reach EUR-Lex for ${act.celex}. Using cached data if available.`);
-      document.getElementById('refresh-btn').disabled = false;
-      return null;
-    }
-
-    for (let i = 0; i < amendments.length; i++) {
-      const a = amendments[i];
-      setStatus('loading', `Fetching details for ${a.celex} (${i+1}/${amendments.length})...`);
-
-      const title = await fetchTitle(a.celex);
-      amendments[i].title = title || a.celex;
-
-      const fullText = await fetchFullText(a.celex);
-      const analysis = await generateImpact(a.celex, amendments[i].title, a.pubDate, fullText);
-      if (analysis) {
-        amendments[i].summary = analysis.summary || null;
-        amendments[i].impact = analysis.impact || null;
-      }
-
-      await new Promise(r => setTimeout(r, 400));
-    }
-
-    cache.acts[key] = { consolidated, amendments };
-  }
-
-  saveCache(cache);
-  document.getElementById('refresh-btn').disabled = false;
-  setStatus('success', 'Data refreshed successfully');
-  return cache;
-}
-
-// ── Render: consolidated banner ───────────────────────────────────────────────
-
-function renderConsolidatedBanner(consol, containerId) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-
-  if (!consol) {
-    el.innerHTML = `
-      <div class="consol-banner not-found">
-        <span class="consol-icon">📋</span>
-        <div class="consol-content">
-          <div class="consol-label">Latest consolidated version</div>
-          <div class="consol-title">Not found in Cellar — may not be published yet</div>
-        </div>
-      </div>`;
-    return;
-  }
-
-  const dateStr = consol.date ? `Valid from ${consol.date}` : 'Date not available from Cellar';
-  const titleStr = consol.title || consol.celex || 'Consolidated version';
-  const sourceNote = consol.source === 'fallback'
-    ? ' <span style="color:#aaa;font-size:10px">(direct link — date not in Cellar)</span>' : '';
-
-  el.innerHTML = `
-    <div class="consol-banner">
-      <span class="consol-icon">📋</span>
-      <div class="consol-content">
-        <div class="consol-label">Latest consolidated version</div>
-        <div class="consol-title">${escHtml(titleStr)}</div>
-        <div class="consol-meta">${escHtml(consol.celex || '')} &nbsp;·&nbsp; ${escHtml(dateStr)}${sourceNote}</div>
-      </div>
-      <a class="consol-link" href="${escHtml(consol.url)}" target="_blank">&#8599; Open in EUR-Lex</a>
-    </div>`;
-}
-
-function renderConsolidatedLoading(containerId) {
-  const el = document.getElementById(containerId);
-  if (el) el.innerHTML = `
-    <div class="consol-banner loading-state">
-      <span class="spinner-sm"></span>
-      <div class="consol-content">
-        <div class="consol-label">Latest consolidated version</div>
-        <div class="consol-title" style="color:#aaa">Loading...</div>
-      </div>
-    </div>`;
-}
-
-// ── Render: amendment tree ────────────────────────────────────────────────────
-
-function renderTree(amendments, containerId, countId, autoOpenFirst) {
-  const container = document.getElementById(containerId);
-  const countEl = document.getElementById(countId);
-  countEl.textContent = amendments.length;
-
-  if (!amendments.length) {
-    container.innerHTML = '<div class="loading-row">No amendments found.</div>';
-    return;
-  }
-
-  container.innerHTML = '';
-
-  amendments.forEach((a, i) => {
-    const isLatest = i === 0;
-    const isMaterial = a.impact && a.impact.material;
-    const bodyId = 'body-' + a.celex.replace(/[^a-zA-Z0-9]/g,'_');
-    const headId = 'head-' + a.celex.replace(/[^a-zA-Z0-9]/g,'_');
-
-    const div = document.createElement('div');
-    div.className = 'amendment';
-
-    const impactRows = a.impact ? [
-      ['Monitoring plan', a.impact.monitoring_plan],
-      ['Emission methodology', a.impact.emission_methodology],
-      ['Flight scope', a.impact.flight_scope],
-      ['Reporting & deadlines', a.impact.reporting_deadlines]
-    ] : [];
-
-    const impactTableRows = impactRows.map(([dim, val]) =>
-      `<tr><td>${escHtml(dim)}</td><td class="${val ? '' : 'null-val'}">${val ? escHtml(val) : 'No impact identified'}</td></tr>`
-    ).join('');
-
-    const overallHtml = a.impact ? `
-      <div class="overall-row ${a.impact.material ? 'material' : 'not-material'}">
-        <span class="overall-icon">${a.impact.material ? '⚠' : '✓'}</span>
-        <span>${escHtml(a.impact.overall || '')}</span>
-      </div>` : '';
-
-    const impactSection = a.impact ? `
-      <div class="body-section">
-        <div class="section-label">Impact — aviation AER verifier</div>
-        <table class="impact-table">${impactTableRows}</table>
-        ${overallHtml}
-      </div>` : `<div class="empty-impact">Impact analysis not yet generated. Refresh to compute.</div>`;
-
-    const summarySection = a.summary ? `
-      <div class="body-section">
-        <div class="section-label">Summary</div>
-        <div class="section-text">${escHtml(a.summary)}</div>
-      </div>` : '';
-
-    div.innerHTML = `
-      <div class="amend-header" id="${headId}" onclick="toggleAmend('${bodyId}','${headId}')">
-        <span class="chevron" id="chev-${bodyId}">&#9654;</span>
-        <span class="amend-celex">${escHtml(a.celex)}</span>
-        <span class="amend-title">${escHtml(a.title || a.celex)}</span>
-        <span class="amend-date">${a.pubDate || '—'}</span>
-        ${isLatest ? '<span class="latest-badge">Latest amend.</span>' : ''}
-        ${isMaterial ? '<span class="material-badge">&#9888; Material</span>' : ''}
-      </div>
-      <div class="amend-body" id="${bodyId}">
-        ${summarySection}
-        ${impactSection}
-        <a class="ext-link" href="${escHtml(a.url)}" target="_blank">
-          &#8599; Open in EUR-Lex
-        </a>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-
-  if (autoOpenFirst && amendments.length > 0) {
-    const firstBodyId = 'body-' + amendments[0].celex.replace(/[^a-zA-Z0-9]/g,'_');
-    const firstHeadId = 'head-' + amendments[0].celex.replace(/[^a-zA-Z0-9]/g,'_');
-    toggleAmend(firstBodyId, firstHeadId);
-    setTimeout(() => {
-      const el = document.getElementById(firstHeadId);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }, 100);
-  }
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function escHtml(s) {
-  if (!s) return '';
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function toggleAmend(bodyId, headId) {
-  const body = document.getElementById(bodyId);
-  const head = document.getElementById(headId);
-  const chev = document.getElementById('chev-' + bodyId);
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  head.classList.toggle('open', !isOpen);
-  if (chev) chev.classList.toggle('open', !isOpen);
-}
-
-function switchTab(id, btn) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  btn.classList.add('active');
-}
-
-function formatTimestamp(iso) {
-  if (!iso) return 'never';
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
-    ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-}
-
-// ── Render all ────────────────────────────────────────────────────────────────
-
-function renderAll(cache, autoOpenFirst) {
-  document.getElementById('last-updated').textContent = 'Last updated: ' + formatTimestamp(cache.timestamp);
-  for (const [key, act] of Object.entries(ACTS)) {
-    const data = cache.acts[key] || {};
-    // Support both old cache format (array) and new format (object with consolidated + amendments)
-    const amendments = Array.isArray(data) ? data : (data.amendments || []);
-    const consolidated = Array.isArray(data) ? null : (data.consolidated || null);
-    renderConsolidatedBanner(consolidated, act.consolId);
-    renderTree(amendments, act.treeId, act.countId, autoOpenFirst && key === 'ets');
-  }
-}
-
-async function forceRefresh() {
-  const fresh = await buildCache();
-  if (fresh) renderAll(fresh, true);
-}
-
-// ── Init ──────────────────────────────────────────────────────────────────────
-
-async function init() {
-  // Show creation date
-  initCreatedDate();
-
-  // Show loading banners immediately
-  for (const [key, act] of Object.entries(ACTS)) {
-    renderConsolidatedLoading(act.consolId);
-  }
-
-  const cache = loadCache();
-  const now = Date.now();
-  const cacheAge = cache ? now - new Date(cache.timestamp).getTime() : Infinity;
-
-  if (cache && cacheAge < CACHE_TTL_MS) {
-    renderAll(cache, true);
-  } else {
-    setStatus('loading', 'Cache expired — fetching fresh data from EUR-Lex...');
-    if (cache) renderAll(cache, true);
-    const fresh = await buildCache();
-    if (fresh) renderAll(fresh, !cache);
-    else if (!cache) {
-      setStatus('error', 'Could not load data from EUR-Lex. Check your connection and try refreshing.');
-      for (const [key, act] of Object.entries(ACTS)) {
-        document.getElementById(act.treeId).innerHTML =
-          '<div class="loading-row">No data available. Click Refresh to try again.</div>';
-        document.getElementById(act.countId).textContent = '0';
-        renderConsolidatedBanner(null, act.consolId);
-      }
-    }
-  }
-}
-
+} ORDER BY DESC(?applDate) LIMIT 20`}
+async function runSparql(q){const url=SPARQL+'?query='+encodeURIComponent(q)+'&format=application%2Fsparql-results%2Bjson';const r=await fetch(url,{headers:{'Accept':'application/sparql-results+json'}});if(!r.ok)throw new Error('SPARQL '+r.status);const j=await r.json();return(j.results&&j.results.bindings)||[]}
+async function fetchConsolidated(celex){const uri=celexToUri(celex);let b=[];try{b=await runSparql(sparqlConsolidated(uri))}catch(e){return buildFallback(celex)}const valid=b.filter(r=>{const c=r.celex&&r.celex.value;if(c)return c.startsWith('0');const w=r.consWork&&r.consWork.value;return w&&w.includes('/celex/0')});if(!valid.length)return buildFallback(celex);valid.sort((a,b)=>((b.applDate&&b.applDate.value)||'').localeCompare((a.applDate&&a.applDate.value)||''));const best=valid[0];const c=(best.celex&&best.celex.value)||extractCelex((best.consWork&&best.consWork.value)||'');const d=(best.applDate&&best.applDate.value)?best.applDate.value.slice(0,10):null;return{celex:c,date:d,url:celexToUrl(c),source:'sparql'}}
+function extractCelex(uri){const m=uri.match(/\/celex\/([^/]+)$/);return m?m[1]:null}
+function buildFallback(celex){if(!celex.startsWith('3'))return null;const c='0'+celex.slice(1);return{celex:c,date:null,url:celexToUrl(c),source:'fallback'}}
+async function fetchAmendments(celex){const b=await runSparql(sparqlAmendments(celexToUri(celex)));return b.filter(r=>r.celex&&r.celex.value).map(r=>({celex:r.celex.value,pubDate:r.pubDate?r.pubDate.value.slice(0,10):null,url:celexToUrl(r.celex.value),title:null,summary:null,impact:null})).sort((a,b)=>(b.pubDate||'').localeCompare(a.pubDate||''))}
+async function fetchTitle(celex){try{const r=await fetch(`https://eur-lex.europa.eu/legal-content/EN/TIT/?uri=CELEX:${celex}`);if(!r.ok)return null;const t=await r.text();const m=t.match(/<title[^>]*>([^<]+)<\/title>/i);return m?m[1].replace(' - EUR-Lex','').trim():null}catch(e){return null}}
+async function fetchFullText(celex){try{const r=await fetch(`https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:${celex}`);if(!r.ok)return null;const h=await r.text();const d=document.createElement('div');d.innerHTML=h;return(d.innerText||d.textContent||'').replace(/\s+/g,' ').trim().slice(0,6000)}catch(e){return null}}
+async function fetchConsolTitle(url){try{const r=await fetch(url);if(!r.ok)return null;const t=await r.text();const m=t.match(/<title[^>]*>([^<]+)<\/title>/i);return m?m[1].replace(' - EUR-Lex','').trim():null}catch(e){return null}}
+function setStatus(type,text){const bar=document.getElementById('status-bar'),txt=document.getElementById('status-text');bar.className='status-bar '+type;txt.textContent=text;if(type==='success')setTimeout(()=>{bar.className='status-bar'},3000)}
+function loadCache(){try{const r=localStorage.getItem(CACHE_KEY);return r?JSON.parse(r):null}catch(e){return null}}
+function saveCache(d){try{localStorage.setItem(CACHE_KEY,JSON.stringify(d))}catch(e){}}
+async function buildCache(){setStatus('loading','Querying EUR-Lex Cellar for amendments...');document.getElementById('refresh-btn').disabled=true;const cache={timestamp:new Date().toISOString(),acts:{}};for(const[key,act]of Object.entries(ACTS)){setStatus('loading',`Fetching consolidated version for ${act.celex}...`);let consolidated=null;try{consolidated=await fetchConsolidated(act.celex);if(consolidated){const t=await fetchConsolTitle(consolidated.url);consolidated.title=t||null}}catch(e){consolidated=buildFallback(act.celex)}setStatus('loading',`Fetching amendments for ${act.celex}...`);let amendments=[];try{amendments=await fetchAmendments(act.celex)}catch(e){setStatus('error',`Could not reach EUR-Lex for ${act.celex}.`);document.getElementById('refresh-btn').disabled=false;return null}for(let i=0;i<amendments.length;i++){const a=amendments[i];setStatus('loading',`Fetching details for ${a.celex} (${i+1}/${amendments.length})...`);const title=await fetchTitle(a.celex);amendments[i].title=title||a.celex;await new Promise(r=>setTimeout(r,400))}cache.acts[key]={consolidated,amendments}}saveCache(cache);document.getElementById('refresh-btn').disabled=false;setStatus('success','Data refreshed successfully');return cache}
+function renderConsolidatedBanner(consol,id){const el=document.getElementById(id);if(!el)return;if(!consol){el.innerHTML=`<div class="consol-banner not-found"><span class="consol-icon">&#128203;</span><div class="consol-content"><div class="consol-label">Latest consolidated version</div><div class="consol-title">Not found in Cellar</div></div></div>`;return}const dateStr=consol.date?`Valid from ${consol.date}`:'Date not available from Cellar';const titleStr=consol.title||consol.celex||'Consolidated version';const note=consol.source==='fallback'?' <span style="color:#aaa;font-size:10px">(direct link)</span>':'';el.innerHTML=`<div class="consol-banner"><span class="consol-icon">&#128203;</span><div class="consol-content"><div class="consol-label">Latest consolidated version</div><div class="consol-title">${esc(titleStr)}</div><div class="consol-meta">${esc(consol.celex||'')} &nbsp;&middot;&nbsp; ${esc(dateStr)}${note}</div></div><a class="consol-link" href="${esc(consol.url)}" target="_blank">&#8599; Open in EUR-Lex</a></div>`}
+function renderConsolidatedLoading(id){const el=document.getElementById(id);if(el)el.innerHTML=`<div class="consol-banner loading-state"><span class="spinner-sm"></span><div class="consol-content"><div class="consol-label">Latest consolidated version</div><div class="consol-title" style="color:#aaa">Loading...</div></div></div>`}
+function renderTree(amendments,containerId,countId,autoOpenFirst){const container=document.getElementById(containerId),countEl=document.getElementById(countId);countEl.textContent=amendments.length;if(!amendments.length){container.innerHTML='<div class="loading-row">No amendments found.</div>';return}container.innerHTML='';amendments.forEach((a,i)=>{const isLatest=i===0,isMaterial=a.impact&&a.impact.material,bodyId='body-'+a.celex.replace(/[^a-zA-Z0-9]/g,'_'),headId='head-'+a.celex.replace(/[^a-zA-Z0-9]/g,'_'),div=document.createElement('div');div.className='amendment';const impactRows=a.impact?[['Monitoring plan',a.impact.monitoring_plan],['Emission methodology',a.impact.emission_methodology],['Flight scope',a.impact.flight_scope],['Reporting & deadlines',a.impact.reporting_deadlines]]:[];const impactTableRows=impactRows.map(([d,v])=>`<tr><td>${esc(d)}</td><td class="${v?'':'null-val'}">${v?esc(v):'No impact identified'}</td></tr>`).join('');const overallHtml=a.impact?`<div class="overall-row ${a.impact.material?'material':'not-material'}"><span class="overall-icon">${a.impact.material?'&#9888;':'&#10003;'}</span><span>${esc(a.impact.overall||'')}</span></div>`:'';const impactSection=a.impact?`<div class="body-section"><div class="section-label">Impact &#8212; aviation AER verifier</div><table class="impact-table">${impactTableRows}</table>${overallHtml}</div>`:'<div class="empty-impact">Impact analysis not yet generated.</div>';const summarySection=a.summary?`<div class="body-section"><div class="section-label">Summary</div><div class="section-text">${esc(a.summary)}</div></div>`:'';div.innerHTML=`<div class="amend-header" id="${headId}" onclick="toggleAmend('${bodyId}','${headId}')"><span class="chevron" id="chev-${bodyId}">&#9654;</span><span class="amend-celex">${esc(a.celex)}</span><span class="amend-title">${esc(a.title||a.celex)}</span><span class="amend-date">${a.pubDate||'&#8212;'}</span>${isLatest?'<span class="latest-badge">Latest amend.</span>':''}${isMaterial?'<span class="material-badge">&#9888; Material</span>':''}</div><div class="amend-body" id="${bodyId}">${summarySection}${impactSection}<a class="ext-link" href="${esc(a.url)}" target="_blank">&#8599; Open in EUR-Lex</a></div>`;container.appendChild(div)});if(autoOpenFirst&&amendments.length>0){const fb='body-'+amendments[0].celex.replace(/[^a-zA-Z0-9]/g,'_'),fh='head-'+amendments[0].celex.replace(/[^a-zA-Z0-9]/g,'_');toggleAmend(fb,fh);setTimeout(()=>{const el=document.getElementById(fh);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'})},100)}}
+function esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function toggleAmend(bodyId,headId){const body=document.getElementById(bodyId),head=document.getElementById(headId),chev=document.getElementById('chev-'+bodyId),isOpen=body.classList.contains('open');body.classList.toggle('open',!isOpen);head.classList.toggle('open',!isOpen);if(chev)chev.classList.toggle('open',!isOpen)}
+function switchTab(id,btn){document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById(id).classList.add('active');btn.classList.add('active')}
+function formatTimestamp(iso){if(!iso)return'never';const d=new Date(iso);return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
+function renderAll(cache,autoOpenFirst){document.getElementById('last-updated').textContent='Last updated: '+formatTimestamp(cache.timestamp);for(const[key,act]of Object.entries(ACTS)){const data=cache.acts[key]||{};const amendments=Array.isArray(data)?data:(data.amendments||[]);const consolidated=Array.isArray(data)?null:(data.consolidated||null);renderConsolidatedBanner(consolidated,act.consolId);renderTree(amendments,act.treeId,act.countId,autoOpenFirst&&key==='ets')}}
+async function forceRefresh(){const fresh=await buildCache();if(fresh)renderAll(fresh,true)}
+async function init(){for(const[key,act]of Object.entries(ACTS))renderConsolidatedLoading(act.consolId);const cache=loadCache();const now=Date.now();const age=cache?now-new Date(cache.timestamp).getTime():Infinity;if(cache&&age<CACHE_TTL_MS){renderAll(cache,true)}else{setStatus('loading','Cache expired &#8212; fetching fresh data from EUR-Lex...');if(cache)renderAll(cache,true);const fresh=await buildCache();if(fresh)renderAll(fresh,!cache);else if(!cache){setStatus('error','Could not load data from EUR-Lex. Check your connection and try refreshing.');for(const[key,act]of Object.entries(ACTS)){document.getElementById(act.treeId).innerHTML='<div class="loading-row">No data available. Click Refresh to try again.</div>';document.getElementById(act.countId).textContent='0';renderConsolidatedBanner(null,act.consolId)}}}}
 init();
 </script>
 </body>
