@@ -1,0 +1,2415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aviation Environmental Schemes – Reference Wiki</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --sidebar-bg: #161b27;
+    --card-bg: #1a2035;
+    --card-border: #2a3550;
+    --accent: #3b82f6;
+    --accent2: #60a5fa;
+    --gold: #f59e0b;
+    --green: #22c55e;
+    --red: #ef4444;
+    --orange: #f97316;
+    --purple: #a855f7;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --verifier-bg: #1e3a5f;
+    --verifier-border: #3b82f6;
+    --warn-bg: #2d1b00;
+    --warn-border: #f59e0b;
+    --sidebar-width: 280px;
+    --header-height: 60px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* SPLASH SCREEN */
+  #splash {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 1000; text-align: center; padding: 40px;
+  }
+  #splash .splash-logo { font-size: 48px; margin-bottom: 20px; }
+  #splash h1 { font-size: 2.2rem; font-weight: 700; color: var(--text); margin-bottom: 8px; line-height: 1.2; }
+  #splash h2 { font-size: 1.1rem; color: var(--accent2); font-weight: 400; margin-bottom: 32px; }
+  #splash .meta-card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 24px 36px; margin-bottom: 28px; max-width: 560px; width: 100%;
+  }
+  #splash .meta-card .author { font-size: 1.05rem; color: var(--text); font-weight: 600; margin-bottom: 4px; }
+  #splash .meta-card .role { color: var(--accent2); font-size: 0.95rem; margin-bottom: 12px; }
+  #splash .meta-card .date { color: var(--text-muted); font-size: 0.88rem; }
+  #splash .enter-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 14px 40px; font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: background 0.2s;
+  }
+  #splash .enter-btn:hover { background: #2563eb; }
+
+  /* MAIN APP */
+  #app { display: none; }
+
+  /* TOP BAR */
+  #topbar {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--header-height);
+    background: var(--sidebar-bg); border-bottom: 1px solid var(--card-border);
+    display: flex; align-items: center; padding: 0 16px; gap: 16px; z-index: 100;
+  }
+  #topbar .brand { font-weight: 700; font-size: 0.95rem; color: var(--accent2); white-space: nowrap; }
+  #topbar .brand span { color: var(--text-muted); font-weight: 400; }
+  #search-wrap { flex: 1; max-width: 520px; position: relative; }
+  #search-input {
+    width: 100%; background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 8px 14px 8px 36px; color: var(--text); font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  #search-input:focus { border-color: var(--accent); }
+  #search-input::placeholder { color: var(--text-dim); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 14px; }
+  #search-results {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 8px; max-height: 380px; overflow-y: auto; display: none; z-index: 200;
+  }
+  .sr-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--card-border); }
+  .sr-item:last-child { border-bottom: none; }
+  .sr-item:hover { background: var(--verifier-bg); }
+  .sr-item .sr-section { font-size: 0.72rem; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+  .sr-item .sr-text { font-size: 0.88rem; color: var(--text); }
+  .sr-item mark { background: rgba(59,130,246,0.3); color: var(--accent2); border-radius: 2px; padding: 0 2px; }
+  #menu-toggle { background: none; border: none; color: var(--text); font-size: 20px; cursor: pointer; padding: 4px; }
+
+  /* SIDEBAR */
+  #sidebar {
+    position: fixed; top: var(--header-height); left: 0; bottom: 0;
+    width: var(--sidebar-width); background: var(--sidebar-bg);
+    border-right: 1px solid var(--card-border); overflow-y: auto;
+    transition: transform 0.25s; z-index: 90; padding-bottom: 40px;
+  }
+  #sidebar.hidden { transform: translateX(-100%); }
+  .nav-section { padding: 14px 16px 6px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); font-weight: 600; }
+  .nav-item {
+    display: block; padding: 9px 20px; font-size: 0.88rem; color: var(--text-muted);
+    cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(59,130,246,0.08); }
+  .nav-item.active { color: var(--accent2); border-left-color: var(--accent); background: rgba(59,130,246,0.1); }
+  .nav-sub { padding-left: 32px; font-size: 0.82rem; }
+
+  /* MAIN CONTENT */
+  #main {
+    margin-left: var(--sidebar-width); margin-top: var(--header-height);
+    padding: 40px 48px; max-width: 960px; transition: margin-left 0.25s;
+  }
+  #main.full { margin-left: 0; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* TYPOGRAPHY */
+  h1.page-title { font-size: 2rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+  h1.page-title .badge {
+    display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 3px 10px;
+    border-radius: 20px; margin-left: 10px; vertical-align: middle; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .badge-ets { background: rgba(59,130,246,0.2); color: var(--accent2); border: 1px solid var(--accent); }
+  .badge-corsia { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid var(--purple); }
+  .badge-refuel { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid var(--green); }
+  .badge-nonco2 { background: rgba(249,115,22,0.2); color: #fb923c; border: 1px solid var(--orange); }
+  .badge-french { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid var(--gold); }
+  .badge-saf { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #10b981; }
+  .badge-iso { background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid #6366f1; }
+  .badge-policy { background: rgba(100,116,139,0.2); color: var(--text-muted); border: 1px solid var(--text-dim); }
+
+  /* PATHWAY GRID */
+  .pathway-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .pathway-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 16px 18px; }
+  .pathway-card .pw-name { font-size: 0.9rem; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+  .pathway-card .pw-abbr { font-size: 0.72rem; color: var(--text-dim); margin-bottom: 8px; }
+  .pathway-card .pw-row { display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 3px; }
+  .pathway-card .pw-label { color: var(--text-dim); }
+  .pathway-card .pw-val { color: var(--text-muted); font-weight: 600; }
+
+  /* SCHEME COMPARISON PILLS */
+  .scheme-pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin: 2px; }
+  .pill-ets { background: rgba(59,130,246,0.2); color: var(--accent2); border: 1px solid var(--accent); }
+  .pill-corsia { background: rgba(168,85,247,0.2); color: #c084fc; border: 1px solid var(--purple); }
+  .pill-refuel { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid var(--green); }
+  .pill-saf { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid #10b981; }
+
+  .page-subtitle { color: var(--text-muted); font-size: 1rem; margin-bottom: 32px; line-height: 1.5; }
+  h2 { font-size: 1.35rem; font-weight: 700; color: var(--text); margin: 36px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--card-border); }
+  h3 { font-size: 1.05rem; font-weight: 600; color: var(--accent2); margin: 24px 0 10px; }
+  h4 { font-size: 0.95rem; font-weight: 600; color: var(--gold); margin: 18px 0 8px; }
+  p { color: var(--text-muted); line-height: 1.75; margin-bottom: 12px; font-size: 0.94rem; }
+  ul, ol { color: var(--text-muted); line-height: 1.8; margin-bottom: 12px; padding-left: 22px; font-size: 0.93rem; }
+  li { margin-bottom: 4px; }
+  strong { color: var(--text); font-weight: 600; }
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* CARDS */
+  .card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 22px 26px; margin-bottom: 20px; }
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .card-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: 18px 20px; }
+  .stat-card .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 6px; }
+  .stat-card .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--accent2); }
+  .stat-card .stat-note { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+
+  /* VERIFIER BOX */
+  .verifier-box {
+    background: var(--verifier-bg); border: 1px solid var(--verifier-border);
+    border-radius: 10px; padding: 18px 22px; margin: 20px 0;
+  }
+  .verifier-box .vb-head { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--accent2); margin-bottom: 10px; }
+  .verifier-box ul { margin: 0; padding-left: 18px; }
+  .verifier-box ul li { color: #93c5fd; font-size: 0.88rem; line-height: 1.7; }
+
+  /* WARNING BOX */
+  .warn-box {
+    background: var(--warn-bg); border: 1px solid var(--warn-border);
+    border-radius: 10px; padding: 16px 20px; margin: 16px 0;
+  }
+  .warn-box .wb-head { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gold); margin-bottom: 8px; }
+  .warn-box p { color: #fde68a; font-size: 0.88rem; margin: 0; }
+
+  /* TABLE */
+  .data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.88rem; }
+  .data-table th { background: var(--card-bg); color: var(--text-muted); font-weight: 600; text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--card-border); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .data-table td { padding: 10px 14px; border-bottom: 1px solid var(--card-border); color: var(--text-muted); vertical-align: top; }
+  .data-table tr:hover td { background: rgba(59,130,246,0.04); }
+  .data-table td strong { color: var(--text); }
+
+  /* TIMELINE */
+  .timeline { position: relative; padding: 10px 0; margin-bottom: 30px; }
+  .timeline::before { content: ''; position: absolute; left: 24px; top: 0; bottom: 0; width: 2px; background: var(--card-border); }
+  .tl-item { display: flex; gap: 20px; margin-bottom: 28px; position: relative; }
+  .tl-dot {
+    flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; border: 2px solid; z-index: 1;
+  }
+  .tl-dot.blue { background: rgba(59,130,246,0.15); border-color: var(--accent); color: var(--accent2); }
+  .tl-dot.green { background: rgba(34,197,94,0.15); border-color: var(--green); color: #4ade80; }
+  .tl-dot.gold { background: rgba(245,158,11,0.15); border-color: var(--gold); color: #fbbf24; }
+  .tl-dot.purple { background: rgba(168,85,247,0.15); border-color: var(--purple); color: #c084fc; }
+  .tl-dot.red { background: rgba(239,68,68,0.15); border-color: var(--red); color: #f87171; }
+  .tl-content { flex: 1; padding-top: 8px; }
+  .tl-year { font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .tl-title { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .tl-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+
+  /* SAF MANDATE CHART */
+  .saf-bars { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .saf-row { display: flex; align-items: center; gap: 12px; }
+  .saf-year { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); width: 38px; flex-shrink: 0; }
+  .saf-bar-wrap { flex: 1; height: 22px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 4px; overflow: hidden; }
+  .saf-bar { height: 100%; border-radius: 3px; display: flex; align-items: center; padding-left: 8px; font-size: 0.75rem; font-weight: 600; color: #fff; transition: width 0.5s ease; }
+  .saf-pct { font-size: 0.8rem; color: var(--text-muted); width: 40px; flex-shrink: 0; text-align: right; }
+
+  /* SCHEME DIAGRAM */
+  #scheme-diagram { width: 100%; max-width: 700px; display: block; margin: 0 auto 24px; }
+
+  /* PHASE CHIPS */
+  .phase-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .phase-chip {
+    border-radius: 8px; padding: 12px 18px; font-size: 0.85rem; font-weight: 600;
+    border: 1px solid; display: flex; flex-direction: column; gap: 4px; min-width: 130px;
+  }
+  .phase-chip .pc-years { font-size: 0.72rem; font-weight: 400; opacity: 0.75; }
+
+  /* HOME CARDS */
+  .scheme-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+  .scheme-card {
+    border-radius: 10px; padding: 20px 22px; cursor: pointer;
+    border: 1px solid; transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .scheme-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .scheme-card .sc-icon { font-size: 1.6rem; margin-bottom: 10px; }
+  .scheme-card .sc-name { font-size: 1rem; font-weight: 700; margin-bottom: 5px; }
+  .scheme-card .sc-desc { font-size: 0.82rem; line-height: 1.5; opacity: 0.8; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); }
+    #sidebar.mobile-open { transform: translateX(0); }
+    #main { margin-left: 0; padding: 24px 20px; }
+    .card-grid, .card-grid.three { grid-template-columns: 1fr; }
+    .scheme-cards { grid-template-columns: 1fr; }
+    h1.page-title { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="splash-logo">✈️</div>
+  <h1>Aviation Environmental Schemes</h1>
+  <h2>Reference Wiki for Accredited Verifiers</h2>
+
+  <div class="meta-card">
+    <div class="author">Frank Adriaansen</div>
+    <div class="role">Lead Verifier — ETSverification</div>
+    <div class="date">Created: 21 May 2026 &nbsp;·&nbsp; ISO 14065 / ISO 17029</div>
+  </div>
+  <button class="enter-btn" onclick="enterWiki()">Enter Wiki →</button>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <button id="menu-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="brand">Aviation Wiki <span>| ETSverification</span></div>
+    <div id="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search all topics…" oninput="doSearch(this.value)" onblur="setTimeout(()=>closeSearch(),200)" />
+      <div id="search-results"></div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar">
+    <div class="nav-section">Navigation</div>
+    <a class="nav-item active" onclick="showPage('home')">🏠 Home & Overview</a>
+    <a class="nav-item" onclick="showPage('timeline')">📅 Climate Policy Timeline</a>
+    <div class="nav-section">EU ETS</div>
+    <a class="nav-item" onclick="showPage('ets-overview')">📊 Overview & History</a>
+    <a class="nav-item nav-sub" onclick="showPage('ets-aviation')">✈️ Aviation in EU ETS</a>
+    <a class="nav-item nav-sub" onclick="showPage('ets-mrv')">📋 MRV for Verifiers</a>
+    <div class="nav-section">International</div>
+    <a class="nav-item" onclick="showPage('corsia')">🌍 CORSIA</a>
+    <a class="nav-item" onclick="showPage('refueleu')">⛽ ReFuelEU Aviation</a>
+    <div class="nav-section">Fuels</div>
+    <a class="nav-item" onclick="showPage('saf')">🌿 Sustainable Aviation Fuel</a>
+    <div class="nav-section">Standards</div>
+    <a class="nav-item" onclick="showPage('iso')">📐 ISO 14065 &amp; ISO 17029</a>
+    <div class="nav-section">Other Schemes</div>
+    <a class="nav-item" onclick="showPage('nonco2')">🌡️ Non-CO₂ Effects</a>
+    <a class="nav-item" onclick="showPage('french')">🇫🇷 French Compensation</a>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main id="main">
+
+    <!-- HOME PAGE -->
+    <div class="page active" id="page-home">
+      <h1 class="page-title">Aviation Environmental Schemes <span class="badge badge-ets">Reference Wiki</span></h1>
+      <p class="page-subtitle">A comprehensive reference for verifiers accredited under ISO 14065 and ISO 17029. Covers EU ETS, CORSIA, ReFuelEU, Non-CO₂ effects, and the French domestic compensation scheme.</p>
+
+      <h2>How the Schemes Relate</h2>
+      <p>Aviation decarbonisation is governed by a layered set of overlapping instruments operating at EU and global level. Understanding how they interact is essential for verifiers.</p>
+
+      <svg id="scheme-diagram" viewBox="0 0 700 340" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <polygon points="0 0, 8 3, 0 6" fill="#475569"/>
+          </marker>
+        </defs>
+        <!-- Background panels -->
+        <rect x="10" y="10" width="680" height="320" rx="12" fill="#161b27" stroke="#2a3550" stroke-width="1.5"/>
+        <!-- EU level box -->
+        <rect x="30" y="30" width="300" height="280" rx="8" fill="rgba(59,130,246,0.06)" stroke="#3b82f6" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="45" y="52" fill="#60a5fa" font-size="10" font-weight="700" font-family="system-ui">EU LEVEL</text>
+        <!-- ICAO level box -->
+        <rect x="370" y="30" width="300" height="280" rx="8" fill="rgba(168,85,247,0.06)" stroke="#a855f7" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="385" y="52" fill="#c084fc" font-size="10" font-weight="700" font-family="system-ui">ICAO / GLOBAL LEVEL</text>
+
+        <!-- EU ETS box -->
+        <rect x="50" y="65" width="120" height="56" rx="7" fill="#1e3a5f" stroke="#3b82f6" stroke-width="1.5"/>
+        <text x="110" y="89" text-anchor="middle" fill="#93c5fd" font-size="11" font-weight="700" font-family="system-ui">EU ETS</text>
+        <text x="110" y="105" text-anchor="middle" fill="#64748b" font-size="9" font-family="system-ui">EEA flights (CO₂)</text>
+
+        <!-- ReFuelEU box -->
+        <rect x="200" y="65" width="110" height="56" rx="7" fill="rgba(34,197,94,0.1)" stroke="#22c55e" stroke-width="1.5"/>
+        <text x="255" y="89" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700" font-family="system-ui">ReFuelEU</text>
+        <text x="255" y="105" text-anchor="middle" fill="#64748b" font-size="9" font-family="system-ui">SAF mandates</text>
+
+        <!-- Non-CO2 box -->
+        <rect x="50" y="155" width="120" height="56" rx="7" fill="rgba(249,115,22,0.1)" stroke="#f97316" stroke-width="1.5"/>
+        <text x="110" y="179" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="700" font-family="system-ui">Non-CO₂ MRV</text>
+        <text x="110" y="195" text-anchor="middle" fill="#64748b" font-size="9" font-family="system-ui">from Jan 2025</text>
+
+        <!-- French box -->
+        <rect x="200" y="155" width="110" height="56" rx="7" fill="rgba(245,158,11,0.1)" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="255" y="176" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700" font-family="system-ui">French</text>
+        <text x="255" y="191" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700" font-family="system-ui">Compensation</text>
+        <text x="255" y="207" text-anchor="middle" fill="#64748b" font-size="9" font-family="system-ui">Domestic flights</text>
+
+        <!-- CORSIA box -->
+        <rect x="390" y="110" width="250" height="130" rx="7" fill="rgba(168,85,247,0.12)" stroke="#a855f7" stroke-width="1.5"/>
+        <text x="515" y="140" text-anchor="middle" fill="#c084fc" font-size="13" font-weight="700" font-family="system-ui">CORSIA</text>
+        <text x="515" y="158" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="system-ui">International flights</text>
+        <text x="515" y="172" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="system-ui">Pilot: 2021–2023</text>
+        <text x="515" y="185" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="system-ui">Phase 1: 2024–2026</text>
+        <text x="515" y="198" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="system-ui">Phase 2: 2027–2035</text>
+        <text x="515" y="212" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="system-ui">(ICAO Annex 16, Vol. IV)</text>
+        <text x="515" y="228" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="system-ui">ISO 14065 verifier required</text>
+
+        <!-- Legal base -->
+        <rect x="390" y="260" width="250" height="38" rx="7" fill="rgba(100,116,139,0.12)" stroke="#475569" stroke-width="1"/>
+        <text x="515" y="279" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="700" font-family="system-ui">LEGAL BASIS</text>
+        <text x="515" y="292" text-anchor="middle" fill="#64748b" font-size="9" font-family="system-ui">Paris Agreement · EU Climate Law · Fit for 55</text>
+
+        <!-- Arrows -->
+        <line x1="170" y1="93" x2="198" y2="93" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="110" y1="121" x2="110" y2="153" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="255" y1="121" x2="255" y2="153" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="320" y1="93" x2="388" y2="155" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="4,3"/>
+        <text x="335" y="118" fill="#475569" font-size="8" font-family="system-ui">review 2026</text>
+
+        <!-- Paris to all -->
+        <line x1="515" y1="298" x2="515" y2="242" stroke="#475569" stroke-width="1" marker-end="url(#arr)"/>
+        <line x1="390" y1="279" x2="330" y2="230" stroke="#475569" stroke-width="1" stroke-dasharray="3,3"/>
+        <line x1="390" y1="279" x2="170" y2="220" stroke="#475569" stroke-width="1" stroke-dasharray="3,3"/>
+      </svg>
+
+      <h2>Quick Navigation</h2>
+      <div class="scheme-cards">
+        <div class="scheme-card" style="background:rgba(59,130,246,0.08);border-color:#3b82f6;" onclick="showPage('ets-overview')">
+          <div class="sc-icon">📊</div>
+          <div class="sc-name" style="color:#60a5fa;">EU Emissions Trading System</div>
+          <div class="sc-desc" style="color:#93c5fd;">Cap-and-trade system covering EEA aviation. Free allocation phase-out by 2026. MRV obligations for aircraft operators.</div>
+        </div>
+        <div class="scheme-card" style="background:rgba(168,85,247,0.08);border-color:#a855f7;" onclick="showPage('corsia')">
+          <div class="sc-icon">🌍</div>
+          <div class="sc-name" style="color:#c084fc;">CORSIA</div>
+          <div class="sc-desc" style="color:#d8b4fe;">ICAO global offsetting scheme for international aviation. Pilot phase complete. Phase 1 (2024–2026) now mandatory for 130 States.</div>
+        </div>
+        <div class="scheme-card" style="background:rgba(34,197,94,0.08);border-color:#22c55e;" onclick="showPage('refueleu')">
+          <div class="sc-icon">⛽</div>
+          <div class="sc-name" style="color:#4ade80;">ReFuelEU Aviation</div>
+          <div class="sc-desc" style="color:#86efac;">SAF blending mandates from 2% (2025) to 70% (2050). Includes synthetic e-fuel sub-mandate from 2030.</div>
+        </div>
+        <div class="scheme-card" style="background:rgba(16,185,129,0.08);border-color:#10b981;" onclick="showPage('saf')">
+          <div class="sc-icon">🌿</div>
+          <div class="sc-name" style="color:#34d399;">Sustainable Aviation Fuel (SAF)</div>
+          <div class="sc-desc" style="color:#6ee7b7;">Pathways, sustainability criteria, certification (ISCC/RSB), how SAF is treated under EU ETS, CORSIA, ReFuelEU and the French scheme.</div>
+        </div>
+        <div class="scheme-card" style="background:rgba(249,115,22,0.08);border-color:#f97316;" onclick="showPage('nonco2')">
+          <div class="sc-icon">🌡️</div>
+          <div class="sc-name" style="color:#fb923c;">Non-CO₂ Effects</div>
+          <div class="sc-desc" style="color:#fdba74;">Contrails, NOx, soot. >66% of aviation's net climate forcing. Mandatory MRV monitoring from 1 January 2025.</div>
+        </div>
+        <div class="scheme-card" style="background:rgba(245,158,11,0.08);border-color:#f59e0b;" onclick="showPage('french')">
+          <div class="sc-icon">🇫🇷</div>
+          <div class="sc-name" style="color:#fbbf24;">French Compensation Scheme</div>
+          <div class="sc-desc" style="color:#fde68a;">Article 147 — mandatory 100% offsetting of domestic flight emissions since 2024. Annual report to DGAC by 31 March.</div>
+        </div>
+        <div class="scheme-card" style="background:rgba(99,102,241,0.08);border-color:#6366f1;" onclick="showPage('iso')">
+          <div class="sc-icon">📐</div>
+          <div class="sc-name" style="color:#a5b4fc;">ISO 14065 &amp; ISO 17029</div>
+          <div class="sc-desc" style="color:#c7d2fe;">The two interlocking standards for accredited verifiers. How they work together, key clauses, differences, and what each requires from a verification body.</div>
+        </div>
+        <div class="scheme-card" style="background:rgba(100,116,139,0.08);border-color:#475569;" onclick="showPage('timeline')">
+          <div class="sc-icon">📅</div>
+          <div class="sc-name" style="color:#94a3b8;">Climate Policy Timeline</div>
+          <div class="sc-desc" style="color:#cbd5e1;">From UNFCCC 1992 to EU net-zero 2050. Kyoto, Paris Agreement, EU Green Deal, Fit for 55 and beyond.</div>
+        </div>
+      </div>
+
+      <h2>About This Wiki</h2>
+      <div class="card">
+        <p>This reference tool is designed for verifiers accredited under <strong>ISO 14065</strong> (general principles and requirements for bodies validating and verifying environmental information) and <strong>ISO 17029</strong> (conformity assessment — general principles and requirements for validation and verification bodies). It covers all major aviation environmental compliance schemes in force as of May 2026.</p>
+        <p>Each section includes specific <strong>verifier obligation callout boxes</strong> summarising what accredited verifiers are required to do, check, and report. Use the search bar to jump directly to any topic.</p>
+      </div>
+    </div>
+
+    <!-- TIMELINE PAGE -->
+    <div class="page" id="page-timeline">
+      <h1 class="page-title">Climate Policy Timeline <span class="badge badge-policy">Background</span></h1>
+      <p class="page-subtitle">Key milestones from the first international climate agreements to the EU's 2050 net-zero commitment and beyond.</p>
+
+      <h2>International Framework</h2>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot blue">1992</div>
+          <div class="tl-content">
+            <div class="tl-year">Rio de Janeiro · June 1992</div>
+            <div class="tl-title">UNFCCC — United Nations Framework Convention on Climate Change</div>
+            <div class="tl-desc">Adopted at the UN Conference on Environment and Development ("Earth Summit"). First global framework to coordinate a response to climate change. Set the objective of stabilising GHG concentrations to prevent dangerous anthropogenic interference. Now ratified by 198 Parties. Aviation emissions not explicitly addressed.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot purple">1997</div>
+          <div class="tl-content">
+            <div class="tl-year">Kyoto, Japan · December 1997 (entered into force 2005)</div>
+            <div class="tl-title">Kyoto Protocol</div>
+            <div class="tl-desc">First legally binding treaty with country-specific emissions reduction targets. Committed developed (Annex I) countries to reduce emissions by an average of 5% below 1990 levels over 2008–2012. Did not bind developing nations. Introduced three market mechanisms: Emissions Trading (ET), Clean Development Mechanism (CDM), and Joint Implementation (JI). Article 2.2 tasked ICAO with limiting aviation bunker fuel emissions.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot gold">2009</div>
+          <div class="tl-content">
+            <div class="tl-year">Copenhagen · December 2009</div>
+            <div class="tl-title">COP15 — Copenhagen Accord</div>
+            <div class="tl-desc">Non-binding political agreement. Countries pledged to limit global warming to below 2°C. Introduced concept of nationally determined contributions (NDCs). Widely considered a diplomatic disappointment but established the 2°C target that Paris later codified.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot green">2015</div>
+          <div class="tl-content">
+            <div class="tl-year">Paris · December 2015 (entered into force November 2016)</div>
+            <div class="tl-title">Paris Agreement — COP21</div>
+            <div class="tl-desc">Adopted at COP21 (195 states participated; the EU counts as a 196th Party). Legally binding framework requiring all countries to submit NDCs (Nationally Determined Contributions) and ratchet ambition every 5 years. Goals: (1) hold warming well below 2°C above pre-industrial levels; (2) pursue efforts to limit to 1.5°C; (3) strengthen climate resilience. No specific aviation provisions — ICAO tasked via CORSIA. Entered into force 4 November 2016.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot blue">2016</div>
+          <div class="tl-content">
+            <div class="tl-year">Montreal · October 2016</div>
+            <div class="tl-title">ICAO 39th Assembly — CORSIA Adopted</div>
+            <div class="tl-desc">ICAO member states unanimously adopted Resolution A39-3, establishing CORSIA as the mechanism to deliver carbon-neutral growth from 2020 (CNG2020 — the aspiration itself was first established at the 37th Assembly in 2010 and reaffirmed at the 38th in 2013). Voluntary pilot phase to begin 2021.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot gold">2019</div>
+          <div class="tl-content">
+            <div class="tl-year">Brussels · December 2019</div>
+            <div class="tl-title">European Green Deal</div>
+            <div class="tl-desc">Landmark European Commission strategy aiming to make the EU the first climate-neutral continent by 2050. Covered energy, transport, industry, food systems. Aviation identified as a key sector requiring decarbonisation. Led directly to the Fit for 55 legislative package.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot green">2021</div>
+          <div class="tl-content">
+            <div class="tl-year">EU · June 2021</div>
+            <div class="tl-title">European Climate Law</div>
+            <div class="tl-desc">Writes into binding EU law the goal of climate neutrality by 2050. Sets the interim target: at least <strong>−55% net GHG emissions by 2030</strong> vs. 1990 levels. Establishes a European Scientific Advisory Board on Climate Change. CORSIA pilot phase begins (2021–2023). <em>(Note: the −90% by 2040 interim target was added by amendment in 2026 — see below.)</em></div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot blue">2023</div>
+          <div class="tl-content">
+            <div class="tl-year">EU · May 2023</div>
+            <div class="tl-title">Fit for 55 Package — Final Adoption</div>
+            <div class="tl-desc">Comprehensive legislative package revising all relevant EU policy instruments to deliver the 2030 climate target. For aviation: revised EU ETS Directive (Regulation 2023/958 and 2023/959), ReFuelEU Aviation (Regulation 2023/2405), extended MRV framework. EU ETS cap tightened; free allowances for aviation phase-out accelerated. CORSIA Phase 1 begins (2024–2026).</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot gold">2025</div>
+          <div class="tl-content">
+            <div class="tl-year">EU · January 2025</div>
+            <div class="tl-title">ReFuelEU & Non-CO₂ MRV Take Effect</div>
+            <div class="tl-desc">ReFuelEU Aviation Regulation becomes applicable from 1 January 2025 — 2% SAF blending obligation begins. Regulation (EU) 2024/2493 extends EU ETS MRV to include <strong>non-CO₂ aviation effects</strong>; aircraft operators must monitor and report non-CO₂ data from this date.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot purple">2026</div>
+          <div class="tl-content">
+            <div class="tl-year">EU · 2026</div>
+            <div class="tl-title">EU ETS Aviation — Full Auctioning; Climate Law 2040 Target Added</div>
+            <div class="tl-desc">Free allowance allocation for aircraft operators ends in 2026 — all allowances auctioned; aviation cap: 24.9 MtCO₂e. European Commission reviews CORSIA convergence with EU ETS goals. Separately, the Council formally adopted an amendment to the European Climate Law (Regulation (EU) 2021/1119) adding an interim <strong>−90% net GHG by 2040</strong> target vs. 1990 levels (March 2026). This target was not in the original 2021 law.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot green">2030</div>
+          <div class="tl-content">
+            <div class="tl-year">Global / EU · 2030</div>
+            <div class="tl-title">Key Milestone Year</div>
+            <div class="tl-desc">EU target: −55% net GHG vs. 1990. ReFuelEU: 6% SAF mandate (incl. 1.2% synthetic e-fuels). CORSIA Phase 1 ends; Phase 2 begins (2027). EU ETS Linear Reduction Factor rises to 4.4% from 2028.</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot red">2050</div>
+          <div class="tl-content">
+            <div class="tl-year">EU · 2050</div>
+            <div class="tl-title">EU Climate Neutrality Target</div>
+            <div class="tl-desc">EU to be climate neutral (net-zero GHG emissions). ReFuelEU: 70% SAF mandate (incl. 35% synthetic). CORSIA Phase 2 concludes in 2035; the long-term framework beyond 2035 remains subject to ICAO periodic review. Aviation sector expected to have reduced CO₂ by ~60% vs. 2020 baseline through SAF, operational improvements, and offsets.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EU ETS OVERVIEW PAGE -->
+    <div class="page" id="page-ets-overview">
+      <h1 class="page-title">EU ETS — Overview &amp; History <span class="badge badge-ets">EU ETS</span></h1>
+      <p class="page-subtitle">The European Union Emissions Trading System is the world's first major carbon market, launched in 2005. It uses a cap-and-trade mechanism to reduce greenhouse gas emissions cost-effectively across the EU economy.</p>
+
+      <h2>What Is the EU ETS?</h2>
+      <p>The EU ETS sets an absolute limit (cap) on the total amount of certain GHGs that can be emitted by covered installations and aircraft operators. Within that cap, companies receive or buy emission allowances (EUAs — EU Allowances) which they can trade. At the end of each year, each covered entity must surrender allowances equal to its verified emissions. If emissions fall, surplus allowances can be sold; if emissions exceed allocations, additional allowances must be purchased.</p>
+      <p>One EUA = one tonne of CO₂ equivalent (tCO₂e).</p>
+
+      <div class="card-grid three">
+        <div class="stat-card">
+          <div class="stat-label">Launch Year</div>
+          <div class="stat-value">2005</div>
+          <div class="stat-note">Phase 1 began 1 Jan 2005</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">2030 Reduction Target</div>
+          <div class="stat-value">−62%</div>
+          <div class="stat-note">vs. 2005 levels (ETS sectors)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Linear Reduction Factor (2028+)</div>
+          <div class="stat-value">4.4%</div>
+          <div class="stat-note">per year from 2028 onwards</div>
+        </div>
+      </div>
+
+      <h2>Phases of the EU ETS</h2>
+      <div class="phase-row">
+        <div class="phase-chip" style="background:rgba(59,130,246,0.1);border-color:#3b82f6;color:#93c5fd;">
+          <span>Phase 1</span>
+          <span class="pc-years">2005 – 2007</span>
+        </div>
+        <div class="phase-chip" style="background:rgba(59,130,246,0.15);border-color:#3b82f6;color:#93c5fd;">
+          <span>Phase 2</span>
+          <span class="pc-years">2008 – 2012</span>
+        </div>
+        <div class="phase-chip" style="background:rgba(59,130,246,0.2);border-color:#3b82f6;color:#93c5fd;">
+          <span>Phase 3</span>
+          <span class="pc-years">2013 – 2020</span>
+        </div>
+        <div class="phase-chip" style="background:rgba(59,130,246,0.28);border-color:#3b82f6;color:#60a5fa;">
+          <span>Phase 4</span>
+          <span class="pc-years">2021 – 2030</span>
+        </div>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Phase</th><th>Period</th><th>Key Features</th><th>LRF / Cap</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Phase 1</strong></td><td>2005–2007</td><td>Pilot phase. Free allocation (grandfathering). Power and heavy industry only. Aviation excluded.</td><td>~2.2 Gt/yr; no LRF</td></tr>
+          <tr><td><strong>Phase 2</strong></td><td>2008–2012</td><td>First Kyoto commitment period. Inclusion of more gases. Aviation included from 2012 (initially all flights; later EEA-only). Limited auctioning.</td><td>~2.1 Gt/yr; 1.74% LRF</td></tr>
+          <tr><td><strong>Phase 3</strong></td><td>2013–2020</td><td>Single EU-wide cap. Shift from grandfathering to auctioning for power sector. Benchmarking for industry. Market Stability Reserve (MSR) established 2019.</td><td>1.74% LRF/yr. −21% vs. 2005 achieved by 2020.</td></tr>
+          <tr><td><strong>Phase 4</strong></td><td>2021–2030</td><td>Fit for 55 reform. Accelerated LRF: 2.2% (2021–23), 4.3% (2024–27), 4.4% (2028+). One-off cap reductions: −90M allowances in 2024, −27M in 2026. Free allocation phase-out for aviation by 2026.</td><td>Target: −62% vs. 2005 by 2030</td></tr>
+        </tbody>
+      </table>
+
+      <h2>The Emissions Cap &amp; Linear Reduction Factor</h2>
+      <p>The cap declines each year by the <strong>Linear Reduction Factor (LRF)</strong>, calculated as a percentage of the average 2008–2012 baseline emissions. Following the 2023 Fit for 55 reform:</p>
+      <ul>
+        <li>LRF was 1.74%/year through Phase 2 and most of Phase 3</li>
+        <li>Raised to <strong>2.2%/year</strong> for 2021–2023</li>
+        <li>Further raised to <strong>4.3%/year</strong> for 2024–2027</li>
+        <li>Then <strong>4.4%/year</strong> from 2028 onwards</li>
+        <li>One-off reductions: 90 million EUAs removed in 2024; 27 million removed in 2026</li>
+      </ul>
+
+      <h2>Market Stability Reserve (MSR)</h2>
+      <p>Established in 2019, the MSR addresses surplus allowances that had built up. The MSR absorbs allowances when the Total Number of Allowances in Circulation (TNAC) exceeds 833 million, and releases allowances when TNAC falls below 400 million. The doubled intake rate of <strong>24% of TNAC</strong> has been maintained through 2030 as part of the Fit for 55 reform.</p>
+
+      <h2>2023 Reform (Fit for 55)</h2>
+      <p>Regulation (EU) 2023/959 amended the EU ETS Directive. Key changes for aviation included:</p>
+      <ul>
+        <li>Accelerated phase-out of free allowances for aircraft operators (full auctioning by 2026)</li>
+        <li>20 million allowances from the aviation cap reserved to support SAF uptake (2024–2030)</li>
+        <li>Extended scope to include non-CO₂ effects monitoring</li>
+        <li>Review of CORSIA convergence by end of 2026</li>
+      </ul>
+    </div>
+
+    <!-- EU ETS AVIATION PAGE -->
+    <div class="page" id="page-ets-aviation">
+      <h1 class="page-title">EU ETS — Aviation <span class="badge badge-ets">EU ETS</span></h1>
+      <p class="page-subtitle">Aviation was included in the EU ETS from 2012. The scheme applies to aircraft operators performing flights departing from or arriving at EEA airports. Key changes since 2023 include the accelerated phase-out of free allowances.</p>
+
+      <h2>Scope of Aviation in the EU ETS</h2>
+      <p>The EU ETS covers <strong>CO₂ emissions</strong> from all commercial flights between airports within the <strong>European Economic Area (EEA)</strong> — i.e., EU Member States plus Iceland, Liechtenstein, and Norway. Intra-EEA flights are the current scope; international flights are addressed by CORSIA.</p>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Historical Scope Changes</div>
+        <p>Aviation was originally included for all flights to/from EEA airports (2012). This was narrowed to intra-EEA only ("stop-the-clock" derogation 2012–2016) pending ICAO's development of CORSIA. The intra-EEA scope became permanent under Fit for 55, with CORSIA covering international flights.</p>
+      </div>
+
+      <h2>Free Allowance Phase-Out (2024–2026)</h2>
+      <p>Under the 2023 reform, free allocation to aircraft operators is being rapidly phased out:</p>
+      <table class="data-table">
+        <thead><tr><th>Year</th><th>Free Allocation</th><th>Auctioned</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td><strong>2023</strong></td><td>~75%</td><td>~25%</td><td>Pre-reform baseline</td></tr>
+          <tr><td><strong>2024</strong></td><td>75% (−25% cut)</td><td>25%</td><td>Fit for 55 phase-out begins</td></tr>
+          <tr><td><strong>2025</strong></td><td>50% (−50% cut)</td><td>50%</td><td>Continued acceleration</td></tr>
+          <tr><td><strong>2026</strong></td><td>0% — Full auctioning</td><td>100%</td><td>Free allocation ends entirely</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Aviation Cap</h2>
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">Aviation Cap (2026)</div>
+          <div class="stat-value">24.9 Mt</div>
+          <div class="stat-note">CO₂ equivalent per year</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">SAF Support Allowances</div>
+          <div class="stat-value">20 M</div>
+          <div class="stat-note">Reserved 2024–2030 to incentivise SAF</div>
+        </div>
+      </div>
+
+      <h2>Interaction with CORSIA</h2>
+      <p>The EU ETS and CORSIA address different flight categories:</p>
+      <ul>
+        <li><strong>EU ETS:</strong> Intra-EEA flights (CO₂ only, from 2025 also non-CO₂ monitoring)</li>
+        <li><strong>CORSIA:</strong> International flights between CORSIA-participating states</li>
+      </ul>
+      <p>The European Commission is required to publish an assessment by end of 2026 on the degree of convergence between CORSIA and EU ETS goals. If CORSIA is found to be insufficient, the Commission may propose extending EU ETS scope to international flights.</p>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — EU ETS Aviation Scope</div>
+        <ul>
+          <li>Confirm the aircraft operator's administering Member State and that the correct competent authority has approved the Monitoring Plan.</li>
+          <li>Verify that only intra-EEA flights are included in the EU ETS Annual Emissions Report (AER); international flights should appear in the CORSIA emissions report instead.</li>
+          <li>Check that the operator's free allocation entitlement (if any) matches the allowances returned — noting the phase-out schedule.</li>
+          <li>Confirm that SAF volumes reported for allowance purposes are supported by verified SAF certificates and Proof of Sustainability documents.</li>
+        </ul>
+      </div>
+
+      <h2>Key Dates &amp; Deadlines</h2>
+      <table class="data-table">
+        <thead><tr><th>Deadline</th><th>Obligation</th><th>Who</th></tr></thead>
+        <tbody>
+          <tr><td><strong>31 March (Y+1)</strong></td><td>Submit verified Annual Emissions Report (AER) to competent authority</td><td>Aircraft operator + verifier</td></tr>
+          <tr><td><strong>30 September (Y+1)</strong></td><td>Surrender allowances equal to verified emissions from previous year — deadline moved from 30 April to 30 September from 2024 onwards per Directive (EU) 2023/959, Art. 1(21) amending ETS Directive Art. 12(3)</td><td>Aircraft operator</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ============================================================ -->
+      <!-- SCOPE THROUGH THE YEARS -->
+      <!-- ============================================================ -->
+      <h2>Scope of EU ETS Aviation — Evolution Through the Years</h2>
+      <p>Aviation's scope within the EU ETS has changed repeatedly since 2012, driven by the parallel development of CORSIA at ICAO level. The table below traces the legal basis and practical scope for each period.</p>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Geographic scope</th>
+            <th>Legal basis</th>
+            <th>Key context</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>2012</strong></td>
+            <td><strong>Full scope</strong> — all commercial flights arriving at or departing from EEA airports, regardless of origin/destination country</td>
+            <td>Directive 2008/101/EC amending Dir. 2003/87/EC</td>
+            <td>First year of aviation in ETS. Immediate international objections from US, China, Russia. Resulted in "stop-the-clock" derogation.</td>
+          </tr>
+          <tr>
+            <td><strong>2013–2016</strong></td>
+            <td><strong>Intra-EEA only</strong> — flights between two EEA airports; international legs suspended pending ICAO action</td>
+            <td>Decision 377/2013/EU ("stop the clock"); Decision 421/2014/EU (extended)</td>
+            <td>ICAO 38th Assembly (2013) committed to develop a global MBM; EU suspended international scope to give ICAO time. Free allowances: ~82% of cap.</td>
+          </tr>
+          <tr>
+            <td><strong>2017–2020</strong></td>
+            <td><strong>Intra-EEA only</strong> — continued derogation for international flights</td>
+            <td>Regulation (EU) 2017/2392</td>
+            <td>CORSIA adopted at ICAO 39th Assembly (2016). EU extended derogation to give CORSIA pilot phase time to prove itself. Free allowances: ~57% of cap (2017–2021 phase-in).</td>
+          </tr>
+          <tr>
+            <td><strong>2021–2023</strong></td>
+            <td><strong>Intra-EEA only</strong> — CORSIA pilot phase begins for international routes (voluntary)</td>
+            <td>Art. 28a ETS Directive (as in force 2017–2023); COVID adjustment to baseline</td>
+            <td>CORSIA pilot phase (2021–2023): emissions monitoring and reporting, no offsetting obligation. EU ETS continued for intra-EEA. Baseline adjusted to 2019-only due to COVID. Free allocation: ~75% of cap.</td>
+          </tr>
+          <tr>
+            <td><strong>2024–2026</strong></td>
+            <td><strong>Intra-EEA only</strong> (permanent) — international routes derogated to CORSIA Phase 1. Non-CORSIA-participating state routes: EU ETS applies under Art. 28a derogation review</td>
+            <td>Regulation (EU) 2023/958 (amending Dir. 2003/87/EC)</td>
+            <td>Fit for 55 reform. Free allowances for aviation phased out (75% → 50% → 0%). 20 million EUAs reserved for SAF support (FEETS). Commission must assess CORSIA vs EU ETS equivalence by 31 Dec 2026.</td>
+          </tr>
+          <tr>
+            <td><strong>2027+</strong></td>
+            <td><strong>Intra-EEA</strong> confirmed. CORSIA Phase 2 (mandatory) begins for international routes. EU ETS may be extended if CORSIA review (by 2028) finds insufficient ambition.</td>
+            <td>Art. 28a ETS Directive; CORSIA Phase 2 per ICAO Annex 16, Vol. IV</td>
+            <td>If Commission proposes full-scope extension (all flights departing EEA), this requires legislative procedure. Until then, intra-EEA scope is permanent. CORSIA Phase 2: 85% of 2019 emissions baseline; mandatory for most states.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Swiss Linkage — Bilateral Agreement</div>
+        <p>Switzerland operates its own ETS (Swiss ETS), linked to the EU ETS by the bilateral Switzerland–EU ETS Linking Agreement. Swiss ETS allowances (CHUs) are fungible with EU ETS allowances (EUAs). Flights between Switzerland and EEA states are treated equivalently to intra-EEA flights for EU ETS purposes. Verifiers checking operators with Swiss routes should confirm the operator is reporting under the appropriate system (Swiss ETS or EU ETS) and not double-counting.</p>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- EXEMPTIONS -->
+      <!-- ============================================================ -->
+      <h2>Exemptions from EU ETS Aviation Scope</h2>
+      <p>Not all flights departing from or arriving at EEA airports are covered. Annex I to Directive 2003/87/EC (aviation activity definition) explicitly excludes the following categories:</p>
+
+      <h3>Excluded Flight Categories (Annex I, Dir. 2003/87/EC)</h3>
+      <table class="data-table">
+        <thead><tr><th>Exclusion</th><th>Detail</th><th>Practical note for verifiers</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Aircraft MTOW &lt; 5,700 kg</strong></td>
+            <td>Aircraft with a maximum certificated take-off weight below 5,700 kg are fully excluded from the aviation activity definition</td>
+            <td>Check operator's fleet — turboprops below this threshold (e.g., some Cessna types) are out of scope. MTOW is the certified value from the type certificate, not actual take-off weight.</td>
+          </tr>
+          <tr>
+            <td><strong>Military flights</strong></td>
+            <td>Flights performed by military aircraft and state aircraft engaged in military activities. Includes all aircraft operated by national armed forces.</td>
+            <td>State aircraft used commercially (e.g., government-owned airlines operating commercial flights) are NOT automatically exempt — only flights performed in a military capacity.</td>
+          </tr>
+          <tr>
+            <td><strong>Customs and police flights</strong></td>
+            <td>Flights performed exclusively by customs administrations and police services</td>
+            <td>Operator must demonstrate the flight is exclusively for customs/police purpose — mixed-purpose flights do not qualify.</td>
+          </tr>
+          <tr>
+            <td><strong>Search and rescue (SAR)</strong></td>
+            <td>Flights performed exclusively for search and rescue operations, as authorised by the relevant SAR authority</td>
+            <td>Requires authorisation documentation. SAR-configured aircraft used for other purposes on the same flight are not exempt.</td>
+          </tr>
+          <tr>
+            <td><strong>Medical emergency / air ambulance</strong></td>
+            <td>Flights performed under emergency medical service rules, including emergency organ transport</td>
+            <td>The exemption applies to the emergency flight itself, not to positioning flights of air ambulance aircraft.</td>
+          </tr>
+          <tr>
+            <td><strong>Humanitarian flights</strong></td>
+            <td>Flights performed under humanitarian mission authorisation</td>
+            <td>Must be authorised as humanitarian by the relevant authority. Commercial charter flights to disaster zones are not automatically humanitarian.</td>
+          </tr>
+          <tr>
+            <td><strong>Training flights</strong></td>
+            <td>Flights performed exclusively for training of flight crew for a licence or rating. Excludes line training on commercial routes.</td>
+            <td>Training flights that also carry passengers or cargo are not exempt. Line training (type rating on revenue flights) is not excluded.</td>
+          </tr>
+          <tr>
+            <td><strong>Scientific research flights</strong></td>
+            <td>Flights performed exclusively for scientific research purposes</td>
+            <td>Must be exclusively scientific — not positioning or demonstration flights that incidentally gather research data.</td>
+          </tr>
+          <tr>
+            <td><strong>Visual Flight Rules (VFR) flights</strong></td>
+            <td>Flights conducted under Visual Flight Rules (i.e., not IFR-filed commercial operations)</td>
+            <td>Most commercial aviation is IFR — this exclusion typically applies to general aviation rather than commercial operators.</td>
+          </tr>
+          <tr>
+            <td><strong>Public Service Obligation (PSO) flights to outermost regions</strong></td>
+            <td>Flights subject to PSO under Regulation (EC) 1008/2008 to/from outermost regions of EU Member States (e.g., Canary Islands, Azores, Réunion, Guadeloupe, Martinique, French Guiana, Mayotte)</td>
+            <td>Verify that the route is covered by a valid PSO designation — not all thin routes are PSO routes.</td>
+          </tr>
+          <tr>
+            <td><strong>Test/certification flights</strong></td>
+            <td>Flights performed exclusively for the purpose of checking, testing, or certifying aircraft or avionics systems</td>
+            <td>Must be exclusively for airworthiness testing — not ferry or positioning flights of aircraft due for testing.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Small Emitter (De Minimis) Thresholds</h3>
+      <p>Operators below certain thresholds are not fully excluded from EU ETS but may use a <strong>simplified monitoring approach</strong> (the "small emitters' tool") instead of the full fuel-based methodology:</p>
+
+      <table class="data-table">
+        <thead><tr><th>Category</th><th>Threshold</th><th>Consequence</th><th>Legal basis</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Non-commercial aircraft operators</strong></td>
+            <td>Emissions ≤ 1,000 tCO₂ per year from aviation activities</td>
+            <td>May use the small emitters' tool (Eurocontrol SHST or equivalent) approved by competent authority, instead of full fuel measurement methodology</td>
+            <td>MRR Annex X, Section 5; AVR Art. 47</td>
+          </tr>
+          <tr>
+            <td><strong>Commercial air transport operators</strong></td>
+            <td>Fewer than 243 commercial air transport flights per 4-month period for three consecutive 4-month periods (i.e., effectively &lt;729 qualifying flights/year); OR total emissions &lt; 10,000 tCO₂/year</td>
+            <td>May use the small emitters' tool; verifier must still confirm eligibility threshold is met and the tool has been correctly applied</td>
+            <td>ETS Directive Annex I (aviation activity); MRR Art. 55</td>
+          </tr>
+          <tr>
+            <td><strong>Ultra-small operators</strong></td>
+            <td>Fewer than 243 commercial air transport flights per any single 4-month period</td>
+            <td>May be excluded from the requirement to have a full Monitoring Plan — competent authority discretion applies</td>
+            <td>ETS Directive Annex I; Art. 28a(3)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ De Minimis — Verifier Obligations</div>
+        <p>Even where an operator uses the small emitters' tool, the verifier must confirm: (1) the operator genuinely qualifies for the de minimis threshold — check flight logs against the 243 flights/4-month-period criterion; (2) the correct version of the small emitters' tool has been used (EUROCONTROL updates it periodically); (3) the tool's output has been correctly transferred into the AER. Do not assume that small operators are inherently low-risk — the small emitters' tool uses estimates and its results can diverge significantly from actual fuel consumption if the operator's route mix or load factors are atypical.</p>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SAF CLAIM -->
+      <!-- ============================================================ -->
+      <h2>SAF Claim Under EU ETS — Zero Emission Factor &amp; Proportionality Factor</h2>
+      <p>When an aircraft operator uses Sustainable Aviation Fuel, the biogenic CO₂ released on combustion is assigned a <strong>zero emission factor</strong> under the EU ETS. This is consistent with the IPCC convention (biogenic carbon is accounted for at the land-use sector level, not at the point of combustion) and with RED III lifecycle accounting. The result is a direct reduction in the operator's verified emissions — and hence in the allowances it must surrender.</p>
+
+      <h3>Emission Factor Logic</h3>
+      <table class="data-table">
+        <thead><tr><th>Fuel type</th><th>Emission factor (tCO₂/tonne fuel)</th><th>Basis</th></tr></thead>
+        <tbody>
+          <tr><td>Fossil Jet A / Jet A-1</td><td>3.16 tCO₂/tonne</td><td>MRR Annex X default</td></tr>
+          <tr><td>SAF — biogenic (HEFA, FT-SPK, AtJ-SPK, etc.)</td><td><strong>0.00 tCO₂/tonne</strong> for the biogenic fraction</td><td>MRR Annex X; consistent with IPCC 2006 GL</td></tr>
+          <tr><td>SAF — synthetic e-fuel (RFNBO/PtL)</td><td><strong>0.00 tCO₂/tonne</strong> provided renewable electricity is used and CO₂ source meets RED III criteria</td><td>MRR Annex X; RED III Art. 25 + delegated acts</td></tr>
+          <tr><td>Blended fuel (e.g., 10% SAF / 90% fossil)</td><td>Weighted average: 0.10 × 0 + 0.90 × 3.16 = <strong>2.844 tCO₂/tonne</strong></td><td>MRR: calculate per constituent fraction</td></tr>
+          <tr><td>Lower Carbon Aviation Fuel (LCAF)</td><td>Reduced EF proportional to lifecycle savings — e.g., 50% savings → 1.58 tCO₂/tonne. Does <em>not</em> qualify for full zero rating.</td><td>MRR Annex X; separate from SAF</td></tr>
+        </tbody>
+      </table>
+
+      <h3>The Proportionality Factor (PF) for SAF — MRR Definition</h3>
+      <p>In practice, SAF is uplifted at a specific airport and blended into shared fuel infrastructure. An operator cannot always trace exactly which flight burned which SAF molecules. The MRR therefore prescribes a <strong>proportionality factor</strong> to allocate the total SAF uplifted by the operator at a given airport across all flights departing from that airport during the monitoring period.</p>
+
+      <div class="card" style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:18px 20px;margin:16px 0;">
+        <p style="font-weight:700;color:#4ade80;margin-bottom:10px;">Proportionality Factor Formula (MRR Annex X)</p>
+        <p style="font-family:monospace;font-size:0.95rem;background:rgba(0,0,0,0.25);border-radius:6px;padding:10px 14px;color:#d1fae5;">
+          PF<sub>i</sub> = Fuel<sub>i</sub> / Σ Fuel<sub>airport, period</sub>
+        </p>
+        <ul style="margin-top:12px;padding-left:18px;color:#86efac;font-size:0.88rem;">
+          <li><strong>PF<sub>i</sub></strong> — proportionality factor for flight <em>i</em> departing from airport A</li>
+          <li><strong>Fuel<sub>i</sub></strong> — total fuel uplifted on flight <em>i</em> at airport A (tonnes)</li>
+          <li><strong>Σ Fuel<sub>airport, period</sub></strong> — total fuel uplifted by the operator at airport A across all flights in the monitoring period (typically the full calendar year)</li>
+        </ul>
+        <p style="margin-top:10px;color:#86efac;font-size:0.88rem;">
+          <strong>SAF tonnes attributable to flight <em>i</em></strong> = Total SAF uplifted at airport A × PF<sub>i</sub>
+        </p>
+        <p style="margin-top:6px;color:#6ee7b7;font-size:0.82rem;">
+          <em>Where an operator uplifts SAF across multiple airports, the calculation is performed separately for each airport. SAF batches at different airports are not cross-allocated.</em>
+        </p>
+      </div>
+
+      <h3>Step-by-Step SAF Claim Process</h3>
+      <table class="data-table">
+        <thead><tr><th>Step</th><th>Action</th><th>Key document / evidence</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1</strong></td>
+            <td>Procure SAF from a certified supplier; obtain <strong>Proof of Sustainability (PoS)</strong> — a chain-of-custody certificate issued under an approved scheme (ISCC CORSIA, ISCC EU, RSB CORSIA, RSB EU)</td>
+            <td>PoS certificate; feedstock and pathway declaration; GHG lifecycle value (gCO₂e/MJ)</td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td>Record SAF delivery in fuel log: date, airport, batch reference, SAF quantity (tonnes), blend ratio (if already blended by supplier), PoS certificate number</td>
+            <td>Fuel delivery docket; depot blending record; PoS cross-reference</td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td>At year-end, calculate the <strong>proportionality factor</strong> for each flight at each SAF-uplift airport: PF<sub>i</sub> = Fuel<sub>i</sub> / Σ Fuel<sub>airport</sub></td>
+            <td>Fuel uplift log per flight per airport (from Monitoring Plan data)</td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td>Calculate SAF tonnes per flight: SAF<sub>i</sub> = Total SAF at airport A × PF<sub>i</sub>. Derive the <strong>weighted average emission factor</strong> per flight: EF<sub>i</sub> = [(Fuel<sub>i</sub> − SAF<sub>i</sub>) × 3.16 + SAF<sub>i</sub> × 0] / Fuel<sub>i</sub></td>
+            <td>Emission calculation spreadsheet (must be auditable); cross-check sum of SAF<sub>i</sub> = total SAF at airport</td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td>Report in <strong>AER</strong>: total fuel, SAF quantity, fossil fuel quantity, total CO₂ separately. Apply zero EF to SAF portion. Submit with verified AER to competent authority by 31 March (Y+1).</td>
+            <td>AER (standard EASA / national CA template); verification report referencing SAF documentation</td>
+          </tr>
+          <tr>
+            <td><strong>6</strong></td>
+            <td>Ensure <strong>no double-claiming</strong>: SAF claimed under EU ETS (zero EF) cannot simultaneously be claimed as a CORSIA SAF credit for the same flight, unless the regulatory frameworks explicitly permit parallel claims without adjustment</td>
+            <td>Cross-reference EU ETS AER and CORSIA emissions report; flag any overlap to competent authority</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="verifier-box">
+        <div class="wb-head">✅ Verifier Checklist — SAF Claim</div>
+        <ul>
+          <li><strong>PoS validity:</strong> Confirm the PoS covers the period of the SAF delivery — a PoS issued after the fuel was uplifted is not valid retrospectively. Check validity period and scheme (ISCC CORSIA or EU, RSB CORSIA or EU, or equivalent approved by CA).</li>
+          <li><strong>Batch quantities reconciled:</strong> SAF quantity on PoS = SAF quantity on delivery docket = SAF quantity in operator's fuel log. Any discrepancy must be investigated — short deliveries and density conversion errors are common.</li>
+          <li><strong>Proportionality factor calculation correct:</strong> Verify that PF<sub>i</sub> values sum to 1.0 for each airport (i.e., all fuel uplifted at that airport is accounted for), and that total SAF allocated across flights equals total SAF received at that airport.</li>
+          <li><strong>Emission factor applied correctly:</strong> Fossil fraction uses the MRR default EF (3.16 tCO₂/t); SAF fraction uses 0. For partial lifecycle GHG values (LCAF), a reduced but non-zero EF applies — check this is not being rounded to zero.</li>
+          <li><strong>No double-claiming:</strong> Check whether any SAF batches appear in both the EU ETS AER (zero EF claim) and the CORSIA emissions report (SAF credit claim). ICAO and EU rules differ on how double-use is handled — flag to operator and CA where overlap exists.</li>
+          <li><strong>Certification scheme current:</strong> ISCC and RSB update their approved operator lists. Verify the supplier holds a valid, current certificate at the date of delivery — not at the date of the PoS issuance.</li>
+          <li><strong>Pathway matches PoS:</strong> The PoS must state the feedstock pathway (e.g., HEFA-UCO, FT-MSW). Confirm this matches the feedstock claimed and that the pathway is approved under the applicable certification scheme.</li>
+        </ul>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- FEETS -->
+      <!-- ============================================================ -->
+      <h2>FEETS — Fuels Eligible for ETS-financed Support</h2>
+      <p><strong>FEETS</strong> (Fuels Eligible for ETS-financed Support) is the mechanism established under the 2023 EU ETS reform (Regulation (EU) 2023/959) by which a dedicated pool of <strong>20 million ETS allowances</strong>, ring-fenced from the aviation cap for the period 2024–2030, is used to provide financial support to aircraft operators that use qualifying sustainable aviation fuels. This is separate from — and additional to — the zero emission factor SAF claim in the AER.</p>
+
+      <div class="card-grid" style="margin:16px 0;">
+        <div class="stat-card">
+          <div class="stat-label">FEETS Allowance Pool</div>
+          <div class="stat-value">20 M</div>
+          <div class="stat-note">EUAs reserved 2024–2030 from aviation cap</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Support Period</div>
+          <div class="stat-value">2024–2030</div>
+          <div class="stat-note">Supports early SAF market development</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Legal basis</div>
+          <div class="stat-value">Art. 3c(6)</div>
+          <div class="stat-note">ETS Directive as amended by Reg. 2023/959</div>
+        </div>
+      </div>
+
+      <h3>Which Fuels Qualify for FEETS Support?</h3>
+      <p>To be eligible for FEETS, a fuel must be a <strong>Fuel Eligible for ETS-financed Support</strong> — meaning it satisfies all of the following:</p>
+      <table class="data-table">
+        <thead><tr><th>Criterion</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>SAF definition</strong></td>
+            <td>Must qualify as SAF under Regulation (EU) 2023/2405 (ReFuelEU Aviation, Art. 2(5)) — i.e., an advanced aviation biofuel, other aviation biofuel, recycled carbon aviation fuel, or synthetic aviation fuel (RFNBO/e-fuel)</td>
+          </tr>
+          <tr>
+            <td><strong>RED III sustainability criteria</strong></td>
+            <td>Must meet the sustainability and GHG savings criteria in RED III Art. 29 — minimum 65% lifecycle GHG savings vs. fossil comparator for installations operating from 1 January 2021</td>
+          </tr>
+          <tr>
+            <td><strong>Certification</strong></td>
+            <td>Must be certified under a voluntary scheme approved by the European Commission (ISCC EU, RSB EU, SURE, or equivalent) and carry a valid Proof of Sustainability (PoS)</td>
+          </tr>
+          <tr>
+            <td><strong>Used on intra-EEA flights</strong></td>
+            <td>The FEETS benefit applies to the EU ETS scope (intra-EEA flights). SAF used exclusively on international/CORSIA-covered flights does not generate a FEETS entitlement under the EU ETS mechanism.</td>
+          </tr>
+          <tr>
+            <td><strong>Reported in verified AER</strong></td>
+            <td>The SAF must be reflected in the operator's verified Annual Emissions Report (AER) — FEETS claims are based on verified SAF quantities, not self-reported figures</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>FEETS Proportionality Factor</h3>
+      <p>The FEETS support pool is distributed among <em>all</em> eligible aircraft operators in proportion to their verified SAF use. The proportionality factor for FEETS determines each operator's share of the available allowances:</p>
+
+      <div class="card" style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:18px 20px;margin:16px 0;">
+        <p style="font-weight:700;color:#c084fc;margin-bottom:10px;">FEETS Proportionality Factor Formula</p>
+        <p style="font-family:monospace;font-size:0.95rem;background:rgba(0,0,0,0.25);border-radius:6px;padding:10px 14px;color:#e9d5ff;">
+          FEETS-PF<sub>operator</sub> = SAF<sub>operator, verified</sub> / Σ SAF<sub>all eligible operators, verified</sub>
+        </p>
+        <ul style="margin-top:12px;padding-left:18px;color:#d8b4fe;font-size:0.88rem;">
+          <li><strong>SAF<sub>operator, verified</sub></strong> — total tonnes of FEETS-eligible SAF used by the operator on EU ETS (intra-EEA) flights in the reporting year, as confirmed in the verified AER</li>
+          <li><strong>Σ SAF<sub>all eligible operators, verified</sub></strong> — total tonnes of FEETS-eligible SAF used by all claiming operators across the EU ETS aviation sector in the same year</li>
+        </ul>
+        <p style="margin-top:10px;color:#d8b4fe;font-size:0.88rem;">
+          <strong>Operator's FEETS allocation</strong> = FEETS-PF<sub>operator</sub> × Annual tranche of 20 M EUAs available for that year
+        </p>
+        <p style="margin-top:6px;color:#c4b5fd;font-size:0.82rem;">
+          <em>The annual tranche of the 20 M EUAs is distributed by the Commission/EASA across the 2024–2030 period. The exact yearly allocation is set by implementing regulation. The FEETS-PF is calculated ex-post (after all AERs are verified and submitted), so operators receive their FEETS allocation after the AER submission deadline.</em>
+        </p>
+      </div>
+
+      <p>Because the FEETS-PF is determined after <em>all</em> operators have submitted their verified AERs, no operator can know in advance exactly how many allowances they will receive — only their proportional share relative to total verified SAF across the industry. This creates an incentive for early SAF adoption (larger proportional share when fewer operators claim) while remaining fair across the sector.</p>
+
+      <h3>How to Claim FEETS Support — Step by Step</h3>
+      <table class="data-table">
+        <thead><tr><th>Step</th><th>Action</th><th>Key document</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1</strong></td>
+            <td>Use FEETS-eligible SAF on intra-EEA flights and document it fully (PoS, delivery records, proportionality calculation) in the same way as the MRR SAF claim</td>
+            <td>PoS certificate; fuel delivery dockets; MRR PF calculation</td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td>Ensure the verified AER explicitly reports the SAF quantity used (tonnes), the certification scheme, the feedstock pathway, and the GHG lifecycle value. The FEETS claim is based on this verified figure — not a separate submission.</td>
+            <td>Verified AER; verification report confirming SAF data</td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td>Submit the FEETS claim through the designated national competent authority (administering Member State) or through the EASA Sustainability Portal (as specified in the implementing regulation). Attach the verified AER reference and PoS documentation.</td>
+            <td>FEETS claim form (CA or EASA portal); AER reference; PoS certificates</td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td>The Commission (via the European Commission / EASA) collects all verified FEETS claims from competent authorities across the EU, calculates the system-wide FEETS-PF, and determines each operator's EUA allocation for the year</td>
+            <td>Commission implementing decision; FEETS allocation notice</td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td>FEETS allowances are transferred to the operator's Union Registry account. Operators may surrender these allowances for the same or subsequent compliance year, trade them, or bank them (subject to ETS banking rules).</td>
+            <td>Union Registry transfer record; EUA account statement</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ FEETS vs SAF Zero-EF Claim — Two Separate Benefits</div>
+        <p>An operator that uses FEETS-eligible SAF receives <strong>two distinct benefits</strong> — they must be tracked separately:</p>
+        <ol style="padding-left:18px;color:#fde68a;font-size:0.88rem;margin-top:8px;">
+          <li><strong>Zero emission factor (MRR SAF claim):</strong> Reduces the operator's reported CO₂ in the AER, which directly reduces the number of allowances it must surrender. This is calculated using the MRR Proportionality Factor (flight-level allocation).</li>
+          <li><strong>FEETS allowance receipt:</strong> Separately, the operator receives a proportional share of the 20 M EUA pool, calculated using the FEETS Proportionality Factor (sector-wide share of verified SAF). These allowances arrive in the Union Registry account after the AER cycle and can be used for surrender or traded.</li>
+        </ol>
+        <p style="margin-top:8px;color:#fde68a;font-size:0.88rem;">Both benefits are legitimate and intentional — the FEETS mechanism was designed precisely to make SAF economically viable by supplementing the emission-reduction benefit with an additional financial transfer. Verifiers should confirm that the SAF is correctly reflected in the AER (for the zero-EF benefit) and that the FEETS claim documentation is consistent with the verified AER.</p>
+      </div>
+
+      <div class="verifier-box">
+        <div class="wb-head">✅ Verifier Checklist — FEETS</div>
+        <ul>
+          <li><strong>FEETS-eligible fuel confirmed:</strong> Verify that the SAF claimed for FEETS meets all four eligibility criteria: ReFuelEU SAF definition, RED III sustainability thresholds, valid PoS under an approved scheme, and used on intra-EEA (EU ETS scope) flights.</li>
+          <li><strong>AER is the source of record:</strong> The FEETS claim is based solely on the verified AER SAF figure. Ensure the AER SAF quantity is correct — any understatement reduces the operator's FEETS allocation; any overstatement constitutes a false claim.</li>
+          <li><strong>No double-use for CORSIA:</strong> SAF reported under EU ETS (and claimed for FEETS) should not also be applied as a CORSIA SAF unit for international flights in the same monitoring period. Flag any potential overlap to the competent authority.</li>
+          <li><strong>Implementing regulation current:</strong> FEETS distribution rules, claim deadlines, and form requirements are set in Commission implementing acts. Verify that the operator is following the most current procedure — regulations in this area were still being finalised after the 2023 reform. Check the EASA Sustainability Portal and the administering Member State competent authority for current guidance.</li>
+          <li><strong>Union Registry tracking:</strong> Confirm that any FEETS allowances received in prior years are correctly accounted for in the operator's allowance surrender calculation — FEETS EUAs reduce the net surrender requirement for the year they apply to.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- EU ETS MRV PAGE -->
+    <div class="page" id="page-ets-mrv">
+      <h1 class="page-title">EU ETS — MRV for Verifiers <span class="badge badge-ets">EU ETS</span></h1>
+      <p class="page-subtitle">The Monitoring, Reporting and Verification (MRV) framework defines what aircraft operators must monitor and report, and what accredited verifiers must check. This page focuses on the verifier's role.</p>
+
+      <h2>Legal Framework</h2>
+      <ul>
+        <li><strong>Directive 2003/87/EC</strong> (EU ETS Directive, as amended by Regulation 2023/959)</li>
+        <li><strong>Monitoring and Reporting Regulation (MRR) — Regulation (EU) 2018/2066</strong> (as amended)</li>
+        <li><strong>Accreditation and Verification Regulation (AVR) — Regulation (EU) 2018/2067</strong></li>
+        <li><strong>Regulation (EU) 2024/2493</strong> — extends MRV to non-CO₂ aviation effects (from 1 Jan 2025)</li>
+      </ul>
+
+      <h2>Monitoring Plan</h2>
+      <p>Aircraft operators must have an approved <strong>Monitoring Plan (MP)</strong> before the start of any monitoring period. The MP must be approved by the competent authority. It specifies:</p>
+      <ul>
+        <li>Methodology for monitoring CO₂ emissions (fuel use method — Tier 1 or Tier 2)</li>
+        <li>Data sources and data flow activities</li>
+        <li>Control activities and procedures</li>
+        <li>From 2025: methodology for monitoring non-CO₂ parameters</li>
+      </ul>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — Monitoring Plan Review</div>
+        <ul>
+          <li>Confirm the MP has been approved by the administering Member State's competent authority and is current (not outdated or superseded).</li>
+          <li>Check that the monitoring methodology applied during the year matches what is approved in the MP — any deviations must be identified and assessed for materiality.</li>
+          <li>Verify that control procedures described in the MP (e.g., data quality checks, IT system controls) are actually in place and operating effectively.</li>
+          <li>From 2025: confirm the MP includes the non-CO₂ monitoring methodology as required by Regulation (EU) 2024/2493.</li>
+        </ul>
+      </div>
+
+      <h2>Annual Emissions Report (AER)</h2>
+      <p>The AER covers all EU ETS-relevant flights operated during the calendar year (1 January – 31 December). Key elements the operator must report:</p>
+      <ul>
+        <li>Total CO₂ emissions (tCO₂)</li>
+        <li>Aggregated fuel consumption per flight type</li>
+        <li>Evidence of any SAF use and verified SAF quantities</li>
+        <li>Uncertainty assessment</li>
+        <li>From 2025: non-CO₂ monitoring data</li>
+      </ul>
+
+      <h2>Tonne-Kilometre Report</h2>
+      <p>The Tonne-Kilometre (TKM) report is required when an aircraft operator applies for free allocation of allowances. It covers:</p>
+      <ul>
+        <li>Revenue tonne-kilometres flown on eligible routes</li>
+        <li>Must be monitored in the year prior to applying for allocation</li>
+        <li>Maximum uncertainty: <strong>2.5% for Tier 2</strong> operators; <strong>5% for Tier 1</strong></li>
+        <li>TKM reports must also be verified by an accredited verifier</li>
+      </ul>
+
+      <h2>Verification Process</h2>
+      <table class="data-table">
+        <thead><tr><th>Step</th><th>Activity</th><th>Timing</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Strategic analysis — understand operator's activities, risks, monitoring systems</td><td>Before site visit / early year</td></tr>
+          <tr><td>2</td><td>Risk analysis — identify areas of potential misstatement</td><td>Planning phase</td></tr>
+          <tr><td>3</td><td>Data verification — check fuel consumption data, calculation methodologies, data flow</td><td>Jan–Mar (Y+1)</td></tr>
+          <tr><td>4</td><td>Site visit (if required) — interview staff, inspect systems, test controls</td><td>Jan–Mar (Y+1)</td></tr>
+          <tr><td>5</td><td>Internal review — verifier's own quality control of findings</td><td>Before issuing opinion</td></tr>
+          <tr><td>6</td><td>Issue Verification Report (VR) with opinion</td><td>Before 31 March (Y+1)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Verification Opinion</h2>
+      <p>The verifier issues one of the following opinions:</p>
+      <ul>
+        <li><strong>Satisfactory</strong> — the AER is free from material misstatements and conforms with MRR requirements</li>
+        <li><strong>Satisfactory with qualifications</strong> — minor non-conformities exist but do not rise to material level</li>
+        <li><strong>Not satisfactory</strong> — material misstatements or non-conformities that have not been corrected</li>
+      </ul>
+      <p>Materiality threshold is typically <strong>5% of reported emissions</strong> (or absolute tonne equivalent), per the AVR.</p>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — AER Verification</div>
+        <ul>
+          <li>Verify that total CO₂ emissions are calculated using the approved methodology and that all EU ETS-relevant flights are included (no omissions or double-counting with CORSIA).</li>
+          <li>Confirm fuel density values and conversion factors used are correct and sourced appropriately (e.g., from fuel invoices or density measurements).</li>
+          <li>Assess completeness of the flight list — cross-reference with EUROCONTROL/ANSP data if available.</li>
+          <li>Check SAF claims: verify SAF sustainability certification (ISCC, RSB or equivalent), chain of custody, and correct emission factor application.</li>
+          <li>Submit the Verification Report to the operator by <strong>31 March (Y+1)</strong>.</li>
+          <li>Retain verification documentation for at least 10 years per AVR requirements.</li>
+        </ul>
+      </div>
+
+      <h2>Accreditation Requirements for Verifiers</h2>
+      <p>Under the AVR, verifiers must:</p>
+      <ul>
+        <li>Be accredited by a National Accreditation Body (NAB) under <strong>ISO 17029</strong> for the aviation sector</li>
+        <li>Demonstrate competence in <strong>ISO 14065</strong> GHG verification principles</li>
+        <li>Have sector-specific competence in aviation fuel consumption monitoring and air transport operations</li>
+        <li>Maintain independence from the aircraft operator being verified</li>
+        <li>Apply an internal quality management and impartiality system</li>
+      </ul>
+    </div>
+
+    <!-- CORSIA PAGE -->
+    <div class="page" id="page-corsia">
+      <h1 class="page-title">CORSIA <span class="badge badge-corsia">ICAO Global</span></h1>
+      <p class="page-subtitle">The Carbon Offsetting and Reduction Scheme for International Aviation (CORSIA) is ICAO's global market-based measure to address CO₂ emissions from international aviation. It complements the EU ETS by covering intercontinental flights.</p>
+
+      <h2>Background &amp; Legal Basis</h2>
+      <p>CORSIA was adopted at the ICAO 39th Assembly in October 2016 (Resolution A39-3). It is the first global market-based measure for any sector. The legal framework is embedded in <strong>ICAO Annex 16, Volume IV</strong> (Environmental Protection — Carbon Offsetting and Reduction Scheme for International Aviation). The scheme's stated goal is to achieve <strong>carbon-neutral growth from 2020 (CNG2020)</strong> for international aviation.</p>
+
+      <h2>Scope</h2>
+      <p>CORSIA applies to <strong>international flights</strong> between CORSIA-participating states. Purely domestic flights are excluded (those may fall under national schemes such as the EU ETS intra-EEA scope or the French domestic scheme). Aeroplane operators with annual CO₂ emissions ≤10,000 tCO₂ from international flights are exempt from offsetting obligations (but MRV may still apply above certain thresholds).</p>
+
+      <h2>Implementation Phases</h2>
+      <div class="phase-row">
+        <div class="phase-chip" style="background:rgba(168,85,247,0.1);border-color:#a855f7;color:#c084fc;">
+          <span>Pilot Phase</span>
+          <span class="pc-years">2021 – 2023 (voluntary)</span>
+        </div>
+        <div class="phase-chip" style="background:rgba(168,85,247,0.15);border-color:#a855f7;color:#c084fc;">
+          <span>Phase 1</span>
+          <span class="pc-years">2024 – 2026 (voluntary)</span>
+        </div>
+        <div class="phase-chip" style="background:rgba(168,85,247,0.22);border-color:#a855f7;color:#d8b4fe;">
+          <span>Phase 2</span>
+          <span class="pc-years">2027 – 2035 (mandatory*)</span>
+        </div>
+      </div>
+      <p><em>*Phase 2 is mandatory for most ICAO member states; exemptions apply for Least Developed Countries (LDCs), Small Island Developing States (SIDS), and states with very low aviation activity.</em></p>
+
+      <table class="data-table">
+        <thead><tr><th>Phase</th><th>Period</th><th>Participation</th><th>Baseline</th><th>Eligible Units</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Pilot</strong></td><td>2021–2023</td><td>Voluntary — 88 states initially, grew to wider participation</td><td>100% of 2019 emissions</td><td>11 approved programmes</td></tr>
+          <tr><td><strong>Phase 1</strong></td><td>2024–2026</td><td>Voluntary — wider participation, 130 states by 2026</td><td>85% of 2019 emissions</td><td>8 approved programmes</td></tr>
+          <tr><td><strong>Phase 2</strong></td><td>2027–2035</td><td>Mandatory (with exemptions)</td><td>85% of 2019 emissions</td><td>To be determined per triennium</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Baseline Emissions</h2>
+      <p>The baseline determines what level of emissions triggers offsetting obligations. In June 2020, due to COVID-19's impact on 2020 traffic, the ICAO Council agreed to use <strong>2019 emissions only</strong> as the baseline for the pilot phase (originally the average of 2019–2020 was intended). For Phase 1 and Phase 2, the baseline is set at <strong>85% of 2019 emissions</strong>, reflecting the long-term growth ambition of CNG2020.</p>
+
+      <h2>Eligible Emissions Units</h2>
+      <p>Not all carbon credits are eligible for CORSIA. The ICAO Technical Advisory Body (TAB) assesses programmes against CORSIA Eligibility Criteria (which include additionality, permanence, no double counting, and third-party verification). Approved programmes for Phase 1 (2024–2026) include selected credits from programmes such as the American Carbon Registry, Architecture for REDD+ Transactions (ART), and others approved by the ICAO Council.</p>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Important: Units Eligible for Pilot ≠ Units Eligible for Phase 1</div>
+        <p>8 programmes are currently approved for Phase 1 (2024–2026) by the ICAO Council — ACR, ART, Climate Action Reserve, Global Carbon Council, Gold Standard, Isometric, Premium Thailand VERP, and Verra VCS — compared to 11 for the Pilot Phase. Aircraft operators must use only Phase 1-eligible units for Phase 1 compliance. Verifiers must check the vintage and eligibility of all credits cancelled.</p>
+      </div>
+
+      <h2>CORSIA MRV Framework</h2>
+      <p>All aeroplane operators on international routes must monitor CO₂ emissions from <strong>1 January 2019</strong> onwards under ICAO Annex 16, Volume IV. Key elements:</p>
+
+      <h3>Emissions Monitoring Plan (EMP)</h3>
+      <p>Operators submit an EMP to their State Authority before the monitoring period. The EMP specifies the fuel monitoring method: fuel use (from actual fuel consumption measured per flight), default fuel factors, or the ICAO CERT tool. The EMP must be approved by the State/CAA before the monitoring period begins.</p>
+
+      <h3>Annual Emissions Report (AER)</h3>
+      <p>Operators submit an AER to their State Authority annually, covering all international CORSIA flights during the calendar year. The AER must be <strong>verified by an accredited verifier</strong> before submission. Deadline: typically by 30 April of the following year (Y+1).</p>
+
+      <h3>Emissions Units Cancellation Report (EUCR)</h3>
+      <p>Submitted at the end of each compliance period (3 years), the EUCR demonstrates that the operator has cancelled sufficient eligible emissions units to cover its offsetting obligations. Also requires verification.</p>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — CORSIA</div>
+        <ul>
+          <li>Be accredited under <strong>ISO 14065</strong> and recognised by the relevant ICAO member state / National Accreditation Body for CORSIA verification scope (per Annex 16, Vol. IV, Appendix 6).</li>
+          <li>Verify the Annual Emissions Report against the approved EMP — confirm methodology, data sources, calculations, and completeness of route coverage.</li>
+          <li>Confirm all international CORSIA-relevant routes are included and that intra-EEA routes are not double-counted between CORSIA and EU ETS.</li>
+          <li>For the EUCR: verify that cancelled units are from CORSIA-eligible programmes and valid for the applicable compliance period (check vintage and Phase eligibility).</li>
+          <li>Issue a verification statement with a reasonable assurance opinion.</li>
+          <li>Submit verification documentation to the operator in time for the State Authority submission deadline.</li>
+        </ul>
+      </div>
+
+      <h2>CORSIA vs. EU ETS — Key Differences</h2>
+      <table class="data-table">
+        <thead><tr><th>Aspect</th><th>EU ETS</th><th>CORSIA</th></tr></thead>
+        <tbody>
+          <tr><td>Scope</td><td>Intra-EEA flights</td><td>International flights (between CORSIA states)</td></tr>
+          <tr><td>Mechanism</td><td>Cap-and-trade (allowances)</td><td>Offsetting (carbon credits)</td></tr>
+          <tr><td>GHG covered</td><td>CO₂ (+ non-CO₂ monitoring from 2025)</td><td>CO₂ only</td></tr>
+          <tr><td>Legal basis</td><td>EU Directive 2003/87/EC</td><td>ICAO Annex 16, Volume IV</td></tr>
+          <tr><td>Compliance currency</td><td>EU Allowances (EUAs)</td><td>CORSIA Eligible Emissions Units (CEEUs)</td></tr>
+          <tr><td>Verifier standard</td><td>ISO 17029 + ISO 14065 (AVR)</td><td>ISO 14065 (Annex 16 Vol. IV, App. 6)</td></tr>
+          <tr><td>MRV start</td><td>2012 (aviation)</td><td>1 January 2019</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- REFUELEU PAGE -->
+    <div class="page" id="page-refueleu">
+      <h1 class="page-title">ReFuelEU Aviation <span class="badge badge-refuel">Regulation 2023/2405</span></h1>
+      <p class="page-subtitle">ReFuelEU Aviation establishes mandatory sustainable aviation fuel (SAF) blending obligations for aviation fuel suppliers at EU airports, scaling from 2% in 2025 to 70% by 2050. It is a cornerstone of the Fit for 55 package.</p>
+
+      <h2>Overview</h2>
+      <p>Regulation (EU) 2023/2405, commonly called <strong>ReFuelEU Aviation</strong>, entered into force in 2023 and became applicable from <strong>1 January 2025</strong>. It requires aviation fuel suppliers to blend an increasing minimum share of SAF into the conventional jet fuel (CJF) supplied at EU airports. Airlines departing from EU airports are required to take on fuel from these mandated blends.</p>
+
+      <h2>SAF Blending Mandate Timeline</h2>
+      <div class="saf-bars">
+        <div class="saf-row">
+          <div class="saf-year">2025</div>
+          <div class="saf-bar-wrap"><div class="saf-bar" style="width:2.857%;background:linear-gradient(90deg,#22c55e,#16a34a);">2%</div></div>
+          <div class="saf-pct">2%</div>
+        </div>
+        <div class="saf-row">
+          <div class="saf-year">2030</div>
+          <div class="saf-bar-wrap"><div class="saf-bar" style="width:8.571%;background:linear-gradient(90deg,#22c55e,#16a34a);">6%</div></div>
+          <div class="saf-pct">6%</div>
+        </div>
+        <div class="saf-row">
+          <div class="saf-year">2035</div>
+          <div class="saf-bar-wrap"><div class="saf-bar" style="width:28.57%;background:linear-gradient(90deg,#22c55e,#15803d);">20%</div></div>
+          <div class="saf-pct">20%</div>
+        </div>
+        <div class="saf-row">
+          <div class="saf-year">2040</div>
+          <div class="saf-bar-wrap"><div class="saf-bar" style="width:48.57%;background:linear-gradient(90deg,#16a34a,#166534);">34%</div></div>
+          <div class="saf-pct">34%</div>
+        </div>
+        <div class="saf-row">
+          <div class="saf-year">2045</div>
+          <div class="saf-bar-wrap"><div class="saf-bar" style="width:60%;background:linear-gradient(90deg,#15803d,#14532d);">42%</div></div>
+          <div class="saf-pct">42%</div>
+        </div>
+        <div class="saf-row">
+          <div class="saf-year">2050</div>
+          <div class="saf-bar-wrap"><div class="saf-bar" style="width:100%;background:linear-gradient(90deg,#14532d,#052e16);">70%</div></div>
+          <div class="saf-pct">70%</div>
+        </div>
+      </div>
+
+      <h2>Synthetic E-Fuel Sub-Mandate</h2>
+      <p>Within the overall SAF mandate, a separate sub-mandate requires a minimum share of <strong>synthetic aviation fuels (e-fuels / Power-to-Liquid)</strong>:</p>
+      <table class="data-table">
+        <thead><tr><th>Year</th><th>Synthetic E-Fuel Sub-Mandate</th></tr></thead>
+        <tbody>
+          <tr><td>2030</td><td>1.2% of total fuel supplied <small style="opacity:0.7;">(transitional average 2030–2031: 0.7%)</small></td></tr>
+          <tr><td>2035</td><td>5%</td></tr>
+          <tr><td>2040</td><td>10%</td></tr>
+          <tr><td>2045</td><td>15%</td></tr>
+          <tr><td>2050</td><td>35%</td></tr>
+        </tbody>
+      </table>
+
+      <h2>What Qualifies as SAF?</h2>
+      <p>SAF must meet the sustainability criteria defined in the Renewable Energy Directive (RED II/III), including:</p>
+      <ul>
+        <li>Minimum GHG savings threshold (typically ≥65% lifecycle GHG reduction vs. fossil jet fuel)</li>
+        <li>No feedstock from high-biodiversity or high-carbon stock land</li>
+        <li>Feedstocks include agricultural residues, municipal solid waste, algae, and (for e-fuels) renewable electricity + CO₂</li>
+      </ul>
+
+      <h2>Compliance Flexibility: Weighted Average</h2>
+      <p>Until 2034, aviation fuel suppliers may meet their blending obligation based on a <strong>weighted average across all EU airports</strong> they supply. From 2035, they must meet the specific SAF percentage at <strong>each individual EU airport</strong>.</p>
+
+      <h2>SAF Attribute Certificates (Book-and-Claim System)</h2>
+      <div class="warn-box">
+        <div class="wb-head">⚠ Regulatory Limitation — Book-and-Claim</div>
+        <p><strong>Book-and-claim SAF certificates do not confer regulatory compliance credit in any current mandatory scheme.</strong> Under EU ETS (MRR/AVR), CORSIA (ICAO Annex 16, Vol. IV), and the French compensation scheme, the aircraft operator must demonstrate <em>physical uplift</em> of SAF — i.e., actual delivery of certified fuel into the aircraft's tanks, evidenced by fuel delivery receipts, invoices, and a traceable chain of custody. A book-and-claim certificate alone — representing the environmental attributes of SAF uplifted elsewhere by someone else — cannot substitute for physical delivery documentation in these regulatory schemes.</p>
+        <p>Under <strong>ReFuelEU Aviation (Regulation (EU) 2023/2405)</strong>, a limited form of book-and-claim is introduced for the <em>supplier blending mandate</em> only: fuel suppliers may use registry-tracked certificates to demonstrate compliance with their supply obligation at EU airports. However, aircraft operators reporting under Article 8 must report actual SAF uplifted; the use of attribute certificates in operator-level compliance reporting remains subject to Member State competent authority approval and cannot be assumed.</p>
+      </div>
+      <p>The term <strong>"book-and-claim"</strong> refers to a voluntary commercial mechanism — separate from any regulatory obligation — in which a SAF producer registers the environmental attributes of produced SAF in a registry, issues a certificate, and transfers that certificate to an airline buyer. The airline "claims" the sustainability attributes on paper without the fuel physically reaching their tanks. This is used for voluntary corporate sustainability reporting (e.g., CSRD scope 3, Science Based Targets) but <strong>does not count as SAF uplift</strong> for regulatory purposes under EU ETS, CORSIA, or the French scheme.</p>
+
+      <h2>Reporting Obligations</h2>
+      <p>Both aviation fuel suppliers and aircraft operators have reporting obligations under ReFuelEU:</p>
+      <ul>
+        <li><strong>Fuel suppliers:</strong> Annual report to the competent authority on SAF quantities supplied per airport and per airline</li>
+        <li><strong>Aircraft operators:</strong> Report SAF volumes <em>physically uplifted</em> and integrate into EU ETS AER; note that book-and-claim certificates do not substitute for physical uplift records under EU ETS</li>
+      </ul>
+
+      <h2>Intersection with EU ETS</h2>
+      <p>SAF use reduces an aircraft operator's net CO₂ emissions under the EU ETS. The Commission reserved <strong>20 million EUAs</strong> from the aviation cap (2024–2030) specifically to incentivise SAF adoption. Operators using certified SAF may benefit from reduced allowance surrender obligations to the extent SAF lifecycle emissions are lower than fossil jet fuel.</p>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — ReFuelEU / SAF</div>
+        <ul>
+          <li>When verifying EU ETS AERs: check that SAF volumes claimed are supported by valid sustainability certificates (ISCC CORSIA, RSB CORSIA, or equivalent scheme) and chain-of-custody documentation.</li>
+          <li>Confirm that the SAF emission factor used in the AER calculation corresponds to the certified lifecycle GHG value, not the fossil default.</li>
+          <li>Where an operator presents book-and-claim certificates: note that these do not constitute valid SAF uplift evidence under EU ETS (MRR/AVR). The verifier must obtain physical fuel delivery records to support any SAF emission factor reduction in the AER.</li>
+          <li>Note: ReFuelEU verification is primarily the competent authority's responsibility for fuel suppliers; verifiers' main interface is through the EU ETS AER and CORSIA emissions reports where SAF use affects calculated CO₂ emissions.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- NON-CO2 PAGE -->
+    <div class="page" id="page-nonco2">
+      <h1 class="page-title">Non-CO₂ Effects <span class="badge badge-nonco2">From 2025</span></h1>
+      <p class="page-subtitle">Aviation's climate impact extends well beyond CO₂. Non-CO₂ effects — including contrails, NOx, soot, and water vapour — accounted for over 66% of aviation's net climate forcing in 2018. EU mandatory monitoring began 1 January 2025.</p>
+
+      <h2>What Are Non-CO₂ Effects?</h2>
+      <p>When aircraft burn jet fuel at high altitude, they produce several non-CO₂ emissions that affect the atmosphere and climate in ways distinct from CO₂:</p>
+
+      <h3>1. Contrails and Contrail-Cirrus</h3>
+      <p>Condensation trails (contrails) form when hot, humid exhaust gases mix with cold air at cruise altitude. When atmospheric conditions are supersaturated with respect to ice, contrails persist and spread into <strong>contrail-cirrus</strong> clouds. These high-altitude ice clouds:</p>
+      <ul>
+        <li>Reflect incoming solar radiation (cooling effect — mainly daytime)</li>
+        <li>Trap outgoing longwave (infrared) radiation (warming effect — day and night)</li>
+        <li>Have a <strong>net warming effect</strong> overall, because nighttime warming and daytime trapping exceed daytime cooling</li>
+      </ul>
+      <p>Contrail radiative forcing is highly variable and uncertain — it depends on location, season, time of day, atmospheric humidity, and aircraft type.</p>
+
+      <h3>2. NOx (Nitrogen Oxides)</h3>
+      <p>NOx emissions at cruise altitude lead to two competing chemical effects:</p>
+      <ul>
+        <li><strong>Short-term:</strong> Formation of ozone (O₃) in the upper troposphere → warming effect</li>
+        <li><strong>Long-term:</strong> Destruction of methane (CH₄) → cooling effect</li>
+      </ul>
+      <p>The net effect of aviation NOx is a short-term warming dominated by ozone formation.</p>
+
+      <h3>3. Aerosols — Soot &amp; Sulphur</h3>
+      <p>Soot (black carbon) particles from jet engines can act as seeds for contrail and cirrus cloud formation. Sulphur aerosols have a direct cooling effect. Both contribute to indirect aerosol-cloud interactions that are highly uncertain.</p>
+
+      <h3>4. Water Vapour</h3>
+      <p>At cruise altitude, water vapour from combustion can persist and contribute to cirrus cloud formation. The direct radiative forcing of aviation water vapour is relatively small compared to contrails and NOx.</p>
+
+      <h2>Scale of Non-CO₂ Impact</h2>
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">Share of Aviation Climate Forcing (2018)</div>
+          <div class="stat-value">&gt;66%</div>
+          <div class="stat-note">Non-CO₂ effects as % of net climate forcing</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Contrail Warming Dominance</div>
+          <div class="stat-value">~57%</div>
+          <div class="stat-note">Contrail-cirrus share of non-CO₂ forcing</div>
+        </div>
+      </div>
+
+      <h2>EU Regulatory Framework — MRV for Non-CO₂</h2>
+      <p><strong>Regulation (EU) 2024/2493</strong>, adopted on 23 September 2024, extends the EU ETS Monitoring, Reporting and Verification framework to include non-CO₂ aviation effects. Key provisions:</p>
+      <ul>
+        <li>Mandatory monitoring of non-CO₂ parameters by aircraft operators from <strong>1 January 2025</strong></li>
+        <li>Data is collected and reported but does <strong>not yet trigger allowance surrender obligations</strong> — this is a data-gathering phase to build the evidence base</li>
+        <li>The Commission will review the non-CO₂ data and may propose regulatory action (e.g., allowance obligations) in future based on findings</li>
+        <li>Operators must update their Monitoring Plans to include non-CO₂ methodology</li>
+      </ul>
+
+      <h2>NEATS Tool</h2>
+      <p>The EU has developed the <strong>NEATS (Non-CO₂ Aviation Effects Tracking System)</strong> — jointly operated by the European Commission (DG CLIMA) and EUROCONTROL — to support operators in calculating non-CO₂ climate impacts. Version 2 (NEATS V2) allows aircraft operators to calculate the non-CO₂ climate impact of individual flights using operational data they already collect for EU ETS reporting. Key inputs: flight trajectory, fuel burn, engine type, atmospheric conditions.</p>
+
+      <h2>Uncertainties</h2>
+      <p>Non-CO₂ effects are subject to significant scientific uncertainty, particularly:</p>
+      <ul>
+        <li>Contrail formation prediction (depends on local atmospheric conditions not always predictable)</li>
+        <li>Indirect aerosol effects on cloud formation</li>
+        <li>Quantification of NOx ozone vs. methane effects over different timescales</li>
+        <li>Effective Radiative Forcing (ERF) metrics vs. traditional GWP approaches</li>
+      </ul>
+      <p>Current research (including EASA's non-CO₂ research programme) is working to reduce these uncertainties.</p>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — Non-CO₂ MRV (from 2025)</div>
+        <ul>
+          <li>Confirm that the aircraft operator's Monitoring Plan has been updated to include a non-CO₂ monitoring methodology, as required by Regulation (EU) 2024/2493.</li>
+          <li>Verify that non-CO₂ parameters are being monitored and recorded in accordance with the approved methodology (e.g., NEATS V2 tool inputs or alternative approved method).</li>
+          <li>Check that non-CO₂ data is reported in the AER separately from CO₂ data, using the correct templates and formats required by the competent authority.</li>
+          <li>Note: At present, non-CO₂ data does not trigger additional allowance surrender — verification confirms data quality and completeness, not compliance with a cap.</li>
+          <li>Stay current with EASA and Commission guidance as the regulatory framework for non-CO₂ is actively evolving.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- FRENCH COMPENSATION PAGE -->
+    <div class="page" id="page-french">
+      <h1 class="page-title">French Compensation Scheme <span class="badge badge-french">France — Domestic</span></h1>
+      <p class="page-subtitle">Article 147 of French Law 2021-1104 introduced a mandatory obligation for aircraft operators to compensate 100% of their CO₂ emissions from domestic flights as of 1 January 2024.</p>
+
+      <h2>Legal Basis</h2>
+      <p>The French compensation scheme is established by <strong>Article 147 of Law No. 2021-1104</strong> (Loi Climat et Résilience), which amended the French Code de l'environnement. The implementing decree specifies the scope, thresholds, and reporting obligations. The scheme is administered by the <strong>DGAC (Direction Générale de l'Aviation Civile)</strong>.</p>
+
+      <h2>Scope</h2>
+      <p>The scheme applies to:</p>
+      <ul>
+        <li>Both <strong>commercial and non-commercial</strong> aircraft operators</li>
+        <li>Operators who are already subject to the <strong>EU ETS</strong></li>
+        <li>Operators emitting more than <strong>1,000 tCO₂ per year</strong> from French domestic flights</li>
+        <li>Coverage: all domestic French flights (metropolitan and overseas territories)</li>
+      </ul>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Interaction with EU ETS</div>
+        <p>The French compensation scheme targets domestic CO₂ emissions that are already covered by the EU ETS (intra-EEA flights). It does not replace EU ETS obligations — operators must comply with both. The compensation requirement is an additional national measure on top of EU ETS allowance surrender.</p>
+      </div>
+
+      <h2>Phase-In Schedule</h2>
+      <table class="data-table">
+        <thead><tr><th>Period</th><th>Compensation Obligation</th><th>Remaining Uncompensated</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1 Jan 2022 – 31 Dec 2022</strong></td><td>50% of domestic CO₂ emissions</td><td>50%</td></tr>
+          <tr><td><strong>1 Jan 2023 – 31 Dec 2023</strong></td><td>70% of domestic CO₂ emissions</td><td>30%</td></tr>
+          <tr><td><strong>From 1 Jan 2024</strong></td><td>100% of domestic CO₂ emissions</td><td>0% — Full compensation required</td></tr>
+        </tbody>
+      </table>
+
+      <h2>How Compensation Works</h2>
+      <p>Operators must <strong>acquire and cancel carbon credits</strong> to meet their obligation. Eligible carbon credits must finance projects that either:</p>
+      <ul>
+        <li><strong>Store CO₂</strong> — e.g., forest renewal, reforestation, soil carbon storage</li>
+        <li><strong>Reduce GHG emissions</strong> — e.g., renewable energy projects, energy efficiency</li>
+      </ul>
+      <p>Projects must meet quality standards defined by DGAC. Unlike CORSIA, there is currently no closed list of approved programmes — operators must demonstrate that credits meet the applicable environmental integrity criteria set out in the implementing decree.</p>
+
+      <h2>Reporting Obligations</h2>
+      <p>Aircraft operators subject to the French scheme must submit annually to the DGAC:</p>
+      <ul>
+        <li>A report covering <strong>CO₂ emissions from domestic flights</strong> during the previous calendar year</li>
+        <li>Evidence of carbon credits acquired and cancelled</li>
+        <li>Deadline: <strong>31 March of each year</strong> (covering the previous calendar year)</li>
+      </ul>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — French Compensation Scheme</div>
+        <ul>
+          <li>The French scheme does not currently mandate independent third-party verification in the same formal sense as EU ETS or CORSIA — the operator submits the report directly to DGAC.</li>
+          <li>However, operators subject to EU ETS (whose domestic emissions are part of the verified AER) should ensure consistency between EU ETS verified figures and the domestic flight data reported to DGAC under Article 147.</li>
+          <li>Verifiers checking EU ETS AERs should be aware of the French domestic flight subset — any discrepancy between the AER and the Article 147 report could indicate a data quality issue.</li>
+          <li>Monitor DGAC guidance: the implementing framework may introduce verification requirements as the scheme matures.</li>
+        </ul>
+      </div>
+
+      <h2>Relationship to Other Schemes</h2>
+      <table class="data-table">
+        <thead><tr><th>Scheme</th><th>Flights Covered</th><th>Mechanism</th><th>Overlap?</th></tr></thead>
+        <tbody>
+          <tr><td>French Compensation</td><td>French domestic flights</td><td>Carbon credit cancellation (100% from 2024)</td><td>Cumulative with EU ETS</td></tr>
+          <tr><td>EU ETS</td><td>Intra-EEA (incl. French domestic)</td><td>Cap-and-trade (EUA surrender)</td><td>Yes — domestic French flights in both</td></tr>
+          <tr><td>CORSIA</td><td>International flights</td><td>Offsetting</td><td>No — different routes</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- SAF PAGE -->
+    <div class="page" id="page-saf">
+      <h1 class="page-title">Sustainable Aviation Fuel (SAF) <span class="badge badge-saf">Cross-Scheme</span></h1>
+      <p class="page-subtitle">SAF is the central decarbonisation lever for aviation. This page covers what SAF is, how it is produced, the sustainability criteria that apply, how each scheme treats it differently, certification pathways, and the verifier's role at each stage.</p>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- KNOWLEDGE BASE SECTION                                  -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <h2>Knowledge Base — Fuel Taxonomy</h2>
+      <p>Before diving into scheme-specific rules, it is essential to understand the fuel taxonomy that underlies every regulatory framework. The terms <em>biofuel</em>, <em>advanced biofuel</em>, <em>SAF</em>, <em>LCAF</em>, <em>RCF</em>, and <em>e-fuel</em> are often used interchangeably but have distinct regulatory meanings. Misclassification directly affects which GHG threshold applies, which certification scheme is required, and whether a verifier can accept a claim.</p>
+
+      <h3>Level 1 — Conventional Aviation Fuel</h3>
+      <p><strong>Jet-A / Jet-A1</strong> is a kerosene-based fossil fuel refined from crude oil. It is the baseline against which all alternative fuels are compared. Its lifecycle GHG intensity is standardised at:</p>
+      <ul>
+        <li><strong>89 gCO₂e/MJ</strong> — ICAO/CORSIA fossil fuel comparator (Annex 16, Vol. IV, Appendix 5)</li>
+        <li><strong>94 gCO₂e/MJ</strong> — EU transport fossil fuel comparator (RED III, Annex V, Part C)</li>
+      </ul>
+      <p>These two different baselines mean that the same physical fuel batch may have a different calculated GHG saving percentage depending on which regulatory framework is being applied — a critical detail for cross-scheme verification.</p>
+
+      <h3>Level 2 — Biofuel (Conventional)</h3>
+      <p>A <strong>biofuel</strong> is a liquid or gaseous transport fuel derived from biomass. Under EU law, the definition is established in <strong>Article 2(33) of RED III (Directive (EU) 2023/2413)</strong>, which carried forward the RED II definition. Conventional biofuels are produced from food and feed crops (e.g., wheat starch, sugar beet, rapeseed oil, palm oil). In the aviation context, a conventional crop-based biofuel blended into jet fuel is technically a biofuel, but it is <em>not eligible as SAF</em> under ReFuelEU Aviation (Regulation (EU) 2023/2405, Article 3(3)), because food and feed-crop feedstocks are explicitly excluded.</p>
+      <div class="warn-box">
+        <div class="wb-head">⚠ Conventional Biofuel ≠ SAF under EU Law</div>
+        <p>A biofuel produced from rapeseed, palm oil or sugar cane may meet the RED III GHG threshold but is still excluded from ReFuelEU SAF eligibility (Regulation (EU) 2023/2405, Article 3(3)(b)). Verifiers must distinguish between RED III compliance (for renewable energy counting) and ReFuelEU SAF eligibility (for mandate compliance).</p>
+      </div>
+
+      <h3>Level 3 — Advanced Biofuel</h3>
+      <p>An <strong>advanced biofuel</strong> is defined in <strong>Article 2(34) of RED III</strong> as a biofuel produced from feedstocks listed in <strong>Annex IX, Part A</strong> of RED III. The EU definition of "advanced" is feedstock-based, not technology-based — this contrasts with the US approach where "advanced" refers to the production technology used.</p>
+      <p>Annex IX Part A feedstocks are considered non-competing with food/feed systems and are uncapped. They include: agricultural residues and straw, food and biowaste from urban and rural areas, municipal solid waste (non-recyclable fractions), algae, CO₂ for Power-to-Liquid processes, sawdust and forestry residues, and others.</p>
+      <p>Advanced biofuels count double towards the EU's renewable energy sub-targets (<strong>RED III, Article 22</strong>) and have a specific sub-mandate within the overall renewable transport fuel target.</p>
+
+      <h3>Level 4 — SAF (Sustainable Aviation Fuel) under EU Law</h3>
+      <p>Under <strong>ReFuelEU Aviation (Regulation (EU) 2023/2405, Article 2(5))</strong>, SAF is defined as a drop-in aviation fuel that meets one of three categories and complies with RED III sustainability criteria (Article 29 of RED III, as incorporated by reference):</p>
+      <div class="card" style="margin-bottom:16px;">
+        <table class="data-table" style="margin-bottom:0;">
+          <thead><tr><th>SAF Category</th><th>Regulatory Definition</th><th>Key Examples</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>Advanced aviation biofuels</strong></td>
+              <td>Produced from Annex IX Part A feedstocks; qualifies as advanced biofuel under RED III Art. 2(34)</td>
+              <td>FT-SPK from municipal solid waste, AtJ from lignocellulosic biomass, HEFA from certain waste residues qualifying under Part A</td>
+            </tr>
+            <tr>
+              <td><strong>Other aviation biofuels</strong></td>
+              <td>Produced from Annex IX Part B feedstocks (UCO, cat. 1&amp;2 animal fats, tallow); not "advanced" but still SAF-eligible</td>
+              <td>HEFA from Used Cooking Oil (UCO), HEFA from tallow — the dominant current SAF supply</td>
+            </tr>
+            <tr>
+              <td><strong>Recycled carbon aviation fuels (RCF)</strong></td>
+              <td>Produced from non-renewable waste gases or liquids (e.g., flue gas from steel industry, plastic waste off-gases)</td>
+              <td>FT-SPK from industrial waste gases; plastic pyrolysis oil to jet</td>
+            </tr>
+            <tr>
+              <td><strong>Synthetic aviation fuels (e-fuels / RFNBO)</strong></td>
+              <td>Renewable Fuels of Non-Biological Origin — produced from renewable electricity + CO₂ (direct air capture or biogenic). Sub-mandated from 2030.</td>
+              <td>Power-to-Liquid (PtL): electrolytic H₂ + CO₂ via FT or methanol route</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Level 5 — CORSIA Eligible Fuel (SAF vs. LCAF)</h3>
+      <p>ICAO's CORSIA scheme uses a different but overlapping taxonomy, defined in <strong>ICAO Annex 16, Volume IV, Chapter 1</strong>. Two types of CORSIA Eligible Fuels (CEF) can reduce an operator's offsetting obligation:</p>
+      <table class="data-table">
+        <thead><tr><th>Term</th><th>ICAO Definition (Annex 16, Vol. IV)</th><th>GHG Threshold</th><th>Feedstock type</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>CORSIA SAF</strong></td>
+            <td>A <em>renewable or waste-derived</em> aviation fuel that meets CORSIA sustainability criteria (Annex 16, Vol. IV, Appendix 5 &amp; 6)</td>
+            <td>≥10% lifecycle GHG reduction vs. 89 gCO₂e/MJ</td>
+            <td>Biomass, waste, renewable electricity (non-fossil origin)</td>
+          </tr>
+          <tr>
+            <td><strong>CORSIA LCAF</strong></td>
+            <td>A <em>fossil-based</em> aviation fuel that meets CORSIA sustainability criteria (Annex 16, Vol. IV, Chapter 1)</td>
+            <td>≥10% lifecycle GHG reduction vs. 89 gCO₂e/MJ</td>
+            <td>Fossil-based (e.g., gas-to-liquid with carbon capture)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Note: CORSIA LCAF is fossil-derived — it can <strong>never qualify as SAF under EU law</strong> (RED III/ReFuelEU), since EU SAF must come from non-fossil, renewable or waste sources. This is a critical cross-scheme distinction for verifiers handling operators reporting under both EU ETS and CORSIA.</p>
+
+      <!-- RED II -->
+      <h2>Knowledge Base — Renewable Energy Directive II (RED II)</h2>
+      <p><strong>Directive (EU) 2018/2001</strong> (RED II) was the primary EU legislative framework for renewable energy and biofuel sustainability from 2018 until it was substantially amended by RED III in 2023. Understanding RED II remains important because many existing Monitoring Plans, Proofs of Sustainability, and operator agreements reference RED II criteria, and the transition to RED III criteria for installations is phased.</p>
+
+      <h3>Key RED II Provisions Relevant to SAF</h3>
+      <table class="data-table">
+        <thead><tr><th>Article / Annex</th><th>Subject</th><th>Requirement</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Art. 2(33)</strong></td><td>Definition of biofuel</td><td>Liquid fuel for transport produced from biomass</td></tr>
+          <tr><td><strong>Art. 2(34)</strong></td><td>Definition of advanced biofuel</td><td>Biofuel produced from Annex IX Part A feedstocks</td></tr>
+          <tr><td><strong>Art. 2(36)</strong></td><td>Definition of renewable liquid and gaseous transport fuels of non-biological origin (RFNBO)</td><td>E-fuels from renewable electricity (predecessors to "synthetic SAF" category)</td></tr>
+          <tr><td><strong>Art. 29</strong></td><td>Sustainability &amp; GHG criteria</td><td>Biofuels must: (1) not come from high-carbon stock land (peatland, wetland, forests); (2) not come from high-biodiversity land; (3) meet GHG savings thresholds. No land requirement for waste/residue-based fuels.</td></tr>
+          <tr><td><strong>Art. 29(10)</strong></td><td>GHG savings thresholds (existing installations)</td><td>≥50% for installations operating before 5 Oct 2015; ≥60% for installations starting between 5 Oct 2015 and 31 Dec 2020</td></tr>
+          <tr><td><strong>Art. 29(10)</strong></td><td>GHG savings thresholds (new installations)</td><td>≥65% for installations starting on or after 1 Jan 2021</td></tr>
+          <tr><td><strong>Art. 30</strong></td><td>Verification of compliance</td><td>Member States require operators to have sustainability criteria verified by an independent auditor; the EU recognises voluntary certification schemes</td></tr>
+          <tr><td><strong>Annex IX, Part A</strong></td><td>Advanced biofuel feedstocks (uncapped)</td><td>Algae, biowaste, straw, animal manure, sewage sludge, lignocellulosic material, bark, CO₂ for e-fuels, and others</td></tr>
+          <tr><td><strong>Annex IX, Part B</strong></td><td>Other eligible feedstocks (capped at 1.7% from 2030)</td><td>UCO (Used Cooking Oil), cat. 1 &amp; 2 animal fats</td></tr>
+          <tr><td><strong>Annex V, Part C</strong></td><td>GHG methodology</td><td>Lifecycle GHG calculation methodology for transport biofuels; default values per feedstock/pathway; fossil fuel comparator: 94 gCO₂e/MJ</td></tr>
+        </tbody>
+      </table>
+
+      <h3>RED II GHG Savings — Installed Base Impact</h3>
+      <p>The tiered GHG thresholds in RED II (Art. 29(10)) mean that the vintage of the SAF production plant matters. A HEFA plant that began operating before October 2015 only needs to demonstrate 50% GHG savings, while a plant starting after 1 January 2021 needs 65%. Verifiers checking Proofs of Sustainability must confirm that the correct threshold is being applied based on the installation's commissioning date.</p>
+
+      <!-- RED III -->
+      <h2>Knowledge Base — Renewable Energy Directive III (RED III)</h2>
+      <p><strong>Directive (EU) 2023/2413</strong> (RED III) amended RED II substantially and was formally adopted in October 2023 as part of the Fit for 55 package. It raises the EU's binding renewable energy target and introduces stricter sustainability criteria. RED III is the <em>current applicable framework</em> for SAF sustainability verification under both EU ETS and ReFuelEU Aviation as of 2025.</p>
+
+      <h3>Key RED III Changes Relevant to SAF</h3>
+      <table class="data-table">
+        <thead><tr><th>Article / Annex</th><th>Change vs. RED II</th><th>Impact on SAF</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Art. 22a</strong> (new)</td><td>Dedicated sub-mandate for RFNBOs and recycled carbon fuels in transport</td><td>E-fuels and RCF now have their own mandatory sub-target in transport; reinforces the ReFuelEU e-fuel sub-mandate</td></tr>
+          <tr><td><strong>Art. 29(1)</strong></td><td>Sustainability criteria scope maintained, with clarified application to aviation</td><td>RED III Art. 29 criteria directly referenced by ReFuelEU (Regulation (EU) 2023/2405, Art. 3(3)) as the eligibility gate for SAF</td></tr>
+          <tr><td><strong>Art. 29(10) — new 65% threshold</strong></td><td>All new biofuel installations (operational from 1 Jan 2021 onward) must achieve ≥65% GHG savings</td><td>The 65% threshold is now the default standard for SAF PoS documents in the EU; older plants may still operate at 50%/60% thresholds if grandfathered</td></tr>
+          <tr><td><strong>Annex IX Part A</strong> (expanded)</td><td>Additional feedstocks added via Delegated Directive (EU) 2024/1405 (entered into force 2024)</td><td>Expands the pool of advanced biofuel feedstocks eligible for SAF without the Annex IX Part B cap</td></tr>
+          <tr><td><strong>Annex IX Part B cap</strong></td><td>1.7% cap on Part B feedstocks (UCO, animal fats) maintained; Commission empowered to adjust via delegated act</td><td>Limits the extent to which UCO-based HEFA (currently dominant) can count toward EU renewable targets; does not cap absolute production volume</td></tr>
+          <tr><td><strong>Art. 30 — verification</strong></td><td>Strengthened requirements for national competent authority oversight of voluntary schemes</td><td>Certification scheme approvals may be reviewed more rigorously; verifiers should use only currently recognised schemes</td></tr>
+          <tr><td><strong>Annex V / VI</strong></td><td>Updated default GHG values for biofuels and biomass fuels</td><td>Default emission factors in PoS documents may differ between RED II and RED III; confirm the applicable default value table when verifying AERs</td></tr>
+        </tbody>
+      </table>
+
+      <h3>RED II vs. RED III — Summary Comparison</h3>
+      <table class="data-table">
+        <thead><tr><th>Aspect</th><th>RED II (2018/2001)</th><th>RED III (2023/2413)</th></tr></thead>
+        <tbody>
+          <tr><td>Binding renewable energy target (2030)</td><td>32% of total EU energy</td><td>42.5% (indicative 45%) of total EU energy</td></tr>
+          <tr><td>Transport sub-target</td><td>14% renewable energy in transport by 2030</td><td>29% (or 14.5% GHG intensity reduction) by 2030</td></tr>
+          <tr><td>Advanced biofuel sub-mandate</td><td>3.5% in transport by 2030</td><td>5.5% in transport by 2030 (with 1% RFNBO sub-target)</td></tr>
+          <tr><td>GHG threshold (new installations, from Jan 2021)</td><td>65%</td><td>65% (maintained)</td></tr>
+          <tr><td>Palm/soy prohibition</td><td>High ILUC-risk fuels phased out to 0% by 2030 (delegated act)</td><td>High ILUC-risk status confirmed; phased out in aviation via ReFuelEU explicit exclusion</td></tr>
+          <tr><td>RCF (Recycled Carbon Fuels)</td><td>Not specifically addressed in transport mandates</td><td>Covered under Art. 22a; eligible for ReFuelEU SAF mandate</td></tr>
+          <tr><td>Aviation-specific rules</td><td>Referenced via Article 25; no SAF-specific mandate</td><td>Aviation mandate delegated entirely to ReFuelEU Regulation (EU) 2023/2405</td></tr>
+          <tr><td>Fossil fuel comparator</td><td>94 gCO₂e/MJ (Annex V, Part C)</td><td>94 gCO₂e/MJ (maintained)</td></tr>
+          <tr><td>Voluntary certification schemes</td><td>Commission recognised; listed in implementing decisions</td><td>Stricter oversight; schemes must reapply for recognition under RED III criteria</td></tr>
+        </tbody>
+      </table>
+
+      <!-- CORSIA ELIGIBLE FUEL -->
+      <h2>Knowledge Base — CORSIA Eligible SAF</h2>
+      <p>CORSIA's fuel eligibility framework is defined in <strong>ICAO Annex 16, Volume IV, Appendix 5 (Sustainability Criteria)</strong> and <strong>Appendix 6 (Verification Requirements)</strong>. It is distinct from the EU framework — a fuel that qualifies as SAF under ReFuelEU may or may not qualify as CORSIA Eligible Fuel, and vice versa (particularly for LCAF).</p>
+
+      <h3>CORSIA Three-Pillar Sustainability Criteria (Annex 16, Vol. IV, Appendix 5)</h3>
+      <table class="data-table">
+        <thead><tr><th>Pillar</th><th>Criteria Reference</th><th>Requirements (Summary)</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>1 — Carbon</strong></td>
+            <td>Appendix 5, Section 2</td>
+            <td>Net lifecycle GHG emissions ≥10% below fossil baseline of 89 gCO₂e/MJ. Calculated using ICAO-approved LCA methodology (Document 04: LCA Methodology). Land-use change emissions (ILUC) must be included for biogenic feedstocks.</td>
+          </tr>
+          <tr>
+            <td><strong>2 — Environmental</strong></td>
+            <td>Appendix 5, Section 3</td>
+            <td>No conversion of high carbon stock land (primary forests, peatlands, wetlands) after 1 Jan 2008. Protect high biodiversity areas. Soil quality and water quality safeguards.</td>
+          </tr>
+          <tr>
+            <td><strong>3 — Socio-Economic</strong></td>
+            <td>Appendix 5, Section 4</td>
+            <td>Respect for land rights and water rights (FPIC where applicable). No adverse impact on food security. Compliance with local labour laws. Positive development for rural/developing communities.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>CORSIA LCA Methodology — Key Documents</h3>
+      <ul>
+        <li><strong>ICAO Document 04</strong> — CORSIA Eligible Fuels — Life Cycle Assessment Methodology (defines how to calculate the lifecycle emission value)</li>
+        <li><strong>ICAO Document 05</strong> — CORSIA Sustainability Criteria (June 2025 edition is current)</li>
+        <li><strong>ICAO Document 06</strong> — Default Life Cycle Emission Values (June 2025 edition; published per feedstock/pathway combination)</li>
+      </ul>
+      <p>The lifecycle emission value for a fuel is: <strong>LCA value = Core LCA emissions + ILUC factor − Emission credits</strong>. Default values from Document 06 may be used, or operators may commission site-specific LCA assessments (which must be approved by the State Authority).</p>
+
+      <h3>CORSIA Eligible Fuel — Phase Eligibility</h3>
+      <table class="data-table">
+        <thead><tr><th>Phase</th><th>Period</th><th>Approved Programmes</th><th>Number of Unit Programmes</th></tr></thead>
+        <tbody>
+          <tr><td>Pilot</td><td>2021–2023</td><td>ISCC CORSIA, RSB CORSIA, and 9 others</td><td>11 approved</td></tr>
+          <tr><td>Phase 1</td><td>2024–2026</td><td>ACR, ART, CAR, GCC, Gold Standard, Isometric, Premium Thailand VERP, Verra VCS</td><td>8 approved</td></tr>
+          <tr><td>Phase 2</td><td>2027–2035</td><td>To be determined; new TAB review per triennium</td><td>TBD</td></tr>
+        </tbody>
+      </table>
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier obligation — CORSIA Fuel Phase Eligibility</div>
+        <ul>
+          <li>Per <strong>ICAO Annex 16, Vol. IV, Appendix 6, Section 2.2</strong>: the verifier shall confirm that any CORSIA Eligible Fuel claimed is certified under a programme approved for the specific compliance phase being verified. A programme approved for the Pilot Phase is not automatically approved for Phase 1.</li>
+          <li>Per <strong>Appendix 6, Section 2.3</strong>: the verifier shall confirm the fuel certificate vintage — the sustainability certificate must cover the period in which the fuel was produced and uplifted.</li>
+        </ul>
+      </div>
+
+      <h3>SAF vs. LCAF — Regulatory Significance for Verifiers</h3>
+      <table class="data-table">
+        <thead><tr><th>Characteristic</th><th>CORSIA SAF</th><th>CORSIA LCAF</th><th>EU SAF (ReFuelEU)</th></tr></thead>
+        <tbody>
+          <tr><td>Feedstock origin</td><td>Renewable / waste (non-fossil)</td><td>Fossil-based</td><td>Renewable / waste (non-fossil) only</td></tr>
+          <tr><td>Eligible as EU SAF?</td><td>Potentially yes (if RED III criteria also met)</td><td><strong>No</strong> — fossil origin disqualifies under ReFuelEU Art. 3(3)</td><td>Yes (if ASTM + RED III criteria met)</td></tr>
+          <tr><td>Min. GHG reduction</td><td>≥10% vs. 89 gCO₂e/MJ</td><td>≥10% vs. 89 gCO₂e/MJ</td><td>≥65% vs. 94 gCO₂e/MJ (for bio-based); renewable electricity for e-fuels</td></tr>
+          <tr><td>Certification required</td><td>CORSIA-approved scheme</td><td>CORSIA-approved scheme</td><td>RED III-recognised scheme</td></tr>
+          <tr><td>CORSIA offsetting reduction?</td><td>Yes</td><td>Yes</td><td>Not applicable (different scheme)</td></tr>
+          <tr><td>EU ETS zero-rating?</td><td>Yes (if RED III criteria also met)</td><td>No</td><td>Yes</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <!-- END KNOWLEDGE BASE SECTION                              -->
+      <!-- ═══════════════════════════════════════════════════════ -->
+
+      <h2>What Is SAF?</h2>
+      <p>Sustainable Aviation Fuel (SAF) is a drop-in replacement for conventional fossil jet fuel (Jet-A / Jet-A1), produced from non-petroleum feedstocks such as waste oils, agricultural residues, municipal solid waste, or from renewable electricity and captured CO₂. It is chemically similar enough to fossil kerosene to be blended and used in existing aircraft and infrastructure without modification.</p>
+      <p>SAF must be certified to <strong>ASTM D7566</strong> (the international technical specification for synthesised aviation fuel) before it can be blended with conventional jet fuel and used in commercial aircraft. Once blended, the mixture meets the regular <strong>ASTM D1655</strong> jet fuel standard and is no longer distinguishable from fossil kerosene.</p>
+
+      <div class="card-grid three">
+        <div class="stat-card">
+          <div class="stat-label">Current max blend ratio (most pathways)</div>
+          <div class="stat-value">50%</div>
+          <div class="stat-note">Technical limit — aromatics constraint</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">CORSIA min. GHG reduction vs. fossil</div>
+          <div class="stat-value">10%</div>
+          <div class="stat-note">Fossil baseline: 89 gCO₂e/MJ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">RED III min. GHG reduction for EU ETS/ReFuelEU</div>
+          <div class="stat-value">65%</div>
+          <div class="stat-note">vs. fossil kerosene lifecycle baseline</div>
+        </div>
+      </div>
+
+      <h2>SAF Production Pathways</h2>
+      <p>ASTM International has approved 11 SAF production pathways under D7566. Each has different feedstocks, maturity levels, and maximum blend limits. The dominant current pathway is HEFA; all others are at various stages of commercialisation.</p>
+
+      <div class="pathway-grid">
+        <div class="pathway-card">
+          <div class="pw-name">HEFA-SPK</div>
+          <div class="pw-abbr">Hydroprocessed Esters and Fatty Acids – Synthetic Paraffinic Kerosene</div>
+          <div class="pw-row"><span class="pw-label">Feedstocks</span><span class="pw-val">UCO, tallow, animal fats, plant oils (excl. palm/soy for EU)</span></div>
+          <div class="pw-row"><span class="pw-label">Max blend</span><span class="pw-val">50%</span></div>
+          <div class="pw-row"><span class="pw-label">Market share (2026)</span><span class="pw-val">~88% of global SAF</span></div>
+          <div class="pw-row"><span class="pw-label">GHG reduction (typical)</span><span class="pw-val">60–90% vs. fossil</span></div>
+          <div class="pw-row"><span class="pw-label">Maturity</span><span class="pw-val">Commercial — dominant</span></div>
+        </div>
+        <div class="pathway-card">
+          <div class="pw-name">FT-SPK</div>
+          <div class="pw-abbr">Fischer-Tropsch Synthetic Paraffinic Kerosene</div>
+          <div class="pw-row"><span class="pw-label">Feedstocks</span><span class="pw-val">Municipal solid waste, agricultural residues, woody biomass</span></div>
+          <div class="pw-row"><span class="pw-label">Max blend</span><span class="pw-val">50%</span></div>
+          <div class="pw-row"><span class="pw-label">GHG reduction (typical)</span><span class="pw-val">70–95% vs. fossil</span></div>
+          <div class="pw-row"><span class="pw-label">Maturity</span><span class="pw-val">Early commercial / scaling</span></div>
+        </div>
+        <div class="pathway-card">
+          <div class="pw-name">AtJ-SPK</div>
+          <div class="pw-abbr">Alcohol-to-Jet Synthetic Paraffinic Kerosene</div>
+          <div class="pw-row"><span class="pw-label">Feedstocks</span><span class="pw-val">Ethanol, isobutanol from lignocellulosic biomass, agricultural waste</span></div>
+          <div class="pw-row"><span class="pw-label">Max blend</span><span class="pw-val">50%</span></div>
+          <div class="pw-row"><span class="pw-label">GHG reduction (typical)</span><span class="pw-val">40–85% vs. fossil</span></div>
+          <div class="pw-row"><span class="pw-label">Maturity</span><span class="pw-val">Early commercial (23% of expected 2030 SAF)</span></div>
+        </div>
+        <div class="pathway-card">
+          <div class="pw-name">Power-to-Liquid (PtL / e-SAF)</div>
+          <div class="pw-abbr">Electrofuel via FT or methanol route — also called synthetic aviation fuel</div>
+          <div class="pw-row"><span class="pw-label">Feedstocks</span><span class="pw-val">Renewable electricity + captured CO₂ + green hydrogen</span></div>
+          <div class="pw-row"><span class="pw-label">Max blend</span><span class="pw-val">Up to 50% (pathway-dependent)</span></div>
+          <div class="pw-row"><span class="pw-label">GHG reduction (typical)</span><span class="pw-val">&gt;85% (if renewable electricity used)</span></div>
+          <div class="pw-row"><span class="pw-label">Maturity</span><span class="pw-val">Pre-commercial — ReFuelEU sub-mandate from 2030</span></div>
+        </div>
+        <div class="pathway-card">
+          <div class="pw-name">SIP</div>
+          <div class="pw-abbr">Synthesized Iso-Paraffins from Hydroprocessed Fermented Sugars</div>
+          <div class="pw-row"><span class="pw-label">Feedstocks</span><span class="pw-val">Sugarcane, corn sugar (C6 sugars) → farnesene</span></div>
+          <div class="pw-row"><span class="pw-label">Max blend</span><span class="pw-val"><strong>10%</strong> (lower due to density)</span></div>
+          <div class="pw-row"><span class="pw-label">GHG reduction (typical)</span><span class="pw-val">~60–80% vs. fossil</span></div>
+          <div class="pw-row"><span class="pw-label">Maturity</span><span class="pw-val">Limited commercial</span></div>
+        </div>
+        <div class="pathway-card">
+          <div class="pw-name">FT-SKA / CHJ / Co-processing</div>
+          <div class="pw-abbr">Additional approved pathways (ASTM D7566)</div>
+          <div class="pw-row"><span class="pw-label">FT-SKA</span><span class="pw-val">FT with aromatics — 50% blend</span></div>
+          <div class="pw-row"><span class="pw-label">CHJ</span><span class="pw-val">Catalytic Hydrothermolysis Jet — 50% blend</span></div>
+          <div class="pw-row"><span class="pw-label">Co-processing</span><span class="pw-val">Bio-oil co-processed in existing refineries — limited % certified</span></div>
+          <div class="pw-row"><span class="pw-label">Maturity</span><span class="pw-val">Niche / emerging</span></div>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Why Is the Blend Limit 50%?</div>
+        <p>Most SAF pathways produce fuel with very low aromatic content. Conventional jet fuel requires 8–25% aromatics — the elastomer O-ring seals in aircraft fuel systems swell slightly with aromatics to prevent leakage. Too little aromatic content causes seal shrinkage and potential fuel leaks. Until 100% SAF pathways are certified with compatible aromatic content or synthetic aromatics are added, the 50% technical blend cap applies industry-wide.</p>
+      </div>
+
+      <h2>Feedstock Categories — EU RED III Annex IX</h2>
+      <p>For SAF to qualify under EU regulations (EU ETS, ReFuelEU), feedstocks must appear in RED III Annex IX or meet the general sustainability criteria of RED III. Annex IX divides eligible advanced feedstocks into two parts:</p>
+
+      <table class="data-table">
+        <thead><tr><th>Annex IX</th><th>Feedstock Examples</th><th>Cap</th><th>Key Notes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Part A</strong> (Advanced, uncapped)</td>
+            <td>Agricultural residues (straw, husks), food &amp; feed waste, municipal solid waste (non-recyclable fraction), algae, CO₂ for e-fuels, forestry residues</td>
+            <td>No volume cap</td>
+            <td>Count double towards EU renewable energy targets; highest GHG savings potential</td>
+          </tr>
+          <tr>
+            <td><strong>Part B</strong> (Advanced, capped)</td>
+            <td>Used Cooking Oil (UCO), Category 1 &amp; 2 animal fats, tallow</td>
+            <td>1.7% cap (shared) from 2030</td>
+            <td>Currently dominant HEFA feedstocks; count double; capped to prevent over-reliance</td>
+          </tr>
+          <tr>
+            <td><strong>Excluded feedstocks</strong></td>
+            <td>Food and feed crops, palm oil, soy, Palm Fatty Acid Distillate (PFAD), soap stock and derivatives</td>
+            <td>Not eligible under ReFuelEU</td>
+            <td>ReFuelEU is more restrictive than RED III base — palm and soy derivatives explicitly excluded</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>SAF Under Each Scheme — Side-by-Side</h2>
+
+      <h3>1. EU ETS <span class="scheme-pill pill-ets">EU ETS</span></h3>
+      <p>Under the EU ETS, SAF that meets RED III sustainability criteria is assigned a <strong>zero CO₂ emission factor</strong> (biomass fraction = zero-rated). This directly reduces the number of EU Allowances (EUAs) an aircraft operator must surrender.</p>
+      <ul>
+        <li><strong>Eligibility criteria:</strong> Must meet RED III sustainability criteria — minimum <strong>65% GHG lifecycle savings</strong> vs. the fossil fuel comparator (94 gCO₂e/MJ for transport fuels)</li>
+        <li><strong>Evidence required:</strong> A <strong>Proof of Sustainability (PoS)</strong> document — typically the certification document from an approved scheme (ISCC EU, RSB EU RED, or equivalent recognised by the competent authority)</li>
+        <li><strong>Monitoring Plan:</strong> SAF use must be reflected in the approved Monitoring Plan; the methodology for calculating the zero-rated fraction and applying the correct emission factor must be described</li>
+        <li><strong>AER reporting:</strong> The verified AER must separately identify: (a) the total fuel quantity, (b) the SAF fraction, (c) the emission factor applied to the SAF fraction (zero), and (d) the PoS reference</li>
+        <li><strong>SAF allowance incentive:</strong> 20 million EUAs reserved (2024–2030) to be allocated to aircraft operators who uplift SAF, partially covering the cost premium above fossil kerosene. First allocation: €100 million-worth of allowances distributed in September 2025.</li>
+        <li><strong>Lower Carbon Aviation Fuel (LCAF):</strong> Fuels that do not reach the 65% threshold but still have lower lifecycle emissions than fossil kerosene may qualify as LCAF — these receive a partial (proportional) emission factor reduction, not full zero-rating</li>
+      </ul>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — SAF in EU ETS AER</div>
+        <ul>
+          <li>Confirm that the SAF or LCAF used has a valid PoS issued by a RED III-recognised certification scheme (ISCC EU, RSB EU RED, or competent authority-approved equivalent).</li>
+          <li>Verify the PoS covers the entire supply chain from feedstock origin to the point of delivery (chain of custody), with no breaks.</li>
+          <li>Check that the GHG lifecycle value stated in the PoS is consistent with the emission factor used in the AER calculation — do not accept a zero rating for LCAF unless the operator meets the ≥65% threshold.</li>
+          <li>Confirm the quantity of SAF claimed in the AER is supported by fuel delivery documents (invoices, fuel receipts, mass balance records) and matches the PoS volumes.</li>
+          <li><strong>Book-and-claim certificates cannot substitute for physical SAF uplift records</strong> in EU ETS regulatory reporting. If an operator presents only book-and-claim documentation, the verifier must qualify the verification statement accordingly, as the SAF emission factor reduction is not substantiated per MRR Art. 54 and AVR requirements.</li>
+          <li>If the operator has received SAF allowances from the 20M EUA reserve: confirm the SAF volumes and types submitted for the allocation match the AER figures.</li>
+        </ul>
+      </div>
+
+      <h3>2. CORSIA <span class="scheme-pill pill-corsia">CORSIA</span></h3>
+      <p>Under CORSIA, SAF is referred to as <strong>CORSIA Eligible Fuel (CEF)</strong> and is split into two types:</p>
+      <ul>
+        <li><strong>SAF</strong> — meets ICAO sustainability criteria and achieves significant lifecycle GHG reduction</li>
+        <li><strong>LCAF (Lower Carbon Aviation Fuel)</strong> — achieves at least 10% GHG reduction vs. the CORSIA fossil baseline but does not meet the full SAF sustainability criteria</li>
+      </ul>
+      <p>Under CORSIA, SAF use <strong>reduces the operator's offsetting obligation</strong>. The emission reduction from SAF use is subtracted from the total CO₂ that must be offset at the end of each compliance period. In principle, sufficient SAF use could reduce the offsetting obligation to zero.</p>
+
+      <h4>CORSIA Lifecycle GHG Calculation</h4>
+      <p>The lifecycle emissions value of a CORSIA Eligible Fuel is calculated as:</p>
+      <div class="card" style="font-family:monospace; font-size:0.88rem; color: var(--text-muted); line-height: 2;">
+        <strong style="color:var(--text)">LCA value = Core LCA emissions + ILUC emissions − Emission credits</strong><br>
+        Fossil baseline: <strong style="color:var(--accent2)">89 gCO₂e/MJ</strong><br>
+        Minimum GHG reduction required: <strong style="color:var(--accent2)">≥10%</strong> (i.e., LCA value ≤ 80.1 gCO₂e/MJ)<br>
+        Emission reduction per MJ of SAF used = 89 − LCA value (gCO₂e/MJ)
+      </div>
+
+      <h4>CORSIA Sustainability Criteria (Three Pillars)</h4>
+      <table class="data-table">
+        <thead><tr><th>Pillar</th><th>Key Requirements</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1. Carbon Reduction</strong></td><td>Lifecycle GHG emissions ≥10% lower than fossil baseline (89 gCO₂e/MJ). Calculated using ICAO's approved LCA methodology (including ILUC for biofuels).</td></tr>
+          <tr><td><strong>2. Environmental</strong></td><td>No conversion of high-carbon stock land (forests, peatlands, wetlands). Protection of biodiversity. Soil, water, and air quality criteria apply.</td></tr>
+          <tr><td><strong>3. Socio-Economic</strong></td><td>Respect for land rights, water rights, labour rights. No adverse effects on food security. FPIC (Free, Prior and Informed Consent) where applicable.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>CORSIA Default Lifecycle Emissions Values</h4>
+      <p>ICAO publishes and periodically updates default LCA values for common feedstock/pathway combinations (Document 06 — Default Life Cycle Emission Values, last updated June 2025). Operators may use these default values or may commission a site-specific LCA for their particular supply chain (which could yield a lower value and thus more emission reduction credit).</p>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — SAF in CORSIA</div>
+        <ul>
+          <li>Confirm the SAF/LCAF used is certified under a CORSIA-recognised sustainability certification scheme (ISCC CORSIA, RSB CORSIA, or equivalent approved by ICAO Council for the relevant compliance period).</li>
+          <li>Verify the LCA value used: if using ICAO default values, confirm correct values from the most current ICAO Document 06. If using a site-specific LCA, confirm it was conducted by an accredited body and accepted by the State Authority.</li>
+          <li>Check that the emission reduction calculation formula is correctly applied: Emission Reduction (tCO₂) = (89 − LCA value) × energy content (MJ) ÷ 1,000,000.</li>
+          <li>Confirm CORSIA-eligible fuel volumes with physical delivery records, fuel invoices, and certificate references — ensure no volumes claimed under both CORSIA and EU ETS (double-use prevention).</li>
+          <li>Verify that the certification is valid for the Phase in question (Pilot Phase vs. Phase 1 vs. Phase 2) — only Phase 1-approved programmes apply to 2024–2026 compliance.</li>
+        </ul>
+      </div>
+
+      <h3>3. ReFuelEU Aviation <span class="scheme-pill pill-refuel">ReFuelEU</span></h3>
+      <p>ReFuelEU is the EU's demand-side mandate that requires aviation fuel <strong>suppliers</strong> to ensure a minimum SAF share in the fuel they supply at EU airports. Unlike EU ETS (which rewards SAF use through fewer allowances) or CORSIA (which reduces offsetting obligations), ReFuelEU sets a compliance obligation directly on the fuel supply chain.</p>
+
+      <h4>What Qualifies as SAF Under ReFuelEU?</h4>
+      <p>SAF eligible under ReFuelEU must meet RED III sustainability criteria and be produced from eligible feedstocks under RED III Annex IX (Parts A and B) or via the Power-to-Liquid (e-fuel) pathway using renewable electricity. Key exclusions — not found in RED III alone — specific to ReFuelEU:</p>
+      <ul>
+        <li>Food and feed crops (no crop-based biofuels count as SAF)</li>
+        <li>Palm oil and all palm-derived materials (including PFAD)</li>
+        <li>Soy-derived materials</li>
+        <li>Soap stock and derivatives</li>
+      </ul>
+
+      <h4>GHG Threshold Under ReFuelEU / RED III</h4>
+      <p>Biofuel-based SAF must achieve a <strong>minimum 65% lifecycle GHG savings</strong> compared to the fossil fuel comparator. For synthetic e-fuels, additional requirements on the source of electricity (renewable) and CO₂ (directly air-captured or from biogenic sources) apply to demonstrate climate benefit.</p>
+
+      <h4>ReFuelEU Reporting Chain</h4>
+      <table class="data-table">
+        <thead><tr><th>Actor</th><th>Obligation</th><th>Deadline</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Fuel Supplier</strong></td><td>Supply minimum SAF share at EU airports. Report SAF volumes per airport and per airline to competent authority.</td><td>14 February (Y+1)</td></tr>
+          <tr><td><strong>Fuel Supplier → Airline</strong></td><td>Provide documentation of SAF quantities, sustainability certificates, and batch references to each aircraft operator by 14 February.</td><td>14 February (Y+1)</td></tr>
+          <tr><td><strong>Aircraft Operator</strong></td><td>Submit verified annual ReFuelEU Aviation report (Article 8 report) to competent authority. Report includes SAF uplifted, book-and-claim certificates held, and compliance position.</td><td>31 March (Y+1)</td></tr>
+          <tr><td><strong>Verifier</strong></td><td>Independently verify the aircraft operator's ReFuelEU annual report before it is submitted. Verification uses EU ETS AVR standards.</td><td>Before 31 March (Y+1)</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Book-and-Claim Under ReFuelEU</h4>
+      <p>The book-and-claim mechanism allows an aircraft operator to claim SAF credits without physically uplifting SAF at the departure airport. The operator purchases a SAF certificate from a registry-approved seller (typically a fuel supplier who uplifted SAF elsewhere in the EU). Key requirements:</p>
+      <ul>
+        <li>Certificates must be issued and retired through an <strong>approved registry</strong> (e.g., SAFc Registry, ISCC Credit Transfer System, RSB Book and Claim Platform)</li>
+        <li>Each certificate represents one tonne of SAF (or per MJ quantity) and its associated sustainability attributes</li>
+        <li>Certificates must not be claimed by multiple parties (unique retirement required)</li>
+        <li>The underlying SAF must have been physically uplifted at an EU airport within the same reporting year</li>
+        <li>E-fuels produced outside the EU may also be covered, subject to country-of-origin criteria</li>
+      </ul>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Obligations — SAF in ReFuelEU Annual Report</div>
+        <ul>
+          <li>Verify the aircraft operator's annual ReFuelEU report in accordance with Regulation (EU) 2023/2405 and the EU ETS AVR (Regulation (EU) 2018/2067) standards.</li>
+          <li>Confirm all SAF quantities reported are supported by: fuel supplier documentation (delivered by 14 February), sustainability certification references, and batch identification numbers.</li>
+          <li>For ReFuelEU supplier compliance only: if book-and-claim certificates are presented, verify they are issued from an EASA-approved registry (e.g., SAFc, ISCC Credit Transfer System), have been properly retired (not double-used), and correspond to actual physical SAF uplifted at an EU airport within the reporting year. Remind operators that book-and-claim certificates do not count towards aircraft operator-level SAF obligations — only physical uplift does.</li>
+          <li>Check that the SAF types claimed comply with ReFuelEU eligibility — in particular, confirm no palm or soy-derived SAF is being counted, even if it holds a RED III certificate.</li>
+          <li>Verify that the e-fuel sub-mandate quantities (from 2030) are correctly identified and that the electricity used was from renewable sources as required.</li>
+          <li>Ensure consistency between the ReFuelEU annual report and the EU ETS AER — SAF volumes used in EU ETS zero-rating should correspond to ReFuelEU reported SAF.</li>
+          <li>Submit the verification report to the operator via the EASA Sustainability Portal before 31 March.</li>
+        </ul>
+      </div>
+
+      <h3>4. French Compensation Scheme <span class="scheme-pill" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid var(--gold);">French</span></h3>
+      <p>The French domestic compensation scheme (Article 147 of Law 2021-1104) does not have a specific SAF recognition mechanism equivalent to EU ETS zero-rating or CORSIA emission reduction credits. Operators must offset 100% of domestic flight CO₂ emissions through carbon credits. However, SAF use indirectly reduces the baseline CO₂ emissions that must be offset — if an operator uses SAF on domestic routes, their verified (or calculated) CO₂ emissions from those flights will be lower, resulting in a lower compensation obligation.</p>
+      <p>No formal SAF certification framework is defined within the French scheme itself; operators relying on SAF use to reduce their Article 147 baseline must be able to demonstrate the reduced emission figure is consistent with their EU ETS verified AER.</p>
+
+      <h2>SAF Certification Schemes</h2>
+      <p>Two ICAO-recognised certification schemes are used across all aviation environmental schemes. Both require certification of the entire supply chain.</p>
+
+      <table class="data-table">
+        <thead><tr><th>Scheme</th><th>Recognised by</th><th>Scope</th><th>Chain of Custody</th><th>Book-and-Claim</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>ISCC CORSIA</strong><br><em>International Sustainability &amp; Carbon Certification</em></td>
+            <td>ICAO (CORSIA), EU (RED III — via ISCC EU), UK ETS</td>
+            <td>Full supply chain: feedstock production → SAF production → blending → delivery</td>
+            <td>Mass balance — physical flow tracked throughout chain; every entity taking legal ownership must be ISCC-certified</td>
+            <td>ISCC Credit Transfer System (CTS)</td>
+          </tr>
+          <tr>
+            <td><strong>RSB CORSIA</strong><br><em>Roundtable on Sustainable Biomaterials</em></td>
+            <td>ICAO (CORSIA), EU (RED III — via RSB EU RED)</td>
+            <td>Full supply chain including 12 RSB principles covering environmental, social, and governance criteria</td>
+            <td>Mass balance and physical segregation options</td>
+            <td>RSB SAF Attribute Certificate Platform — manages SAF attribute certificates for voluntary reporting; not a substitute for physical uplift in regulatory schemes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>How Certification Works — Step by Step</h4>
+      <ol style="color:var(--text-muted);line-height:2;font-size:0.93rem;padding-left:22px;">
+        <li><strong>Feedstock producer</strong> is certified under ISCC or RSB — receives a certificate of conformity for their feedstock.</li>
+        <li><strong>SAF producer</strong> converts feedstock into SAF, records mass balance, and receives a batch-level certificate with an LCA value (or references a default value).</li>
+        <li><strong>Blender/trader</strong> blends SAF with fossil jet fuel, maintains chain-of-custody records, and issues a <em>Proof of Sustainability (PoS)</em> to the buyer (airline or fuel supplier).</li>
+        <li><strong>Airline/aircraft operator</strong> receives PoS, records SAF quantity, and uses the PoS as evidence in EU ETS AER, CORSIA emissions report, or ReFuelEU annual report.</li>
+        <li><strong>SAF attribute certificates (voluntary, non-regulatory):</strong> If physical uplift is not possible, a SAF producer may register the fuel's environmental attributes in a registry and issue a transferable certificate. Airlines may retire this certificate for <em>voluntary</em> sustainability reporting (e.g., CSRD, SBTi), but this does not constitute SAF uplift for regulatory purposes under EU ETS, CORSIA, or the French scheme.</li>
+      </ol>
+
+      <h2>SAF Market Context (2025–2026)</h2>
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">SAF price premium vs. fossil jet (2025)</div>
+          <div class="stat-value">~3×</div>
+          <div class="stat-note">~USD 2,500–4,000/t SAF vs. ~USD 700–900/t fossil jet</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">E-SAF price premium vs. fossil jet (2025)</div>
+          <div class="stat-value">~10×</div>
+          <div class="stat-note">Power-to-Liquid — pre-commercial scale</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Global SAF production (2025)</div>
+          <div class="stat-value">1.9 Mt</div>
+          <div class="stat-note">&lt;0.6% of global jet fuel demand (~330 Mt/yr)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">EU SAF production capacity (2026)</div>
+          <div class="stat-value">&gt;1 Mt</div>
+          <div class="stat-note">Up to 3.5 Mt by 2030 if projects under construction complete</div>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Supply Gap Warning</div>
+        <p>Global SAF production in 2025 (~1.9 Mt) is far below what the ReFuelEU 2030 mandate (6%) would require across EU departures alone. The HEFA pathway dominates (~88% of supply) but is constrained by feedstock availability (UCO, tallow). The 2030 e-SAF sub-mandate (1.2%) requires Power-to-Liquid capacity that does not yet commercially exist. Verifiers should be alert to operators making inflated SAF claims against a tight supply market — rigorous chain-of-custody verification is essential.</p>
+      </div>
+
+      <h2>Cross-Scheme SAF Comparison</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th><span class="scheme-pill pill-ets">EU ETS</span></th>
+            <th><span class="scheme-pill pill-corsia">CORSIA</span></th>
+            <th><span class="scheme-pill pill-refuel">ReFuelEU</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>SAF terminology</strong></td><td>Alternative aviation fuel / LCAF</td><td>CORSIA Eligible Fuel (SAF / LCAF)</td><td>Sustainable Aviation Fuel (SAF)</td></tr>
+          <tr><td><strong>Min. GHG reduction</strong></td><td>≥65% (RED III) for zero-rating; any reduction for LCAF partial factor</td><td>≥10% vs. 89 gCO₂e/MJ fossil baseline</td><td>≥65% (RED III) for biofuels; renewable electricity for e-fuels</td></tr>
+          <tr><td><strong>Benefit mechanism</strong></td><td>Zero emission factor → fewer EUAs surrendered</td><td>Reduces offsetting obligation (tCO₂ basis)</td><td>Compliance with blending mandate; avoids non-compliance penalty</td></tr>
+          <tr><td><strong>Who bears obligation</strong></td><td>Aircraft operator</td><td>Aircraft operator (aeroplane operator)</td><td>Fuel supplier (primary); aircraft operator (reporting)</td></tr>
+          <tr><td><strong>Certification required</strong></td><td>RED III-recognised scheme (ISCC EU, RSB EU RED)</td><td>ICAO-recognised scheme (ISCC CORSIA, RSB CORSIA)</td><td>RED III-recognised scheme (same as EU ETS)</td></tr>
+          <tr><td><strong>Excluded feedstocks</strong></td><td>High ILUC risk (palm, soy) under RED III</td><td>CORSIA criteria apply — no explicit palm/soy exclusion, but GHG/sustainability criteria must pass</td><td>Palm, soy, PFAD, soap stock explicitly excluded (stricter than RED III)</td></tr>
+          <tr><td><strong>Book-and-claim</strong></td><td>Not permitted for regulatory credit — physical uplift required (MRR Art. 54; AVR)</td><td>Not permitted — physical delivery required (Annex 16, Vol. IV, App. 3)</td><td>Permitted for <em>supplier mandate</em> compliance only via EASA-approved registries; not for aircraft operator AER compliance</td></tr>
+          <tr><td><strong>LCA methodology</strong></td><td>RED III (EU-specific)</td><td>ICAO LCA methodology (Document 04/06)</td><td>RED III (same as EU ETS)</td></tr>
+          <tr><td><strong>Verifier role</strong></td><td>Check PoS, quantities, emission factor in AER</td><td>Check CEF certificate, LCA value, emission reduction calculation in AER/EUCR</td><td>Verify annual ReFuelEU report; book-and-claim certificates; consistency with AER</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ISO PAGE -->
+    <div class="page" id="page-iso">
+      <h1 class="page-title">ISO 14065 &amp; ISO 17029 <span class="badge badge-iso">Accreditation Standards</span></h1>
+      <p class="page-subtitle">Two interlocking international standards form the accreditation backbone for every aviation environmental verifier. ISO/IEC 17029:2019 provides the general conformity assessment framework; ISO 14065:2020 adds GHG and environmental information-specific requirements. Together they define what it means to be a competent, impartial verification body in EU ETS, CORSIA, and ReFuelEU.</p>
+
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">ISO 17029 — Published</div>
+          <div class="stat-value">2019</div>
+          <div class="stat-note">ISO/IEC 17029:2019 — Conformity assessment — General principles and requirements for validation and verification bodies</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">ISO 14065 — Published</div>
+          <div class="stat-value">2020</div>
+          <div class="stat-note">ISO 14065:2020 — General principles and requirements for bodies validating and verifying environmental information</div>
+        </div>
+      </div>
+
+      <h2>The Relationship Between the Two Standards</h2>
+      <p>ISO 14065:2020 is explicitly a <strong>sector application</strong> of ISO/IEC 17029:2019. This means:</p>
+      <ul>
+        <li>ISO 17029 is the <em>foundation</em> — it sets generic requirements for any validation/verification body in any sector (construction, food safety, financial reporting, GHG, etc.).</li>
+        <li>ISO 14065 is the <em>overlay</em> — it references ISO 17029 throughout and adds requirements specific to environmental information, particularly GHG data, that go beyond what the generic standard requires.</li>
+        <li>A body accredited under ISO 14065 <strong>must simultaneously comply with ISO 17029</strong> in its entirety. The two standards are applied as a complementary pair — you cannot hold ISO 14065 accreditation without meeting ISO 17029.</li>
+        <li>The relevant EU legislation (AVR — Regulation (EU) 2018/2067, Article 4) mandates accreditation under both standards for EU ETS verification bodies.</li>
+        <li>ICAO Annex 16, Volume IV, Appendix 6, Section 2.1 mandates ISO 14065 (which incorporates ISO 17029 by reference) for CORSIA verifiers.</li>
+      </ul>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Legal obligation — both standards apply simultaneously</div>
+        <p>Under <strong>Regulation (EU) 2018/2067 (AVR), Article 4(1)</strong>, a verifier performing EU ETS verification must be accredited by a national accreditation body in accordance with ISO 14065 (as applied by ISO 17029). Accreditation under only one of the two standards is insufficient. For CORSIA, <strong>ICAO Annex 16, Vol. IV, Appendix 6, Section 2.1</strong> similarly requires ISO 14065-based accreditation, which inherently requires ISO 17029 compliance.</p>
+      </div>
+
+      <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px;display:block;margin:0 auto 24px;">
+        <!-- ISO 17029 large box -->
+        <rect x="10" y="10" width="660" height="180" rx="10" fill="rgba(99,102,241,0.07)" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <text x="30" y="34" fill="#a5b4fc" font-size="11" font-weight="700" font-family="system-ui">ISO/IEC 17029:2019 — General foundation (all sectors)</text>
+        <text x="30" y="52" fill="#64748b" font-size="9" font-family="system-ui">Principles · General requirements · Structural requirements · Resource requirements · Process requirements · Management system</text>
+        <!-- ISO 14065 inner box -->
+        <rect x="30" y="65" width="620" height="110" rx="8" fill="rgba(16,185,129,0.08)" stroke="#10b981" stroke-width="1.5"/>
+        <text x="50" y="86" fill="#34d399" font-size="11" font-weight="700" font-family="system-ui">ISO 14065:2020 — Environmental &amp; GHG-specific overlay (sectors: GHG, environmental information)</text>
+        <text x="50" y="103" fill="#64748b" font-size="9" font-family="system-ui">References ISO 17029 throughout · Adds: professional scepticism · conservativeness · GHG-specific competence · environmental knowledge</text>
+        <!-- Aviation schemes -->
+        <rect x="50" y="116" width="175" height="46" rx="6" fill="rgba(59,130,246,0.12)" stroke="#3b82f6" stroke-width="1"/>
+        <text x="137" y="135" text-anchor="middle" fill="#60a5fa" font-size="9" font-weight="700" font-family="system-ui">EU ETS</text>
+        <text x="137" y="150" text-anchor="middle" fill="#64748b" font-size="8" font-family="system-ui">AVR Reg. 2018/2067</text>
+        <text x="137" y="162" text-anchor="middle" fill="#64748b" font-size="8" font-family="system-ui">Art. 4 — NAB accreditation</text>
+        <rect x="245" y="116" width="175" height="46" rx="6" fill="rgba(168,85,247,0.12)" stroke="#a855f7" stroke-width="1"/>
+        <text x="332" y="135" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="700" font-family="system-ui">CORSIA</text>
+        <text x="332" y="150" text-anchor="middle" fill="#64748b" font-size="8" font-family="system-ui">Annex 16, Vol. IV</text>
+        <text x="332" y="162" text-anchor="middle" fill="#64748b" font-size="8" font-family="system-ui">Appendix 6, Sec. 2.1</text>
+        <rect x="440" y="116" width="175" height="46" rx="6" fill="rgba(34,197,94,0.12)" stroke="#22c55e" stroke-width="1"/>
+        <text x="527" y="135" text-anchor="middle" fill="#4ade80" font-size="9" font-weight="700" font-family="system-ui">ReFuelEU</text>
+        <text x="527" y="150" text-anchor="middle" fill="#64748b" font-size="8" font-family="system-ui">Reg. 2023/2405</text>
+        <text x="527" y="162" text-anchor="middle" fill="#64748b" font-size="8" font-family="system-ui">AVR standards apply</text>
+      </svg>
+
+      <!-- ISO 17029 -->
+      <h2>ISO/IEC 17029:2019 — Standard Summary</h2>
+      <p><strong>Full title:</strong> ISO/IEC 17029:2019 — Conformity assessment — General principles and requirements for validation and verification bodies.<br>
+      <strong>Applies to:</strong> Any body performing validation or verification as a conformity assessment activity, in any sector.</p>
+
+      <h3>Key Distinction: Validation vs. Verification</h3>
+      <p>ISO 17029 is one of the few standards that explicitly addresses both activities as separate but related processes (<strong>ISO 17029, Clause 3, Definitions 3.1 and 3.2</strong>):</p>
+      <table class="data-table">
+        <thead><tr><th>Activity</th><th>ISO 17029 Definition</th><th>Aviation example</th><th>Assurance level</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Validation</strong></td>
+            <td>Confirmation, through the provision of objective evidence, that the requirements for a specific intended future use or application have been fulfilled — i.e., assessing <em>future or projected</em> claims</td>
+            <td>Confirming a Monitoring Plan is fit for purpose before monitoring begins; confirming a CORSIA Emissions Monitoring Plan is correctly set up</td>
+            <td>Limited assurance (plausibility of future projection)</td>
+          </tr>
+          <tr>
+            <td><strong>Verification</strong></td>
+            <td>Confirmation, through the provision of objective evidence, that specified requirements have been fulfilled — i.e., assessing <em>historical/actual</em> data claims</td>
+            <td>Verifying an Annual Emissions Report (AER) for EU ETS; verifying a CORSIA Emissions Report</td>
+            <td>Reasonable assurance (historical data is free from material misstatement)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>ISO 17029 — Clause-by-Clause Summary</h3>
+      <table class="data-table">
+        <thead><tr><th>Clause</th><th>Title</th><th>Key Requirements</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Clause 4</strong></td>
+            <td>Principles</td>
+            <td>Nine principles that underpin all requirements: impartiality, competence, responsibility, openness, confidentiality, responsiveness to complaints, risk-based approach, evidence-based decision making, fair presentation. These are not auditable requirements themselves but guide interpretation of all other clauses.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 5</strong></td>
+            <td>General requirements</td>
+            <td><em>Cl. 5.1</em> — Legal entity: the body must be a legal entity (or defined part thereof) capable of being held legally responsible. <em>Cl. 5.2</em> — Impartiality: the body shall identify risks to impartiality, document them and show how they are managed; a mechanism independent of operations must oversee impartiality (e.g., an impartiality committee). <em>Cl. 5.3</em> — Liability: body must be able to meet financial liabilities for its activities. <em>Cl. 5.4</em> — Non-discriminatory access: services must be available on an equitable basis.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 6</strong></td>
+            <td>Structural requirements</td>
+            <td><em>Cl. 6.1</em> — Organisational structure: top management responsibilities defined; decision-making on validation/verification opinions must be structurally separated from commercial functions. <em>Cl. 6.2</em> — Operational control: body must control all operations that could affect validation/verification, even those performed by external parties (e.g., subcontracted experts).</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 7</strong></td>
+            <td>Resource requirements</td>
+            <td><em>Cl. 7.1</em> — Personnel: the body must have competent personnel; define competence criteria per role. <em>Cl. 7.2</em> — Competence of personnel: demonstrate subject matter knowledge, regulatory knowledge, audit skills. Records of competence assessments maintained. <em>Cl. 7.3</em> — Use of external experts: permitted if managed under the body's quality system; external experts are still the body's responsibility. <em>Cl. 7.4</em> — Outsourcing: documented control required.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 8</strong></td>
+            <td>Validation/verification programme requirements</td>
+            <td>The body must define its scope of activities (programme). The programme defines the object of validation/verification, the criteria to be used, the required competence, and the assurance level (reasonable or limited). The body shall only accept work within its defined and accredited programme scope.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 9</strong></td>
+            <td>Process requirements</td>
+            <td><em>Cl. 9.1</em> — Application review: assess feasibility before accepting. <em>Cl. 9.2</em> — Planning: develop a validation/verification plan; assign competent team; conduct risk assessment. <em>Cl. 9.3</em> — Evidence gathering: obtain sufficient appropriate evidence using sampling, data checks, document review, interviews. <em>Cl. 9.4</em> — Evaluation and determination: form a judgement; document findings; address identified issues. <em>Cl. 9.5</em> — Validation/verification statement: issue a written statement (opinion) with specified content. <em>Cl. 9.6</em> — Complaints and appeals: documented process for handling objections.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 10</strong></td>
+            <td>Information requirements</td>
+            <td>Records of all activities shall be maintained for a defined retention period. The body shall maintain confidentiality of client information except where disclosure is required by law or agreed with the client.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 11</strong></td>
+            <td>Management system requirements</td>
+            <td>The body shall implement a management system capable of achieving consistent fulfilment of requirements. Option A: implement a quality management system per the clauses in Annex A. Option B: implement a system in accordance with ISO 9001:2015 in its entirety, provided it covers the scope of the body's V&V activities.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ISO 14065 -->
+      <h2>ISO 14065:2020 — Standard Summary</h2>
+      <p><strong>Full title:</strong> ISO 14065:2020 — General principles and requirements for bodies validating and verifying environmental information.<br>
+      <strong>Applies to:</strong> Bodies that validate or verify environmental information statements (GHG inventories, GHG project claims, product carbon footprints, environmental labels, green bonds, and similar). In aviation, it applies to EU ETS, CORSIA, and ReFuelEU verification bodies.</p>
+
+      <h3>ISO 14065 — Clause-by-Clause Summary</h3>
+      <p>ISO 14065 follows the same clause numbering as ISO 17029. Where a clause of ISO 14065 simply states "apply ISO 17029, Clause X", the ISO 17029 requirements are the full requirement. Where ISO 14065 adds specific text, those additions are summarised here.</p>
+      <table class="data-table">
+        <thead><tr><th>Clause</th><th>ISO 14065 additions beyond ISO 17029</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Clause 4 — Principles</strong></td>
+            <td>ISO 14065 adds two aviation/GHG-specific principles not in ISO 17029:<br>
+            <strong>• Conservativeness (Cl. 4.5):</strong> When uncertainty cannot be fully resolved, the verifier shall apply conservative assumptions that do not overstate claimed emission reductions or understate emissions — a direct safeguard against manipulation of GHG figures.<br>
+            <strong>• Professional scepticism (Cl. 4.6):</strong> The verifier shall maintain an attitude of professional scepticism throughout — questioning evidence, remaining alert to conditions that may indicate material misstatement, and not accepting representations without corroboration.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 5 — General requirements</strong></td>
+            <td>Applies ISO 17029 Clause 5 in full. Adds that impartiality risks must specifically consider conflicts arising from providing both GHG consultancy and verification to the same client on the same GHG assertion — a common risk in the aviation verification market.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 6 — Structural requirements</strong></td>
+            <td>Applies ISO 17029 Clause 6. Adds that the impartiality committee (or equivalent independent oversight mechanism) must specifically review policies and procedures related to GHG and environmental information assessments, and must include persons with relevant technical competence.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 7 — Resource requirements</strong></td>
+            <td>Adds GHG-specific competence requirements beyond general auditing competence (Cl. 7.2):<br>
+            <strong>• Subject matter competence:</strong> Understanding of the applicable GHG programme (e.g., EU ETS MRR, CORSIA Annex 16, ReFuelEU Regulation); GHG inventory methodologies; lifecycle assessment concepts for SAF; fuel consumption monitoring methods used in aviation.<br>
+            <strong>• Technical reviewers:</strong> Every verification opinion must be reviewed by a competent technical reviewer who was not part of the verification team — an internal quality gate before the opinion is issued (Cl. 7.2.5).</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 8 — Programme requirements</strong></td>
+            <td>Applies ISO 17029 Clause 8. Specifies that the programme criteria for environmental information verification must include the applicable standard or regulation (e.g., EU MRR Regulation (EU) 2018/2066 for EU ETS, ICAO Annex 16 Vol. IV for CORSIA), and that the assurance level (reasonable vs. limited) must be stated in the engagement agreement and the verification statement.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 9 — Process requirements</strong></td>
+            <td>Adds GHG-specific process steps:<br>
+            <strong>• Cl. 9.3 (Strategic analysis):</strong> Verifier must understand the client organisation's activities, GHG sources and sinks, boundaries, and applicable GHG programme before planning the verification.<br>
+            <strong>• Cl. 9.3 (Risk analysis):</strong> Identify and assess risks of material misstatement in the GHG or environmental assertion — required to be documented and to drive the sampling strategy and evidence gathering plan.<br>
+            <strong>• Cl. 9.4 (Materiality):</strong> The verifier must set a materiality threshold (for aviation GHG typically 5% of total reported emissions or the absolute equivalent), below which misstatements are not considered material to the verification opinion. The materiality threshold must be justified and documented.<br>
+            <strong>• Cl. 9.5 (Verification statement):</strong> The statement must specify the GHG or environmental programme applied, the period covered, the assurance level, and any qualifications or emphasis of matter paragraphs. For EU ETS aviation, the statement is the Verification Report required under AVR Article 14.</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 10 — Information requirements</strong></td>
+            <td>Specifies that records of GHG and environmental verification activities must be retained for a minimum period as required by the applicable programme (for EU ETS: 10 years per AVR, Article 30; for CORSIA: as specified by the State Authority).</td>
+          </tr>
+          <tr>
+            <td><strong>Clause 11 — Management system</strong></td>
+            <td>Applies ISO 17029 Clause 11. Adds that the management system must address the specific risks of GHG data manipulation and conflicts of interest in environmental certification markets.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- COMPARISON -->
+      <h2>ISO 17029 vs. ISO 14065 — Side-by-Side Comparison</h2>
+      <table class="data-table">
+        <thead><tr><th>Dimension</th><th>ISO/IEC 17029:2019</th><th>ISO 14065:2020</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Scope</strong></td><td>Any validation/verification body in any sector</td><td>Bodies validating/verifying environmental information (GHG, eco-labels, green bonds, etc.)</td></tr>
+          <tr><td><strong>Relationship</strong></td><td>Foundation / parent standard</td><td>Sector application — explicitly references ISO 17029 throughout; cannot be applied without it</td></tr>
+          <tr><td><strong>Principles</strong></td><td>9 principles (Cl. 4): impartiality, competence, responsibility, openness, confidentiality, responsiveness to complaints, risk-based approach, evidence-based decision making, fair presentation</td><td>Same 9 principles; conservativeness (Cl. 4.5) and professional scepticism (Cl. 4.6) are emphasised as mandatory requirements within this set, not added on top</td></tr>
+          <tr><td><strong>Competence requirements</strong></td><td>Generic auditing competence (Cl. 7.2)</td><td>Adds GHG programme knowledge, LCA concepts, sector-specific technical competence (Cl. 7.2); mandatory independent technical reviewer per engagement (Cl. 7.2.5)</td></tr>
+          <tr><td><strong>Materiality</strong></td><td>Not addressed (sector-neutral)</td><td>Explicitly required — verifier must set, justify and document materiality threshold (Cl. 9.4)</td></tr>
+          <tr><td><strong>Professional scepticism</strong></td><td>Included within the 9 principles (Cl. 4) — general requirement to base decisions on evidence</td><td>Explicitly mandated as a named principle (Cl. 4.6) — verifier must question representations and seek corroboration</td></tr>
+          <tr><td><strong>Conservativeness</strong></td><td>Included within the 9 principles (Cl. 4) — general principle of evidence-based decisions under uncertainty</td><td>Explicitly mandated as a named principle (Cl. 4.5) — when uncertainty cannot be resolved, apply conservative assumptions</td></tr>
+          <tr><td><strong>Accreditation use</strong></td><td>Base standard for NAB accreditation of V&V bodies in any sector</td><td>Specific accreditation standard for EU ETS verifiers (per AVR Art. 4) and CORSIA verifiers (per Annex 16, Vol. IV, App. 6, Sec. 2.1)</td></tr>
+          <tr><td><strong>Record retention</strong></td><td>Defined retention period (programme-specific)</td><td>References programme requirements; EU ETS requires 10 years (AVR Art. 30)</td></tr>
+          <tr><td><strong>Assurance levels</strong></td><td>Reasonable assurance (verification) / Limited assurance (validation) — Cl. 3</td><td>Same; adds specification that level must be stated in both the engagement agreement and the verification statement (Cl. 9.5)</td></tr>
+          <tr><td><strong>Management system</strong></td><td>Cl. 11: Option A (own system) or Option B (ISO 9001)</td><td>Same options, with added GHG-specific risk controls</td></tr>
+        </tbody>
+      </table>
+
+      <!-- PROGRAMME-SPECIFIC APPLICATION -->
+      <h2>Application in Aviation Schemes</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Requirement</th>
+            <th>EU ETS Aviation</th>
+            <th>CORSIA</th>
+            <th>ReFuelEU Aviation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Accreditation standard</strong></td>
+            <td>ISO 17029 + ISO 14065 per <strong>AVR Art. 4(1)</strong></td>
+            <td>ISO 14065 per <strong>Annex 16, Vol. IV, App. 6, Sec. 2.1</strong></td>
+            <td>ISO 17029 + ISO 14065 (AVR standards apply per Reg. 2023/2405)</td>
+          </tr>
+          <tr>
+            <td><strong>Accrediting body</strong></td>
+            <td>National Accreditation Body (NAB) of an EU Member State per <strong>AVR Art. 4(2)</strong></td>
+            <td>National Accreditation Body recognised by ICAO member state; EA MLA recognition or ILAC MRA</td>
+            <td>NAB per AVR framework</td>
+          </tr>
+          <tr>
+            <td><strong>Assurance level</strong></td>
+            <td>Reasonable assurance (verification opinion on AER per <strong>AVR Art. 14</strong>)</td>
+            <td>Reasonable assurance (verification statement per <strong>Annex 16, Vol. IV, App. 6</strong>)</td>
+            <td>Reasonable assurance (per AVR framework)</td>
+          </tr>
+          <tr>
+            <td><strong>Materiality</strong></td>
+            <td>Typically 5% of total CO₂ reported (AVR guidance; ISO 14065 Cl. 9.4)</td>
+            <td>Programme-specific; typically 5% or as defined in State guidance (ISO 14065 Cl. 9.4)</td>
+            <td>Consistent with AVR; programme-specific EASA guidance</td>
+          </tr>
+          <tr>
+            <td><strong>Verification statement / report</strong></td>
+            <td>Verification Report per <strong>AVR Art. 14</strong>; submitted via Union Registry</td>
+            <td>Verification Statement per <strong>Annex 16, Vol. IV, App. 6, Sec. 3</strong>; submitted to State Authority</td>
+            <td>Verification opinion appended to ReFuelEU annual report; submitted via EASA Sustainability Portal</td>
+          </tr>
+          <tr>
+            <td><strong>Scope coverage</strong></td>
+            <td>EU ETS aviation sector (intra-EEA CO₂ + non-CO₂ from 2025)</td>
+            <td>International aviation CO₂ (CORSIA-applicable routes)</td>
+            <td>SAF and aviation fuel reporting by aircraft operators departing EU airports</td>
+          </tr>
+          <tr>
+            <td><strong>Record retention</strong></td>
+            <td><strong>10 years</strong> per <strong>AVR Art. 30</strong></td>
+            <td>As specified by State Authority (ISO 14065 Cl. 10)</td>
+            <td>Follow AVR Art. 30 as default</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ACCREDITATION PROCESS -->
+      <h2>Accreditation Process for Aviation Verifiers</h2>
+      <p>Accreditation is granted by a <strong>National Accreditation Body (NAB)</strong> — in the EU, NABs are designated under <strong>Regulation (EC) 765/2008</strong> and must themselves be members of the European co-operation for Accreditation (EA) multilateral agreement (EA MLA). Examples: RvA (Netherlands), DAkkS (Germany), UKAS (UK), COFRAC (France).</p>
+
+      <table class="data-table">
+        <thead><tr><th>Step</th><th>Activity</th><th>Legal / Standard Reference</th></tr></thead>
+        <tbody>
+          <tr><td><strong>1</strong></td><td><strong>Application:</strong> Verification body applies to NAB, specifying scope (e.g., EU ETS aviation, CORSIA).</td><td>AVR Art. 4; Reg. (EC) 765/2008, Art. 7</td></tr>
+          <tr><td><strong>2</strong></td><td><strong>Document review:</strong> NAB reviews management system manual, competence records, procedures, and sample verification files.</td><td>ISO 14065, Cl. 8–10; ISO 17029, Cl. 8–9; ISO/IEC 17011, Cl. 7.4</td></tr>
+          <tr><td><strong>3</strong></td><td><strong>Office assessment:</strong> NAB assessors visit VB premises to audit procedures, interview staff, and review records in detail.</td><td>ISO/IEC 17011, Cl. 7.5</td></tr>
+          <tr><td><strong>4</strong></td><td><strong>Witnessed assessment:</strong> NAB assessor observes the VB conducting a live verification at an operator's site to confirm competence in practice.</td><td>AVR Art. 7; ISO/IEC 17011, Cl. 7.7</td></tr>
+          <tr><td><strong>5</strong></td><td><strong>Accreditation decision:</strong> NAB grants accreditation for the specified scope if all requirements are met. Certificate issued with defined scope.</td><td>Reg. (EC) 765/2008, Art. 8; AVR Art. 4(1)</td></tr>
+          <tr><td><strong>6</strong></td><td><strong>Surveillance:</strong> Annual surveillance assessments; witnessed assessment at least every 2 years within the 4-year cycle.</td><td>AVR Art. 7(2); ISO/IEC 17011, Cl. 7.10</td></tr>
+          <tr><td><strong>7</strong></td><td><strong>Re-accreditation:</strong> Full reassessment every 4 years to renew the accreditation certificate.</td><td>AVR Art. 7(3); ISO/IEC 17011, Cl. 7.11</td></tr>
+        </tbody>
+      </table>
+
+      <!-- VERIFIER SELF-CHECK -->
+      <div class="verifier-box">
+        <div class="verifier-title">✅ Verifier Self-Check — ISO Compliance Before Issuing a Statement</div>
+        <p>Confirm all of the following before signing the verification statement:</p>
+        <ul>
+          <li><strong>Impartiality documented:</strong> No financial, personal or organisational conflict of interest with the operator; any potential conflict disclosed and resolved. <em>(ISO 17029, Cl. 5.2; ISO 14065, Cl. 5.2; AVR Art. 9)</em></li>
+          <li><strong>Scope of accreditation covers the programme:</strong> Your NAB certificate explicitly lists the scheme being verified (EU ETS aviation, CORSIA, ReFuelEU). <em>(AVR Art. 4(1); Annex 16, Vol. IV, App. 6, Sec. 2.1)</em></li>
+          <li><strong>Competence confirmed:</strong> At least one team member has demonstrated sector-specific technical competence; an independent technical reviewer has reviewed the complete file before opinion is issued. <em>(ISO 14065, Cl. 7.2 and 7.2.5; AVR Art. 8)</em></li>
+          <li><strong>Professional scepticism applied:</strong> Data sources questioned, corroborating evidence sought, reasoning documented — especially for SAF sustainability claims and tonne-kilometre data. <em>(ISO 14065, Cl. 4.6)</em></li>
+          <li><strong>Conservativeness applied:</strong> Where uncertainty or ambiguity could not be resolved, conservative assumptions were applied and their basis documented. <em>(ISO 14065, Cl. 4.5)</em></li>
+          <li><strong>Materiality threshold set and documented:</strong> A numeric materiality threshold (typically 5% of total reported emissions or activity data) has been set, justified and recorded in the verification plan and closing file. <em>(ISO 14065, Cl. 9.4; MRR Art. 70; AVR Annex I)</em></li>
+          <li><strong>Strategic and risk analysis complete:</strong> A documented strategic analysis of the operator and a risk analysis identifying material misstatement risks were completed before the site visit. <em>(ISO 14065, Cl. 9.3; AVR Art. 15)</em></li>
+          <li><strong>All assertions supported by evidence:</strong> Every factual claim in the verification file is backed by documented, retrievable evidence retained in the file. <em>(ISO 14065, Cl. 10; ISO 17029, Cl. 10)</em></li>
+          <li><strong>Verification opinion unambiguous:</strong> The statement reads either <em>satisfactory</em>, <em>satisfactory with qualifications</em>, or <em>not satisfactory</em> — with the basis for any qualification explicitly stated and the assurance level declared. <em>(ISO 17029, Cl. 9.5; AVR Art. 27)</em></li>
+          <li><strong>Record retention planned:</strong> The complete verification file will be retained for at least <strong>10 years</strong> from date of issue. <em>(AVR Art. 30; ISO 14065, Cl. 10)</em></li>
+        </ul>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ─── SPLASH ──────────────────────────────────────────────────────
+function enterWiki() {
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+
+// ─── NAVIGATION ──────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'")) {
+      n.classList.add('active');
+    }
+  });
+  window.scrollTo(0, 0);
+  if (window.innerWidth < 768) {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+  }
+}
+
+// ─── SIDEBAR TOGGLE ──────────────────────────────────────────────
+let sidebarOpen = true;
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const main = document.getElementById('main');
+  if (window.innerWidth < 768) {
+    sb.classList.toggle('mobile-open');
+  } else {
+    sidebarOpen = !sidebarOpen;
+    sb.classList.toggle('hidden', !sidebarOpen);
+    main.classList.toggle('full', !sidebarOpen);
+  }
+}
+
+// ─── SEARCH ──────────────────────────────────────────────────────
+const searchIndex = [];
+
+function buildSearchIndex() {
+  document.querySelectorAll('.page').forEach(page => {
+    const pageId = page.id.replace('page-', '');
+    const pageTitle = page.querySelector('h1.page-title')
+      ? page.querySelector('h1.page-title').textContent.trim()
+      : pageId;
+    page.querySelectorAll('h2, h3, h4, p, li, td').forEach(el => {
+      const text = el.textContent.trim();
+      if (text.length > 20) {
+        searchIndex.push({ pageId, pageTitle, text, tag: el.tagName.toLowerCase() });
+      }
+    });
+  });
+}
+
+function performSearch() {
+  const query = document.getElementById('search-input').value.trim().toLowerCase();
+  const resultsEl = document.getElementById('search-results');
+  if (!query || query.length < 2) {
+    resultsEl.style.display = 'none';
+    return;
+  }
+  const results = searchIndex.filter(item =>
+    item.text.toLowerCase().includes(query)
+  ).slice(0, 15);
+
+  if (results.length === 0) {
+    resultsEl.innerHTML = '<div class="search-result-item"><span style="color:var(--text-muted)">No results found.</span></div>';
+  } else {
+    const grouped = {};
+    results.forEach(r => {
+      if (!grouped[r.pageId]) grouped[r.pageId] = { title: r.pageTitle, snippets: [] };
+      if (grouped[r.pageId].snippets.length < 2) {
+        const idx = r.text.toLowerCase().indexOf(query);
+        const start = Math.max(0, idx - 40);
+        const end = Math.min(r.text.length, idx + query.length + 80);
+        let snippet = (start > 0 ? '…' : '') + r.text.slice(start, end) + (end < r.text.length ? '…' : '');
+        snippet = snippet.replace(new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+          m => '<mark style="background:rgba(59,130,246,0.3);color:#93c5fd;border-radius:2px">' + m + '</mark>');
+        grouped[r.pageId].snippets.push(snippet);
+      }
+    });
+    resultsEl.innerHTML = Object.entries(grouped).map(([pid, g]) =>
+      `<div class="search-result-item" onclick="showPage('${pid}');document.getElementById('search-results').style.display='none';document.getElementById('search-input').value='';">
+        <div class="search-result-page">${g.title}</div>
+        ${g.snippets.map(s => `<div class="search-result-snippet">${s}</div>`).join('')}
+      </div>`
+    ).join('');
+  }
+  resultsEl.style.display = 'block';
+}
+
+// ─── INIT ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  buildSearchIndex();
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', performSearch);
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#search-container')) {
+      const r = document.getElementById('search-results');
+      if (r) r.style.display = 'none';
+    }
+  });
+  showPage('home');
+});
+</script>
+</body>
+</html>
