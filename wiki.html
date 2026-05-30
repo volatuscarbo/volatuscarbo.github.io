@@ -288,13 +288,14 @@
     <a class="nav-item" onclick="showPage('ets-overview')">📊 Overview & History</a>
     <a class="nav-item nav-sub" onclick="showPage('ets-aviation')">✈️ Aviation in EU ETS</a>
     <a class="nav-item nav-sub" onclick="showPage('ets-mrv')">📋 MRV for Verifiers</a>
+    <a class="nav-item nav-sub" onclick="showPage('ets2')">🏭 EU ETS2 (Buildings & Transport)</a>
     <div class="nav-section">International</div>
     <a class="nav-item" onclick="showPage('corsia')">🌍 CORSIA</a>
     <a class="nav-item" onclick="showPage('refueleu')">⛽ ReFuelEU Aviation</a>
     <div class="nav-section">Fuels</div>
     <a class="nav-item" onclick="showPage('saf')">🌿 Sustainable Aviation Fuel</a>
     <div class="nav-section">Standards</div>
-    <a class="nav-item" onclick="showPage('iso')">📐 ISO 14065 &amp; ISO 17029</a>
+    <a class="nav-item" onclick="showPage('iso')">📐 ISO 14065, 17029 &amp; 14064-1</a>
     <div class="nav-section">Data Management</div>
     <a class="nav-item" onclick="showPage('datagap')">⚠️ Data Gaps</a>
     <a class="nav-item" onclick="showPage('tarog-gaps')">🔍 TAROG — Undefined Routes</a>
@@ -1571,7 +1572,90 @@
         <li><strong>Store CO₂</strong> — e.g., forest renewal, reforestation, soil carbon storage</li>
         <li><strong>Reduce GHG emissions</strong> — e.g., renewable energy projects, energy efficiency</li>
       </ul>
-      <p>Projects must meet quality standards defined by DGAC. Unlike CORSIA, there is currently no closed list of approved programmes — operators must demonstrate that credits meet the applicable environmental integrity criteria set out in the implementing decree.</p>
+      <p>Projects must satisfy the five fundamental carbon credit quality principles set out in <strong>Article R. 229-102-1 of the French Environmental Code</strong>: <em>unique, measurable, verifiable, permanent</em> and <em>additional</em>. Projects must also have begun implementation <strong>after 31 December 2019</strong> and must have no net negative impact on biodiversity.</p>
+      <p>Two automatically pre-approved routes exist: projects certified under the <strong>Label Bas-Carbone (LBC)</strong> and projects eligible under the <strong>CORSIA</strong> programme are deemed by law to satisfy all five principles. Any other certification standard may be used, but the operator must explicitly justify its compliance with each principle to the satisfaction of DGEC.</p>
+
+      <h2>European Projects vs. International Projects</h2>
+      <p>The scheme divides eligible projects into two geographic categories with different rules, minimum quotas, and credit maturity requirements.</p>
+
+      <h3>Minimum Quota of European Projects</h3>
+      <p>A minimum share of the total offsetting obligation must be met by projects located <strong>within the EU</strong> (any Member State, not only France). This minimum is set by the Order of 26 April 2022 as amended by the Order of 30 January 2026:</p>
+      <table class="data-table">
+        <thead><tr><th>Emissions Year</th><th>Minimum EU Project Share</th><th>Maximum International Share</th></tr></thead>
+        <tbody>
+          <tr><td>2022</td><td>20%</td><td>80%</td></tr>
+          <tr><td>2023</td><td>35%</td><td>65%</td></tr>
+          <tr><td>2024 onwards</td><td><strong>≥ 50%</strong></td><td><strong>≤ 50%</strong></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Requirements — European Projects (within EU territory)</h3>
+      <ul>
+        <li><strong>Location:</strong> Project must be physically located in an EU Member State.</li>
+        <li><strong>Accepted standards:</strong> Label Bas-Carbone (LBC) — automatically compliant. CORSIA-eligible projects — automatically compliant. Other recognised voluntary standards (e.g., Gold Standard, Verra VCS) may be used if compliance with the five principles is duly justified to DGEC.</li>
+        <li><strong>Start date:</strong> Project implementation must have begun after 31 December 2019.</li>
+        <li><strong>Biodiversity:</strong> No net negative biodiversity impact; biodiversity bonus may apply (see below).</li>
+        <li><strong>From 2023 onwards:</strong> Projects must be <em>labelled</em> (not merely notified) by the relevant certification body. Projects only notified but not yet formally labelled are no longer accepted.</li>
+        <li><strong>Ex-ante (pre-issuance) credits — transitional provision up to 2025:</strong> For EU projects only, operators may satisfy their obligation by presenting <em>proof of financing</em> (a contract) even if the carbon credits have not yet been generated at the time of the offsetting report. The operator must monitor the project annually and adjust for any surplus or shortfall of credits once the project is finalised.</li>
+      </ul>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Checklist — European Projects</div>
+        <ul>
+          <li>Confirm project is located in an EU Member State; verify address and project registration documents.</li>
+          <li>If LBC: confirm the project holds a valid label (not just notification) from DGEC/DREAL; check the label date — from 2023 obligations onwards, mere notification is not sufficient.</li>
+          <li>If CORSIA-eligible: confirm the programme and vintage appear on the current ICAO list of eligible CORSIA emissions units.</li>
+          <li>If another standard: review the operator's written justification for each of the five principles (unique, measurable, verifiable, permanent, additional). Flag any unsupported claim and advise DGEC pre-confirmation before the submission deadline.</li>
+          <li>If ex-ante credits are claimed (2025 transitional): verify a valid contract exists, identifies the operator as beneficiary, and specifies expected credit volumes and delivery timeline. Check prior-year monitoring reports if applicable.</li>
+          <li>Confirm project start date is after 31 December 2019.</li>
+          <li>Check whether biodiversity bonus is claimed and, if so, that sector-specific criteria (Arrêté of 4 June 2023) are met and documented for each criterion.</li>
+        </ul>
+      </div>
+
+      <h3>Requirements — International Projects (outside EU territory)</h3>
+      <ul>
+        <li><strong>Location:</strong> Project located outside the EU; can be anywhere in the world.</li>
+        <li><strong>Accepted standards:</strong> CORSIA-eligible programmes are the primary pathway. The Label Bas-Carbone does not apply to non-EU projects. Other voluntary standards may be used, but DGEC pre-confirmation is strongly advisable given the absence of an automatic compliance presumption.</li>
+        <li><strong>Start date:</strong> Project implementation must have begun after 31 December 2019.</li>
+        <li><strong>Biodiversity:</strong> No net negative biodiversity impact.</li>
+        <li><strong>Credits must already be recognised — no ex-ante financing:</strong> Unlike EU projects, international project credits must already have been <em>issued and verified</em> at the time of use. Pre-issuance or ex-ante credits are <strong>not accepted</strong> for international projects. The credits must represent reductions or removals already recognised by the relevant certification programme.</li>
+        <li><strong>Maximum share:</strong> International projects may not exceed 50% of the total offsetting obligation (for 2024 emissions onwards).</li>
+      </ul>
+
+      <div class="verifier-box">
+        <div class="vb-head">✅ Verifier Checklist — International Projects</div>
+        <ul>
+          <li>Confirm project location is outside the EU and that the geographic split between EU and international credits respects the minimum EU percentage for the obligation year.</li>
+          <li>If CORSIA-eligible: confirm programme name and vintage appear on the ICAO CORSIA eligible emissions units list; verify the serial numbers of cancelled credits match the operator's cancellation certificate.</li>
+          <li>If non-CORSIA standard: review the operator's justification for all five principles; recommend DGEC pre-confirmation if the standard has not previously been accepted.</li>
+          <li><strong>Critically: verify that credits are fully issued (not ex-ante).</strong> Require the credit issuance certificate or registry transaction showing credits were issued and cancelled in the operator's name before the 1 June submission deadline.</li>
+          <li>Confirm start date after 31 December 2019.</li>
+          <li>Check for double-counting: verify cancellation records from the applicable registry (e.g., Verra, Gold Standard, ACR, CAR) and confirm the credits are retired to the operator's account and not used for any other obligation (e.g., CORSIA).</li>
+        </ul>
+      </div>
+
+      <h3>Exemption from the Minimum EU Percentage</h3>
+      <p>If an operator cannot find EU projects available at a price at or below <strong>€40/tCO₂e</strong>, it may apply for an exemption from the minimum EU project share. To qualify, the operator must demonstrate that it:</p>
+      <ul>
+        <li>Contacted at least <strong>5 project holders, agents or intermediaries</strong> offering EU projects;</li>
+        <li>Included among those contacts: at least one agent of <strong>LBC agricultural projects</strong> and at least one agent of <strong>LBC forestry projects</strong>;</li>
+        <li>Was unable to secure sufficient EU credits at or below €40/tCO₂e in the required volume.</li>
+      </ul>
+      <p>The exemption request and all supporting evidence must be submitted to DGEC. The authority may refuse the exemption if EU projects below the threshold were still available. Note: €40/tCO₂e is the trigger threshold for the exemption mechanism — operators may voluntarily purchase credits at higher prices without being exempt.</p>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠ Verifier Note — Exemption Claims</div>
+        <p>If the operator invokes the €40/tCO₂e exemption to exceed the permitted international share, verify that at least five documented contacts are evidenced (emails, quotes, written correspondence), including at least one LBC agricultural agent and one LBC forestry agent. An exemption without this documentation is non-compliant and the operator remains subject to the minimum EU percentage.</p>
+      </div>
+
+      <h3>Biodiversity Bonus</h3>
+      <p>Projects (EU or international) that provide significant improvements in preserving and restoring natural ecosystems may qualify for a <strong>biodiversity bonus</strong> under the Order of 4 June 2023 (Art. R. 229-102-8 of the French Environmental Code). The bonus allows a project's credits to be counted at up to <strong>150% of their face value</strong> (i.e., up to a 50% uplift), reducing the number of credits the operator must acquire. The bonus is capped at <strong>15% of the operator's total annual obligation</strong> regardless of how many bonus projects are used.</p>
+      <p>Bonus eligibility criteria differ by sector:</p>
+      <ul>
+        <li><strong>Forestry:</strong> Must provide a sustainable management document; comply with regional decrees; demonstrate adaptability of forest stands to future climate; show sustainable forestry certification (e.g., PEFC, FSC); maintain diversity of species; preserve islands of aged stands (maintained for the full 30-year project period); minimum 3% of plantation surface set aside as aged-stand islands.</li>
+        <li><strong>Agriculture:</strong> Must hold organic farming certification or be undergoing conversion; permanent grasslands must not be turned over; agro-ecological infrastructure must be properly maintained.</li>
+        <li><strong>Natural areas:</strong> Must comply with management document protection guidelines.</li>
+      </ul>
 
       <h2>Reporting Obligations</h2>
       <p>Aircraft operators subject to the French scheme have two separate submission deadlines each year:</p>
@@ -2508,8 +2592,8 @@
 
     <!-- ISO PAGE -->
     <div class="page" id="page-iso">
-      <h1 class="page-title">ISO 14065 &amp; ISO 17029 <span class="badge badge-iso">Accreditation Standards</span></h1>
-      <p class="page-subtitle">Two interlocking international standards form the accreditation backbone for every aviation environmental verifier. ISO/IEC 17029:2019 provides the general conformity assessment framework; ISO 14065:2020 adds GHG and environmental information-specific requirements. Together they define what it means to be a competent, impartial verification body in EU ETS, CORSIA, and ReFuelEU.</p>
+      <h1 class="page-title">ISO 14065, ISO 17029 &amp; ISO 14064-1 <span class="badge badge-iso">Accreditation &amp; GHG Standards</span></h1>
+      <p class="page-subtitle">The accreditation backbone for environmental verifiers rests on ISO/IEC 17029:2019 (conformity assessment framework) and ISO 14065:2020 (GHG verification body requirements). Underpinning these is the quantification layer: ISO 14064-1:2018 (organisational GHG inventories) and the GHG Protocol Corporate Standard — the two most widely referenced frameworks verifiers will encounter in client organisations.</p>
 
       <div class="card-grid">
         <div class="stat-card">
@@ -2797,6 +2881,121 @@
           <li><strong>Verification opinion unambiguous:</strong> The statement reads either <em>satisfactory</em>, <em>satisfactory with qualifications</em>, or <em>not satisfactory</em> — with the basis for any qualification explicitly stated and the assurance level declared. <em>(ISO 17029, Cl. 9.5; AVR Art. 27)</em></li>
           <li><strong>Record retention planned:</strong> The complete verification file will be retained for at least <strong>10 years</strong> from date of issue. <em>(AVR Art. 30; ISO 14065, Cl. 10)</em></li>
         </ul>
+      </div>
+
+
+      <h2>ISO 14064-1:2018 — Organisational GHG Inventories</h2>
+      <p>ISO 14064-1:2018 is the international standard for <strong>quantifying and reporting greenhouse gas emissions and removals at the organisational level</strong>. It is part of the ISO 14064 series:</p>
+      <ul>
+        <li><strong>ISO 14064-1</strong> — Quantification and reporting of GHG emissions and removals (organisation level)</li>
+        <li><strong>ISO 14064-2</strong> — Quantification, monitoring and reporting of GHG emission reductions or removal enhancements (project level)</li>
+        <li><strong>ISO 14064-3</strong> — Validation and verification of GHG assertions (the standard directly used by verifiers)</li>
+      </ul>
+      <p>ISO 14064-1 was revised in 2018 to align with the GHG Protocol Corporate Standard and to strengthen requirements for Scope 3 reporting, supply chain emissions, and removal activities.</p>
+
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">Standard</div>
+          <div class="stat-value" style="font-size:1.2rem">ISO 14064-1:2018</div>
+          <div class="stat-note">Second edition. Replaces ISO 14064-1:2006.</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Scope</div>
+          <div class="stat-value" style="font-size:1.2rem">Organisation</div>
+          <div class="stat-note">Covers the GHG inventory of an entire organisation across all activities and sites</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">GHGs Covered</div>
+          <div class="stat-value" style="font-size:1.2rem">All 7</div>
+          <div class="stat-note">CO₂, CH₄, N₂O, HFCs, PFCs, SF₆, NF₃ — the full Kyoto basket</div>
+        </div>
+      </div>
+
+      <h3>Key Requirements of ISO 14064-1:2018</h3>
+      <ul>
+        <li><strong>Organisational boundary</strong>: The organisation must define its boundary using either the equity share approach or the control approach (operational or financial control). The chosen approach must be applied consistently.</li>
+        <li><strong>Operational boundary (Scopes)</strong>: Emissions are classified by scope — see GHG Protocol section below. All Scope 1 and Scope 2 emissions must be quantified; Scope 3 categories material to the organisation should be identified and reported.</li>
+        <li><strong>Quantification methods</strong>: Emissions are calculated using activity data × emission factors. The standard allows multiple methods (mass balance, stoichiometry, direct measurement, published emission factors) provided they are consistent and fit-for-purpose.</li>
+        <li><strong>Base year</strong>: A base year GHG inventory must be established and maintained. Recalculation is required when structural changes occur (mergers, acquisitions, divestitures).</li>
+        <li><strong>GHG inventory report</strong>: Must include: organisational description, boundary definition, base year, quantification approach, data sources, emission factors used, uncertainty assessment, and biogenic emissions separately reported.</li>
+        <li><strong>Verification</strong>: Verification is not mandatory under ISO 14064-1 itself, but is required where the organisation seeks third-party assurance, certification, or regulatory compliance (e.g., for CSRD, UK SECR, or voluntary disclosure).</li>
+      </ul>
+
+      <div class="info-box">
+        <div class="ib-head">ℹ️ ISO 14064-1 vs. ISO 14065/17029 — different roles</div>
+        <p>ISO 14064-1 is the <em>quantification standard</em> — it tells an organisation how to measure and report its emissions. ISO 14065 and ISO 17029 are the <em>verification body standards</em> — they tell a verifier how to be competent and impartial. A verifier accredited under ISO 14065/17029 uses ISO 14064-3 to verify an organisation's report prepared under ISO 14064-1.</p>
+      </div>
+
+      <h2>GHG Protocol Corporate Standard</h2>
+      <p>The <strong>GHG Protocol Corporate Accounting and Reporting Standard</strong> (WBCSD/WRI, first published 2001, revised 2004) is the world's most widely used GHG accounting framework. It is the foundation of ISO 14064-1:2018 and is referenced in EU disclosure regulation (CSRD/ESRS), CDP, SBTi, and most voluntary corporate reporting frameworks.</p>
+
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">Published by</div>
+          <div class="stat-value" style="font-size:1rem">WBCSD &amp; WRI</div>
+          <div class="stat-note">World Business Council for Sustainable Development &amp; World Resources Institute</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">First Edition</div>
+          <div class="stat-value">2001</div>
+          <div class="stat-note">Revised edition 2004. Supplementary guidance published through 2023.</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Global Adoption</div>
+          <div class="stat-value">&gt;90%</div>
+          <div class="stat-note">Estimated proportion of Fortune 500 GHG reporters using GHG Protocol methodology</div>
+        </div>
+      </div>
+
+      <h3>The Three Scopes</h3>
+      <p>The GHG Protocol's defining contribution is the <strong>three-scope framework</strong> for classifying emissions:</p>
+      <table class="data-table">
+        <thead>
+          <tr><th>Scope</th><th>Definition</th><th>Examples</th><th>Reporting Status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Scope 1</strong></td>
+            <td>Direct emissions — from sources owned or controlled by the organisation</td>
+            <td>Own fleet combustion, on-site boilers, process emissions, fugitive refrigerant leaks</td>
+            <td>Mandatory under GHG Protocol &amp; ISO 14064-1</td>
+          </tr>
+          <tr>
+            <td><strong>Scope 2</strong></td>
+            <td>Indirect emissions — from generation of purchased energy (electricity, heat, steam, cooling)</td>
+            <td>Purchased grid electricity, district heating</td>
+            <td>Mandatory (location-based and market-based methods both required since 2015)</td>
+          </tr>
+          <tr>
+            <td><strong>Scope 3</strong></td>
+            <td>All other indirect emissions — in the value chain, upstream and downstream</td>
+            <td>Business travel, purchased goods, use of sold products, investments, employee commuting</td>
+            <td>Voluntary in GHG Protocol; 15 categories defined in Scope 3 Standard (2011)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>GHG Protocol Standards Suite</h3>
+      <ul>
+        <li><strong>Corporate Standard</strong> (2004) — the core organisational inventory standard</li>
+        <li><strong>Scope 3 Standard</strong> (2011) — 15 value chain emission categories</li>
+        <li><strong>Corporate Value Chain (Scope 3) Accounting and Reporting Standard</strong> — same as above</li>
+        <li><strong>Market-based Accounting Guidance</strong> (2015) — Scope 2 electricity with contractual instruments (RECs, GOs, PPAs)</li>
+        <li><strong>Land Sector and Removals Guidance</strong> (2022) — land use, forests, soil carbon</li>
+        <li><strong>Mitigation Goals Standard</strong> — tracking progress against corporate climate targets</li>
+      </ul>
+
+      <h3>Relationship to Regulatory Schemes</h3>
+      <ul>
+        <li><strong>CSRD / ESRS E1</strong> (EU): European Sustainability Reporting Standards reference GHG Protocol and ISO 14064-1 as acceptable methodologies for corporate GHG reporting under the Corporate Sustainability Reporting Directive.</li>
+        <li><strong>EU ETS &amp; ETS2</strong>: These schemes have their own MRR (Monitoring and Reporting Regulation) — which uses direct measurement and specific emission factors, not the GHG Protocol scope framework. However, an organisation's GHG Protocol inventory may inform understanding of overall emissions context.</li>
+        <li><strong>CORSIA</strong>: Uses ICAO-specific MRV methodology (fuel uplift × emission factor). Not GHG Protocol-based.</li>
+        <li><strong>SBTi</strong>: Science Based Targets initiative requires GHG Protocol-aligned inventories for target setting.</li>
+      </ul>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠️ Verifier awareness: GHG Protocol ≠ regulatory MRV</div>
+        <p>When verifying EU ETS, ETS2, or CORSIA reports, the applicable methodology is the regulatory MRR — not the GHG Protocol. The GHG Protocol scope framework does not map directly onto ETS monitoring approaches. Be alert to clients that conflate their corporate GHG inventory (prepared under GHG Protocol / ISO 14064-1) with their regulatory emissions report. These are separate documents prepared under different rules and for different purposes.</p>
       </div>
 
     </div>
@@ -3453,8 +3652,142 @@
 
     </div><!-- end page-tarog-gaps -->
 
+  
+    <!-- ETS2 PAGE -->
+    <div class="page" id="page-ets2">
+      <h1 class="page-title">EU ETS2 <span class="badge badge-ets">Buildings &amp; Road Transport</span></h1>
+      <p class="page-subtitle">The EU Emissions Trading System 2 (ETS2) extends carbon pricing to fuel combustion in buildings, road transport, and additional sectors. Separate from EU ETS (ETS1), it regulates upstream fuel suppliers. Verification under ISO 14065 / ISO 17029 is mandatory from 2026.</p>
+
+      <div class="card-grid">
+        <div class="stat-card">
+          <div class="stat-label">Monitoring Start</div>
+          <div class="stat-value">2024</div>
+          <div class="stat-note">Fuel suppliers commenced emissions monitoring 1 January 2024</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">First Verified Report</div>
+          <div class="stat-value">2026</div>
+          <div class="stat-note">2025 emissions report (due 30 April 2026) — first report requiring third-party verification</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Trading Starts</div>
+          <div class="stat-value">2028</div>
+          <div class="stat-note">Postponed from 2027 by EU Council &amp; Parliament decision March 2026</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Surrender Deadline</div>
+          <div class="stat-value">31 May</div>
+          <div class="stat-note">Allowances surrendered annually by 31 May for prior-year emissions (from 2028 onwards)</div>
+        </div>
+      </div>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠️ ETS2 is NOT ETS1 — key structural difference</div>
+        <p>Under EU ETS (ETS1), aircraft operators are regulated directly. Under ETS2, <strong>fuel suppliers</strong> (distributors and importers releasing fuel for consumption) are the regulated entities — not households, transport companies, or building owners. This upstream approach fundamentally shapes the monitoring methodology and what verifiers must examine.</p>
+      </div>
+
+      <h2>Legal Basis &amp; Key Regulations</h2>
+      <ul>
+        <li><strong>Directive 2003/87/EC as amended (ETS Directive, Chapter IVa)</strong> — establishes ETS2. Inserted by Directive (EU) 2023/959 (ETS revision, May 2023).</li>
+        <li><strong>Implementing Regulation (EU) 2018/2066 (MRR)</strong> — revised October 2023 to include ETS2 monitoring and reporting rules for fuel suppliers.</li>
+        <li><strong>Implementing Regulation (EU) 2018/2067 (AVR)</strong> — the Accreditation and Verification Regulation, equally applicable to ETS2 verifiers. Further amended by Commission Implementing Regulation (EU) 2025/1192 (18 June 2025).</li>
+        <li><strong>Delegated Regulation (EU) 2019/331</strong> — not applicable to ETS2 (relevant for ETS1 free allocation only).</li>
+      </ul>
+
+      <h2>Scope &amp; Regulated Sectors</h2>
+      <p>ETS2 covers CO₂ emissions from combustion of fuels in:</p>
+      <ul>
+        <li><strong>Buildings</strong> — heating fuels (gas, oil, coal) for residential and commercial buildings</li>
+        <li><strong>Road transport</strong> — petrol, diesel, LPG released for road vehicles</li>
+        <li><strong>Additional sectors</strong> — other combustion not covered by ETS1, including small industrial installations below the ETS1 threshold</li>
+      </ul>
+      <p>Aviation fuels are explicitly excluded — they fall under EU ETS (ETS1) and, where applicable, CORSIA and ReFuelEU Aviation.</p>
+
+      <h2>Regulated Entities: Fuel Suppliers</h2>
+      <p>A <strong>regulated entity</strong> under ETS2 is a fuel supplier that releases fuels for consumption in the covered sectors. Obligations:</p>
+      <ul>
+        <li>Hold a <strong>GHG emissions permit</strong> by 1 January 2025</li>
+        <li>Have an <strong>approved monitoring plan</strong> in place before 1 January 2024</li>
+        <li>Monitor and report <strong>quantities of fuel released for consumption</strong> and the associated emissions, by fuel type and sector</li>
+        <li>Submit a <strong>verified annual emissions report</strong> by 30 April each year</li>
+        <li>Surrender a corresponding number of <strong>ETS2 allowances</strong> by 31 May each year (from 2028)</li>
+      </ul>
+
+      <h2>Monitoring Methodology</h2>
+      <p>Unlike ETS1 (which monitors emissions at the point of combustion or from aircraft fuel uplift), ETS2 uses an <strong>upstream fuel quantity approach</strong>:</p>
+      <ul>
+        <li>Reported emissions are calculated from <strong>fuel quantities released for consumption</strong>, not from actual combustion measurements</li>
+        <li>Standard <strong>emission factors</strong> (CO₂ per tonne of fuel) from the MRR are applied by fuel type</li>
+        <li><strong>Net calorific values (NCV)</strong> and density figures from the MRR are used unless the operator can demonstrate higher-tier values</li>
+        <li>Monitoring tiers (1–4) apply — higher tiers require more precise measurement of fuel quantity and fuel properties</li>
+        <li>The monitoring plan must document: fuel types monitored, measurement devices, calculation methods, and data flow procedures</li>
+      </ul>
+
+      <h2>Reporting Phase 2024–2027 (Shadow Phase)</h2>
+      <p>Before trading begins, ETS2 operates a monitoring and reporting phase:</p>
+      <ul>
+        <li><strong>2024</strong>: First year of mandatory monitoring (no surrender obligation)</li>
+        <li><strong>2025</strong>: Second monitoring year; emissions report (covering 2024) due 30 April 2025 — verification not yet mandatory for this first report in some Member States</li>
+        <li><strong>2026</strong>: Verification becomes mandatory — the 2025 emissions report (due 30 April 2026) must be verified by an accredited third-party verifier</li>
+        <li><strong>2027</strong>: Continued verified reporting; trading start originally planned for 2027, postponed to 2028</li>
+        <li><strong>2028</strong>: Trading begins; first allowance surrender obligation (31 May 2028 for 2027 emissions)</li>
+      </ul>
+
+      <div class="info-box">
+        <div class="ib-head">ℹ️ Postponement — March 2026</div>
+        <p>In March 2026, the EU Council and European Parliament confirmed a one-year postponement of ETS2 trading from 2027 to 2028. The verification and reporting obligations for the 2025 report (due April 2026) remain in force and were not affected by the postponement.</p>
+      </div>
+
+      <h2>Verifier Obligations &amp; Accreditation</h2>
+      <p>Under AVR (Regulation (EU) 2018/2067), verifiers for ETS2 must:</p>
+      <ul>
+        <li>Be accredited by a <strong>national accreditation body</strong> of an EU Member State</li>
+        <li>Hold accreditation under <strong>ISO 14065:2020</strong> (read together with ISO/IEC 17029:2019)</li>
+        <li>Have the scope of accreditation covering <strong>ETS2 / fuel supplier activities</strong> — separate from aviation ETS1 scope</li>
+        <li>Apply the verification procedures in <strong>Annex V of the AVR</strong>, adapted to the ETS2 monitoring methodology</li>
+        <li>Issue a <strong>verification opinion</strong> (reasonable assurance) based on the verified emissions report</li>
+      </ul>
+
+      <div class="warn-box">
+        <div class="wb-head">⚠️ Scope of accreditation — do not confuse ETS1 and ETS2</div>
+        <p>Accreditation for EU ETS aviation (ETS1) does not automatically cover ETS2. Verify that your accreditation scope explicitly includes ETS2 fuel supplier activities before accepting an ETS2 verification engagement. Check with your national accreditation body.</p>
+      </div>
+
+      <h2>Key Verifier Checks</h2>
+      <ul>
+        <li><strong>Permit &amp; monitoring plan</strong>: Confirm the entity holds a valid permit and that the approved monitoring plan covers all fuel types and activities in scope.</li>
+        <li><strong>Completeness</strong>: All fuel types released for consumption in covered sectors are included — no fuels omitted, no double-counting with ETS1 or other schemes.</li>
+        <li><strong>Fuel quantity data</strong>: Trace fuel quantities from primary source (customs data, weighbridge, fiscal meters) through to the reported figure. Assess tier compliance.</li>
+        <li><strong>Emission factors</strong>: Confirm correct MRR default factors are used, or that higher-tier values are properly supported by laboratory analysis and documented.</li>
+        <li><strong>Sector allocation</strong>: Verify that fuels are correctly allocated to the right sector (buildings vs. road transport vs. additional). Misallocation affects both the entity's liability and national reporting.</li>
+        <li><strong>Excluded fuels</strong>: Confirm aviation fuels, marine fuels, and other excluded categories are correctly removed from the ETS2 scope.</li>
+        <li><strong>Data management systems</strong>: Assess the adequacy of the entity's data management, including IT systems, internal controls, and data flow procedures described in the monitoring plan.</li>
+        <li><strong>Materiality threshold</strong>: Apply the 5% / 10,000 tonne materiality threshold per the AVR when assessing misstatements.</li>
+        <li><strong>Significant changes</strong>: Check whether any significant changes to fuel types, activities, or monitoring methodology were made during the year and whether the monitoring plan was updated and re-approved.</li>
+      </ul>
+
+      <h2>Relationship to EU ETS1 and Aviation</h2>
+      <table class="data-table">
+        <thead>
+          <tr><th>Feature</th><th>ETS1 (Aviation)</th><th>ETS2</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Regulated entity</td><td>Aircraft operator</td><td>Fuel supplier</td></tr>
+          <tr><td>Point of regulation</td><td>Downstream (at combustion / uplift)</td><td>Upstream (fuel release for consumption)</td></tr>
+          <tr><td>GHG covered</td><td>CO₂ (+ non-CO₂ monitoring)</td><td>CO₂ only</td></tr>
+          <tr><td>Sectors</td><td>Aviation (EEA flights)</td><td>Buildings, road transport, other</td></tr>
+          <tr><td>Trading operational</td><td>Since 2005 (aviation from 2012)</td><td>From 2028</td></tr>
+          <tr><td>AVR applies</td><td>Yes</td><td>Yes</td></tr>
+          <tr><td>Accreditation standard</td><td>ISO 14065 + ISO 17029</td><td>ISO 14065 + ISO 17029</td></tr>
+        </tbody>
+      </table>
+
+    </div><!-- end page-ets2 -->
+
   </main>
 </div>
+
+
 
 <script>
 // ─── SPLASH ───────────────────────────────────────────────────────
@@ -3544,25 +3877,31 @@ function performSearch() {
       }
     });
     resultsEl.innerHTML = Object.entries(grouped).map(([pid, g]) =>
-      '<div class="search-result-item" onclick="showPage(\'' + pid + '\');document.getElementById(\'search-results\').style.display=\'none\';document.getElementById(\'search-input\').value=\'\';">' +
-        '<div class="search-result-page">' + g.title + '</div>' +
-        g.snippets.map(s => '<div class="search-result-snippet">' + s + '</div>').join('') +
+      '<div class="search-result-item" onclick="showPage(\'' + pid + '\');document.getElementById(\'search-results\').style.display=\'none\';document.getElementById(\'search-input\').value=\'\'">' +
+      '<div class="sri-title">' + g.title + '</div>' +
+      g.snippets.map(s => '<div class="sri-snippet">' + s + '</div>').join('') +
       '</div>'
     ).join('');
+    resultsEl.style.display = 'block';
   }
-  resultsEl.style.display = 'block';
 }
 
-// ─── INIT ────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   buildSearchIndex();
-  const searchInput = document.getElementById('search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', performSearch);
+  const inp = document.getElementById('search-input');
+  if (inp) {
+    inp.addEventListener('input', performSearch);
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.getElementById('search-results').style.display = 'none';
+        inp.value = '';
+      }
+    });
   }
   document.addEventListener('click', e => {
-    if (!e.target.closest('#search-container')) {
-      document.getElementById('search-results').style.display = 'none';
+    const sr = document.getElementById('search-results');
+    if (sr && !sr.contains(e.target) && e.target !== inp) {
+      sr.style.display = 'none';
     }
   });
 });
